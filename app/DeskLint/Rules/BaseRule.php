@@ -57,6 +57,15 @@ abstract class BaseRule implements Rule
         return sprintf(config('fec.bonus.editor_url'), $bid);
     }
 
+    /** "*us*,*ca*,*au*" -> "us, ca, au" (first six). */
+    protected function shortList(string $raw): string
+    {
+        $codes = array_values(array_filter(array_map(fn ($c) => trim($c, " *"), preg_split('/[,\s]+/', $raw) ?: [])));
+        $shown = array_slice($codes, 0, 6);
+
+        return implode(', ', $shown).(count($codes) > 6 ? sprintf(' +%d', count($codes) - 6) : '');
+    }
+
     /** @var array<int, string> */
     private array $names = [];
 

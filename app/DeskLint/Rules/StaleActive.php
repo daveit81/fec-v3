@@ -25,8 +25,7 @@ final class StaleActive extends BaseRule
             WHERE '.$this->activeWhere().'
               AND GREATEST(COALESCE(NULLIF(b.modified, "0000-00-00 00:00:00"), "1000-01-01"),
                            COALESCE(NULLIF(b.added, "0000-00-00 00:00:00"), "1000-01-01")) < DATE_SUB(NOW(), INTERVAL ? DAY)
-            ORDER BY b.modified
-            LIMIT 300', [$days]);
+            ORDER BY b.modified', [$days]);
 
         return array_map(fn ($r) => $this->finding(
             (string) $r->bid,

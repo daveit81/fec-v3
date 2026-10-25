@@ -69,6 +69,15 @@ return [
         // Days without a modification after which a live bonus is "stale".
         'stale_days' => (int) env('FEC_DESK_LINT_STALE_DAYS', 180),
 
+        // active_on_closed_casino: which casino flags count. The site hides the
+        // bonuses of closed and suspended casinos at render time, so by default
+        // only the blacklist is an inconsistency. Options: blacklisted, closed, suspended.
+        'closed_flags' => array_values(array_filter(explode(',', env('FEC_DESK_LINT_CLOSED_FLAGS', 'blacklisted')))),
+
+        // currency_mismatch: compare currencies only among bonuses of the same
+        // casino aimed at the same countries (true), or across the whole casino (false).
+        'currency_by_market' => filter_var(env('FEC_DESK_LINT_CURRENCY_BY_MARKET', true), FILTER_VALIDATE_BOOL),
+
         // Report recipients. Mail uses the app mailer (MAIL_*); Telegram needs
         // the bot token and the chat id of the desk channel.
         'mail_to' => array_values(array_filter(explode(',', env('FEC_DESK_LINT_MAIL_TO', 'system@freeextrachips.com')))),
