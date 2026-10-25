@@ -107,6 +107,27 @@ return [
             'engine' => null,
         ],
 
+        /*
+        | Same catalogue, writing user: only the paths that must write during
+        | the convivenza use it (click tracking in jos_bonus_clicks, the
+        | shortlink hit counter). Grants are per table on purpose.
+        */
+        'fec_rw' => [
+            'driver' => 'mariadb',
+            'host' => env('FEC_DB_HOST', '127.0.0.1'),
+            'port' => env('FEC_DB_PORT', '3306'),
+            'database' => env('FEC_DB_DATABASE', 'freeextr_fec25'),
+            'username' => env('FEC_RW_DB_USERNAME', env('FEC_DB_USERNAME', '')),
+            'password' => env('FEC_RW_DB_PASSWORD', env('FEC_DB_PASSWORD', '')),
+            'unix_socket' => env('FEC_DB_SOCKET', ''),
+            'charset' => env('FEC_DB_CHARSET', 'utf8mb4'),
+            'collation' => env('FEC_DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => env('FEC_DB_PREFIX', 'jos_'),
+            'prefix_indexes' => true,
+            'strict' => false,
+            'engine' => null,
+        ],
+
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => env('DB_URL'),

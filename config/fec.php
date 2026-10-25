@@ -65,6 +65,18 @@ return [
         'editor_url' => env('FEC_BONUS_EDITOR_URL', 'https://www.freeextrachips.com/index.php?option=com_bonuses&bid=%d&lang=en&view=add'),
     ],
 
+    'goto' => [
+        // Query parameters that carry the shortlink phrase (com_shortlink
+        // "paramname", comma separated; legacy default "link").
+        'params' => array_values(array_filter(explode(',', env('FEC_GOTO_PARAMS', 'link')))),
+
+        // Where an unknown or missing phrase lands (com_shortlink fallback).
+        'fallback' => env('FEC_GOTO_FALLBACK', '/'),
+
+        // Legacy fec_detect_country() default when no country is known.
+        'default_country' => 'US',
+    ],
+
     'desk_lint' => [
         // Days without a modification after which a live bonus is "stale".
         'stale_days' => (int) env('FEC_DESK_LINT_STALE_DAYS', 180),
