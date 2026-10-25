@@ -16,4 +16,13 @@ Route::get('/health', HealthController::class)->name('health');
 Route::get('/__registry', RegistryController::class)->name('registry');
 
 // Phase 1, first production route: the tracked affiliate redirect (parity with goto.php + com_shortlink).
-Route::get('/goto.php', GotoController::class)->name('goto');
+// Stateless on purpose: no session, no CSRF, no cookies on the main hostname for a redirect.
+Route::get('/goto.php', GotoController::class)
+    ->withoutMiddleware([
+        \Illuminate\Session\Middleware\StartSession::class,
+        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+        \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+        \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+        \Illuminate\Cookie\Middleware\EncryptCookies::class,
+    ])
+    ->name('goto');
