@@ -5,6 +5,7 @@ namespace App\DeskLint;
 use App\DeskLint\Rules\ActiveBonusOnClosedCasino;
 use App\DeskLint\Rules\ClockBrandOnBlacklisted;
 use App\DeskLint\Rules\CurrencyMismatch;
+use App\DeskLint\Rules\CurrencyUnknown;
 use App\DeskLint\Rules\DuplicateWelcome;
 use App\DeskLint\Rules\EndedButActive;
 use App\DeskLint\Rules\MissingLink;
@@ -19,6 +20,7 @@ final class Registry
     {
         return [
             CurrencyMismatch::class,
+            CurrencyUnknown::class,
             DuplicateWelcome::class,
             EndedButActive::class,
             StaleActive::class,

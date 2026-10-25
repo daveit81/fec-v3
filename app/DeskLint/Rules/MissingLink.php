@@ -17,18 +17,18 @@ final class MissingLink extends BaseRule
 
     public function run(): array
     {
-        $rows = $this->db()->table('bonuses as b')
-            ->select('b.bid', 'b.cid', 'b.label')
-            ->whereRaw($this->activeWhere())
-            ->whereRaw("TRIM(COALESCE(b.link, '')) = ''")
-            ->limit(200)
-            ->get();
+        $rows = $this->select('
+            SELECT b.bid, b.cid, b.label
+            FROM '.$this->t('bonuses').' b
+            WHERE '.$this->activeWhere().' AND TRIM(COALESCE(b.link, "")) = ""
+            ORDER BY b.bid
+            LIMIT 200');
 
-        return $rows->map(fn ($r) => $this->finding(
+        return array_map(fn ($r) => $this->finding(
             (string) $r->bid,
             sprintf('#%d %s', $r->bid, $this->casinoName((int) $r->cid)),
             trim((string) $r->label),
             $this->editorUrl((int) $r->bid),
-        ))->all();
+        ), $rows);
     }
 }

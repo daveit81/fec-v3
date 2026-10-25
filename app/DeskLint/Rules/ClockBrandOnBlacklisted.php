@@ -2,8 +2,6 @@
 
 namespace App\DeskLint\Rules;
 
-use App\Models\Fec\Casino;
-
 /** FXClock enabled on a casino that is blacklisted or closed. */
 final class ClockBrandOnBlacklisted extends BaseRule
 {
@@ -19,21 +17,19 @@ final class ClockBrandOnBlacklisted extends BaseRule
 
     public function run(): array
     {
-        $truthy = Casino::TRUTHY;
+        $rows = $this->select('
+            SELECT cb.brand_slug, cb.casino_id,
+                   '.$this->flagSet('j.jr_blacklisted').' AS blacklisted,
+                   '.$this->flagSet('j.jr_closed').' AS closed
+            FROM '.$this->t('fec_clock_brands').' cb
+            JOIN '.$this->t('jreviews_content').' j ON j.contentid = cb.casino_id
+            WHERE cb.enabled = 1 AND ('.$this->flagSet('j.jr_blacklisted').' OR '.$this->flagSet('j.jr_closed').')
+            ORDER BY cb.brand_slug');
 
-        $rows = $this->db()->table('fec_clock_brands as cb')
-            ->join('jreviews_content as j', 'j.contentid', '=', 'cb.casino_id')
-            ->select('cb.brand_slug', 'cb.casino_id', 'j.jr_blacklisted', 'j.jr_closed')
-            ->where('cb.enabled', 1)
-            ->where(function ($q) use ($truthy) {
-                $q->whereIn('j.jr_blacklisted', $truthy)->orWhereIn('j.jr_closed', $truthy);
-            })
-            ->get();
-
-        return $rows->map(fn ($r) => $this->finding(
+        return array_map(fn ($r) => $this->finding(
             (string) $r->brand_slug,
             $r->brand_slug,
-            sprintf('%s: %s', $this->casinoName((int) $r->casino_id), in_array((string) $r->jr_blacklisted, $truthy, true) ? 'blacklist' : 'chiuso'),
-        ))->all();
+            sprintf('%s: %s', $this->casinoName((int) $r->casino_id), $r->blacklisted ? 'blacklist' : 'chiuso'),
+        ), $rows);
     }
 }

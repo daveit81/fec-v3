@@ -17,18 +17,20 @@ final class CurrencyMismatch extends BaseRule
 
     public function run(): array
     {
-        $rows = $this->db()->table('bonuses as b')
-            ->selectRaw('b.cid, COUNT(DISTINCT TRIM(b.currency)) AS currencies, GROUP_CONCAT(DISTINCT TRIM(b.currency) ORDER BY TRIM(b.currency) SEPARATOR ", ") AS list, COUNT(*) AS bonuses')
-            ->whereRaw($this->activeWhere())
-            ->whereRaw("TRIM(COALESCE(b.currency, '')) <> ''")
-            ->groupBy('b.cid')
-            ->havingRaw('COUNT(DISTINCT TRIM(b.currency)) > 1')
-            ->get();
+        $rows = $this->select('
+            SELECT b.cid, COUNT(DISTINCT LOWER(TRIM(b.currency))) AS currencies,
+                   GROUP_CONCAT(DISTINCT LOWER(TRIM(b.currency)) ORDER BY LOWER(TRIM(b.currency)) SEPARATOR ", ") AS list,
+                   COUNT(*) AS bonuses
+            FROM '.$this->t('bonuses').' b
+            WHERE '.$this->activeWhere().' AND TRIM(COALESCE(b.currency, "")) <> ""
+            GROUP BY b.cid
+            HAVING COUNT(DISTINCT LOWER(TRIM(b.currency))) > 1
+            ORDER BY bonuses DESC');
 
-        return $rows->map(fn ($r) => $this->finding(
+        return array_map(fn ($r) => $this->finding(
             (string) $r->cid,
             $this->casinoName((int) $r->cid),
             sprintf('%d bonus attivi in %d valute: %s', $r->bonuses, $r->currencies, $r->list),
-        ))->all();
+        ), $rows);
     }
 }

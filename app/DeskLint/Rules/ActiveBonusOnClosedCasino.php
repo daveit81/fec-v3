@@ -2,9 +2,7 @@
 
 namespace App\DeskLint\Rules;
 
-use App\Models\Fec\Casino;
-
-/** Live bonuses on a casino flagged closed, suspended or blacklisted. */
+/** Live bonuses on a casino flagged closed, suspended or blacklisted (JReviews flags: non-empty = set). */
 final class ActiveBonusOnClosedCasino extends BaseRule
 {
     public function id(): string
@@ -19,25 +17,23 @@ final class ActiveBonusOnClosedCasino extends BaseRule
 
     public function run(): array
     {
-        $truthy = Casino::TRUTHY;
+        $rows = $this->select('
+            SELECT b.cid, COUNT(*) AS n,
+                   MAX('.$this->flagSet('j.jr_closed').') AS closed,
+                   MAX('.$this->flagSet('j.jr_suspended').') AS suspended,
+                   MAX('.$this->flagSet('j.jr_blacklisted').') AS blacklisted
+            FROM '.$this->t('bonuses').' b
+            JOIN '.$this->t('jreviews_content').' j ON j.contentid = b.cid
+            WHERE '.$this->activeWhere().'
+              AND ('.$this->flagSet('j.jr_closed').' OR '.$this->flagSet('j.jr_suspended').' OR '.$this->flagSet('j.jr_blacklisted').')
+            GROUP BY b.cid
+            ORDER BY n DESC');
 
-        $rows = $this->db()->table('bonuses as b')
-            ->join('jreviews_content as j', 'j.contentid', '=', 'b.cid')
-            ->selectRaw('b.cid, COUNT(*) AS n, MAX(j.jr_closed) AS closed, MAX(j.jr_suspended) AS suspended, MAX(j.jr_blacklisted) AS blacklisted')
-            ->whereRaw($this->activeWhere())
-            ->where(function ($q) use ($truthy) {
-                $q->whereIn('j.jr_closed', $truthy)
-                    ->orWhereIn('j.jr_suspended', $truthy)
-                    ->orWhereIn('j.jr_blacklisted', $truthy);
-            })
-            ->groupBy('b.cid')
-            ->get();
-
-        return $rows->map(function ($r) use ($truthy) {
+        return array_map(function ($r) {
             $flags = array_keys(array_filter([
-                'chiuso' => in_array((string) $r->closed, $truthy, true),
-                'sospeso' => in_array((string) $r->suspended, $truthy, true),
-                'blacklist' => in_array((string) $r->blacklisted, $truthy, true),
+                'chiuso' => (bool) $r->closed,
+                'sospeso' => (bool) $r->suspended,
+                'blacklist' => (bool) $r->blacklisted,
             ]));
 
             return $this->finding(
@@ -45,6 +41,6 @@ final class ActiveBonusOnClosedCasino extends BaseRule
                 $this->casinoName((int) $r->cid),
                 sprintf('%d bonus attivi su casino %s', $r->n, implode(', ', $flags)),
             );
-        })->all();
+        }, $rows);
     }
 }

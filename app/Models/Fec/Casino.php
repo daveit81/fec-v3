@@ -35,31 +35,39 @@ class Casino extends FecModel
         return $this->hasMany(Bonus::class, 'cid', 'contentid');
     }
 
+    /*
+    | JReviews stores a ticked checkbox as its option value wrapped in
+    | asterisks ("*yes*", "*susp*", "*bl*") and an unticked one as an empty
+    | string (probe of 25 Oct 2026: jr_closed 376, jr_suspended 123,
+    | jr_blacklisted 29). A flag is therefore "set" when not empty.
+    */
     public function scopeBlacklisted(Builder $query): Builder
     {
-        return $query->whereIn('jr_blacklisted', self::TRUTHY);
+        return $query->whereRaw("TRIM(COALESCE(jr_blacklisted, '')) <> ''");
     }
 
     public function scopeClosed(Builder $query): Builder
     {
-        return $query->whereIn('jr_closed', self::TRUTHY);
+        return $query->whereRaw("TRIM(COALESCE(jr_closed, '')) <> ''");
     }
 
     public function scopeSuspended(Builder $query): Builder
     {
-        return $query->whereIn('jr_suspended', self::TRUTHY);
+        return $query->whereRaw("TRIM(COALESCE(jr_suspended, '')) <> ''");
     }
-
-    /** Values the legacy forms store for a ticked yes/no flag. */
-    public const TRUTHY = ['yes', 'Yes', 'YES', '1', 'true'];
 
     public function isBlacklisted(): bool
     {
-        return in_array((string) $this->jr_blacklisted, self::TRUTHY, true);
+        return trim((string) $this->jr_blacklisted) !== '';
     }
 
     public function isClosed(): bool
     {
-        return in_array((string) $this->jr_closed, self::TRUTHY, true);
+        return trim((string) $this->jr_closed) !== '';
+    }
+
+    public function isSuspended(): bool
+    {
+        return trim((string) $this->jr_suspended) !== '';
     }
 }

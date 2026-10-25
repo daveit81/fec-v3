@@ -34,3 +34,13 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
 - No debug logs under the docroot; never log request payloads or user arrays.
 - Every switch of a section is preceded by a parity script and followed by a rollback path
   (one line in the legacy `.htaccess`).
+
+## Desk Lint
+
+- `php artisan fec:desk-lint --probe` prints the value distributions the rules rely on; calibrate
+  `FEC_BONUS_ACTIVE_WHERE`, `FEC_BONUS_WELCOME_TYPES`, `FEC_BONUS_CURRENCIES` from it.
+- Rules live in `app/DeskLint/Rules`, one class each, explicit SQL with `$this->t('table')` for the
+  prefix (the query builder prefixes aliases too, so never `table('bonuses as b')` with raw columns).
+- JReviews checkbox flags (`jr_closed`, `jr_suspended`, `jr_blacklisted`) are set when non-empty
+  (`*yes*`, `*susp*`, `*bl*`), never compared to "yes".
+- Memory table `desk_lint_findings` (framework DB); `--dry-run` leaves it untouched.

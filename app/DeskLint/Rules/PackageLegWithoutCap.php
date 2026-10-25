@@ -17,19 +17,18 @@ final class PackageLegWithoutCap extends BaseRule
 
     public function run(): array
     {
-        $rows = $this->db()->table('fec_bonus_package_legs as l')
-            ->join('fec_bonus_packages as p', 'p.pkg_id', '=', 'l.pkg_id')
-            ->selectRaw('p.pkg_id, p.cid, p.title, GROUP_CONCAT(l.position ORDER BY l.position) AS legs')
-            ->where('p.status', 'active')
-            ->where('l.pct', '>', 0)
-            ->whereRaw('(l.cap IS NULL OR l.cap <= 0)')
-            ->groupBy('p.pkg_id', 'p.cid', 'p.title')
-            ->get();
+        $rows = $this->select('
+            SELECT p.pkg_id, p.cid, p.title, GROUP_CONCAT(l.position ORDER BY l.position) AS legs
+            FROM '.$this->t('fec_bonus_package_legs').' l
+            JOIN '.$this->t('fec_bonus_packages').' p ON p.pkg_id = l.pkg_id
+            WHERE p.status = "active" AND l.pct > 0 AND (l.cap IS NULL OR l.cap <= 0)
+            GROUP BY p.pkg_id, p.cid, p.title
+            ORDER BY p.pkg_id');
 
-        return $rows->map(fn ($r) => $this->finding(
+        return array_map(fn ($r) => $this->finding(
             (string) $r->pkg_id,
             sprintf('%s (pacchetto #%d)', $this->casinoName((int) $r->cid), $r->pkg_id),
             sprintf('leg senza cap: %s; %s', $r->legs, trim((string) $r->title)),
-        ))->all();
+        ), $rows);
     }
 }

@@ -52,8 +52,14 @@ return [
         'active_where' => env('FEC_BONUS_ACTIVE_WHERE', "status = 'active'"),
 
         // Type codes that mean "welcome offer" (one per casino at a time).
-        // Calibrate with --probe (distribution of jos_bonuses.type).
-        'welcome_types' => array_values(array_filter(explode(',', env('FEC_BONUS_WELCOME_TYPES', 'wp,welcome,fdm,match')))),
+        // Probe of 25 Oct 2026: su 834 (sign-up), fs 790, nd 237, 2d/3d/4d/5d
+        // (package legs), hr, sl, cb, bj, db, fp, rl, vp, wb, fc, wkb, mon, tue.
+        'welcome_types' => array_values(array_filter(explode(',', env('FEC_BONUS_WELCOME_TYPES', 'su')))),
+
+        // Canonical currency codes as the desk writes them (probe of 25 Oct 2026:
+        // euro 785, empty 749, usd 693, gbp 188, btc, aud, mbtc, cad, sek, nok, kr,
+        // nzd, usdt, dkk). "eur" (22 rows) is a desk slip, hence not listed.
+        'currencies' => array_values(array_filter(explode(',', env('FEC_BONUS_CURRENCIES', 'euro,usd,gbp,btc,mbtc,aud,cad,sek,nok,kr,nzd,usdt,dkk')))),
 
         // Dashboard editor for a bonus, used in Desk Lint links.
         'editor_url' => env('FEC_BONUS_EDITOR_URL', 'https://www.freeextrachips.com/index.php?option=com_bonuses&bid=%d&lang=en&view=add'),

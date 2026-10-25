@@ -17,19 +17,21 @@ final class OrphanBonus extends BaseRule
 
     public function run(): array
     {
-        $rows = $this->db()->table('bonuses as b')
-            ->leftJoin('jreviews_content as j', 'j.contentid', '=', 'b.cid')
-            ->leftJoin('content as c', 'c.id', '=', 'b.cid')
-            ->selectRaw('b.cid, COUNT(*) AS n, MAX(j.contentid IS NULL) AS no_sheet, MAX(c.id IS NULL OR c.state <> 1) AS no_article')
-            ->whereRaw($this->activeWhere())
-            ->whereRaw('(j.contentid IS NULL OR c.id IS NULL OR c.state <> 1)')
-            ->groupBy('b.cid')
-            ->get();
+        $rows = $this->select('
+            SELECT b.cid, COUNT(*) AS n,
+                   MAX(j.contentid IS NULL) AS no_sheet,
+                   MAX(c.id IS NULL OR c.state <> 1) AS no_article
+            FROM '.$this->t('bonuses').' b
+            LEFT JOIN '.$this->t('jreviews_content').' j ON j.contentid = b.cid
+            LEFT JOIN '.$this->t('content').' c ON c.id = b.cid
+            WHERE '.$this->activeWhere().' AND (j.contentid IS NULL OR c.id IS NULL OR c.state <> 1)
+            GROUP BY b.cid
+            ORDER BY n DESC');
 
-        return $rows->map(fn ($r) => $this->finding(
+        return array_map(fn ($r) => $this->finding(
             (string) $r->cid,
             $this->casinoName((int) $r->cid),
             sprintf('%d bonus attivi; %s%s', $r->n, $r->no_sheet ? 'nessuna scheda JReviews; ' : '', $r->no_article ? 'recensione assente o non pubblicata' : ''),
-        ))->all();
+        ), $rows);
     }
 }
