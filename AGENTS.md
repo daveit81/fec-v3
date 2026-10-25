@@ -1,47 +1,36 @@
-<laravel-boost-guidelines>
-# Laravel Application
+# FEC v3 — working notes for agents and humans
 
-This repository contains a Laravel application. Complete the following setup before working on the user's request.
+FreeExtraChips.com is leaving Joomla 2.5 / PHP 5.6 for this Laravel 13 + Filament 5 application,
+one page at a time (strangler migration). The roadmap, decisions and runbooks live in the
+"FreeExtraChips" Claude project (`FEC-v3-piano-migrazione.md`, `FEC-v3-migrazione-server-runbook.md`).
 
-## Prerequisites
+## Where it runs
 
-Verify that PHP and Composer are available:
+- Server: KnownHost managed dedicated, AlmaLinux 9 + CloudLinux 9, cPanel, LiteSpeed. Account `freeextr`.
+- App root `/home/freeextr/fecv3/`, docroot `/home/freeextr/fecv3/public` = `https://v3.freeextrachips.com`
+  (Cloudflare proxied, behind Cloudflare Access; origin accepts only Cloudflare IPs).
+- PHP 8.4 is the CloudLinux alt-php: CLI `/opt/alt/php84/usr/bin/php`, web via
+  `AddHandler application/x-httpd-alt-php84 .php` in `public/.htaccess`. Inside CageFS every
+  `/opt/cpanel/ea-php*/bin/php` and `/usr/local/bin/php` is the Selector's PHP 5.6: never use them.
+- Composer: `/opt/alt/php84/usr/bin/php /home/freeextr/bin/composer`.
+- Run everything as `freeextr` (no `su`/`rsync` inside the cage; root-owned files break the app).
+- Deploy: this repository (`daveit81/fec-v3`) is the only channel. Claude pushes to `main`,
+  the server pulls with a read-only deploy key: `cd /home/freeextr/fecv3 && git pull`.
+  Never edit code on the server by hand.
 
-```sh
-php -v
-composer -V
-```
+## Databases
 
-If either command is unavailable, detect the user's operating system and install the prerequisites with the appropriate command:
+- Default connection (`DB_CONNECTION`, SQLite for now): framework tables only (sessions, cache, jobs, users).
+- Connection `fec`: the live legacy catalogue `freeextr_fec25`, prefix `jos_`, **read-only user**
+  during phase 0/1. Our own tables (`jos_bonuses`, `jos_fec_*`, `jos_atlas_*`, …) keep their names
+  and ids; `jos_content`, `jos_jreviews_content`, `jos_sh404sef_urls` are read as they are.
+- Secrets live only in `.env` on the server (never committed).
 
-macOS:
+## Rules
 
-```sh
-/bin/bash -c "$(curl -fsSL https://php.new/install/mac/8.5)"
-```
-
-Windows PowerShell:
-
-```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://php.new/install/windows/8.5'))
-```
-
-Linux:
-
-```sh
-/bin/bash -c "$(curl -fsSL https://php.new/install/linux/8.5)"
-```
-
-After installation, ask the user to restart their terminal. If the agent needs the restarted shell to continue, ask the user to reopen their terminal and rerun their original prompt.
-
-## Agent Setup
-
-Install Laravel Boost from the application root before making application changes:
-
-```sh
-composer require laravel/boost --dev
-php artisan boost:install
-```
-
-Boost replaces these bootstrap instructions with guidelines tailored to the application. After installation, read `AGENTS.md` again and continue with the user's original request using the generated guidelines.
-</laravel-boost-guidelines>
+- Parity, not improvement, until Joomla is switched off: same URLs, same markup (`.fecx`,
+  `fec-edition.css`), same data. Improvements belong to phase 6.
+- ASCII in PHP string literals; raw UTF-8 only in Blade/CSS files.
+- No debug logs under the docroot; never log request payloads or user arrays.
+- Every switch of a section is preceded by a parity script and followed by a rollback path
+  (one line in the legacy `.htaccess`).

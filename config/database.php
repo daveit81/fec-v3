@@ -84,6 +84,29 @@ return [
             ]) : [],
         ],
 
+        /*
+        | FEC legacy catalogue (freeextr_fec25): the live Joomla database shared
+        | with the legacy site during the strangler migration. Read-only user
+        | until phase 1; table prefix "jos_" so models can use the bare names
+        | (bonuses, content, jreviews_content, sh404sef_urls, fec_*).
+        | strict=false: legacy schema has zero dates and non-aggregated GROUP BY.
+        */
+        'fec' => [
+            'driver' => 'mariadb',
+            'host' => env('FEC_DB_HOST', '127.0.0.1'),
+            'port' => env('FEC_DB_PORT', '3306'),
+            'database' => env('FEC_DB_DATABASE', 'freeextr_fec25'),
+            'username' => env('FEC_DB_USERNAME', ''),
+            'password' => env('FEC_DB_PASSWORD', ''),
+            'unix_socket' => env('FEC_DB_SOCKET', ''),
+            'charset' => env('FEC_DB_CHARSET', 'utf8mb4'),
+            'collation' => env('FEC_DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => env('FEC_DB_PREFIX', 'jos_'),
+            'prefix_indexes' => true,
+            'strict' => false,
+            'engine' => null,
+        ],
+
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => env('DB_URL'),
