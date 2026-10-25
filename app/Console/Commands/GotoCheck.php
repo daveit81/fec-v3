@@ -42,14 +42,26 @@ class GotoCheck extends Command
                     ->timeout(20)
                     ->get($url);
                 $this->line(sprintf('legacy: HTTP %d  Location: %s', $response->status(), $response->header('Location') ?: '(none)'));
+                $site = rtrim(config('fec.site_url'), '/');
+                // com_shortlink answers with a RELATIVE Location ("index.php?option=com_shortlink&...");
+                // resolve it like a browser would, then follow while we stay on our own host.
+                $absolute = function (?string $loc) use ($site): ?string {
+                    if ($loc === null || $loc === '') {
+                        return null;
+                    }
+                    if (preg_match('#^https?://#i', $loc)) {
+                        return $loc;
+                    }
+
+                    return $site.'/'.ltrim($loc, '/');
+                };
                 $hops = 0;
-                $next = $response->header('Location');
-                while ($next && $hops < 5 && preg_match('#^(https?://)?(www\.)?freeextrachips\.com#', $next) === 1) {
-                    $next = str_starts_with($next, '/') ? rtrim(config('fec.site_url'), '/').$next : $next;
+                $next = $absolute($response->header('Location'));
+                while ($next && $hops < 5 && preg_match('#^https?://(www\.)?freeextrachips\.com#i', $next) === 1) {
                     $r = Http::withHeaders(['User-Agent' => 'FEC-v3-parity-check (bot)'])->withOptions(['allow_redirects' => false])->timeout(20)->get($next);
                     $hops++;
                     $this->line(sprintf('        hop %d: HTTP %d  Location: %s', $hops, $r->status(), $r->header('Location') ?: '(none)'));
-                    $next = $r->header('Location');
+                    $next = $absolute($r->header('Location'));
                 }
                 if ($row && $next) {
                     $this->line(parse_url($next, PHP_URL_HOST) === parse_url((string) $row->link, PHP_URL_HOST) ? 'PARITY: same affiliate host' : 'DIFFERENT TARGET: '.$next);

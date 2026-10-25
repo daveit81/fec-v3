@@ -18,8 +18,10 @@ use Illuminate\Http\Request;
  *   3. 302 to the affiliate URL, with the subid appended only for programs
  *      enabled in Subid::programMap() (empty => URL byte-identical)
  *
- * Unknown or missing phrase: 302 to config fec.goto.fallback, click still
- * logged with the slug (as the legacy did). Never cached.
+ * Unknown or missing phrase: 302 to the site base (com_shortlink's default),
+ * click still logged with the slug (as the legacy did). Never cached.
+ * Verified against components/com_shortlink (controllers/base.php,
+ * models/shortlink.php) on 25 Oct 2026.
  */
 class GotoController extends Controller
 {
@@ -41,11 +43,11 @@ class GotoController extends Controller
             $clicks->log($request, 0, 0, ['slug' => $phrase, 'src_page' => $referer, 'subid' => $subid]);
         }
 
-        $target = (string) config('fec.goto.fallback', '/');
+        $target = rtrim((string) config('fec.site_url'), '/').'/'.ltrim((string) config('fec.goto.fallback', '/'), '/');
         $row = $phrase !== '' ? $shortlinks->find($phrase) : null;
-        if ($row && preg_match('#^https?://#i', trim((string) $row->link))) {
-            $target = Subid::append(trim((string) $row->link), $subid);
+        if ($row) {
             $shortlinks->hit($phrase);
+            $target = Subid::append($shortlinks->target($row), $subid);
         }
 
         return redirect()->away($target, 302)
