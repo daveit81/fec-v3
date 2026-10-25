@@ -16,7 +16,9 @@ use Illuminate\Support\Facades\DB;
  * jos_redirection     oldurl -> newurl 301 rules kept by the desk.
  *
  * Nothing is imported or rewritten: phase 1 resolves requests straight from
- * here, so the legacy site and v3 always agree on what a path means.
+ * here, so the legacy site and v3 always agree on what a path means. The
+ * Router composes redirectFor() + the run-time patterns + lookup(); resolve()
+ * is the registry-only composition used by the probes.
  */
 final class UrlRegistry
 {
@@ -39,23 +41,44 @@ final class UrlRegistry
         return $path === 'index.php' ? '' : $path;
     }
 
-    public function resolve(string $path): ResolvedUrl
+    /** The spellings sh404SEF may have stored for one path. @return list<string> */
+    public static function variants(string $path): array
     {
         $path = self::normalize($path);
-        $variants = array_values(array_unique([$path, rtrim($path, '/'), rtrim($path, '/').'/']));
 
-        // 1. desk redirects win (they are deliberate)
+        return array_values(array_unique([$path, rtrim($path, '/'), rtrim($path, '/').'/']));
+    }
+
+    /** Registry-only resolution: desk redirect, then the SEF table. */
+    public function resolve(string $path): ResolvedUrl
+    {
+        return $this->redirectFor($path) ?? $this->lookup($path);
+    }
+
+    /** 1. desk redirects win (they are deliberate). Null when no rule matches. */
+    public function redirectFor(string $path): ?ResolvedUrl
+    {
+        $path = self::normalize($path);
+
         $rule = $this->db()->table('redirection')
-            ->whereIn('oldurl', $variants)
+            ->whereIn('oldurl', self::variants($path))
             ->orderBy('rank')
             ->first(['id', 'oldurl', 'newurl', 'rank']);
+
         if ($rule && trim((string) $rule->newurl) !== '') {
-            return new ResolvedUrl('redirect', $path, [], null, $this->publicUrl((string) $rule->newurl), (int) $rule->id, (int) $rule->rank, (string) $rule->newurl);
+            return new ResolvedUrl('redirect', $path, [], null, $this->publicUrl((string) $rule->newurl), (int) $rule->id, (int) $rule->rank, (string) $rule->newurl, 'redirection');
         }
 
-        // 2. the SEF registry
+        return null;
+    }
+
+    /** 2. the SEF registry: page, alias, gone or miss. */
+    public function lookup(string $path): ResolvedUrl
+    {
+        $path = self::normalize($path);
+
         $row = $this->db()->table('sh404sef_urls')
-            ->whereIn('oldurl', $variants)
+            ->whereIn('oldurl', self::variants($path))
             ->orderBy('rank')
             ->first(['id', 'oldurl', 'newurl', 'rank']);
         if (! $row) {

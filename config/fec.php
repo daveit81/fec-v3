@@ -77,6 +77,13 @@ return [
         'default_country' => 'US',
     ],
 
+    'router' => [
+        // sh404SEF duplicate URLs (rank > 0): answer 301 to the canonical spelling
+        // (true) or serve them as pages (false), as a Joomla without "redirect
+        // duplicates" does. Check the legacy answer on an alias before relying on it.
+        'alias_redirect' => filter_var(env('FEC_ROUTER_ALIAS_REDIRECT', true), FILTER_VALIDATE_BOOL),
+    ],
+
     'desk_lint' => [
         // Days without a modification after which a live bonus is "stale".
         'stale_days' => (int) env('FEC_DESK_LINT_STALE_DAYS', 180),

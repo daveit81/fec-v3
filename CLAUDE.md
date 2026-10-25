@@ -44,3 +44,14 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
 - JReviews checkbox flags (`jr_closed`, `jr_suspended`, `jr_blacklisted`) are set when non-empty
   (`*yes*`, `*susp*`, `*bl*`), never compared to "yes".
 - Memory table `desk_lint_findings` (framework DB); `--dry-run` leaves it untouched.
+
+## Router (phase 1 kernel)
+
+- `App\Fec\Url\Router::route($path)` decides every GET that no explicit route claims
+  (`Route::fallback` → `FrontController`): `jos_redirection` first, then the run-time patterns
+  (`app/Fec/Url/Patterns`, e.g. `/bonuses/<casino>/<slug>-id<bid>`), then `jos_sh404sef_urls`.
+- A ported view = one `PageHandler` class registered in `Dispatcher::HANDLERS` under `option.view`.
+  Unregistered views answer 404 (with the decision shown on the dev hostname only).
+- Probes: `php artisan fec:urls:resolve <path>...` (`--json`) and `GET /__registry?path=` on `v3.`.
+- Aliases (rank > 0) 301 to the canonical path (`FEC_ROUTER_ALIAS_REDIRECT`); verify legacy first.
+- Stateless endpoints (no cookies) go in `routes/stateless.php`, never in the `web` group.
