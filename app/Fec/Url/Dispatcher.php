@@ -16,8 +16,15 @@ final class Dispatcher
 {
     /** @var array<string, class-string<PageHandler>> */
     public const HANDLERS = [
-        // phase 2: com_authors, view by view as parity goes green (fec:parity)
+        // phase 2: com_authors public views (fec:parity --option=com_authors must stay green)
         'com_authors.authors' => \App\Fec\Legacy\ComponentRunner::class,
+        'com_authors.author' => \App\Fec\Legacy\ComponentRunner::class,
+        'com_authors.methodologyhub' => \App\Fec\Legacy\ComponentRunner::class,
+        'com_authors.methodology' => \App\Fec\Legacy\ComponentRunner::class,
+        'com_authors.page' => \App\Fec\Legacy\ComponentRunner::class,
+        'com_authors.slots' => \App\Fec\Legacy\ComponentRunner::class,
+        'com_authors.slot' => \App\Fec\Legacy\ComponentRunner::class,
+        'com_authors.fxreport' => \App\Fec\Legacy\ComponentRunner::class,
         // phase 3: com_bonuses.*  phase 4: com_content.*, com_atlas.*
     ];
 

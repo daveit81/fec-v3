@@ -45,6 +45,11 @@ class Controller
     /** @var array<string, self> */
     private static array $instances = [];
 
+    public static function reset(): void
+    {
+        self::$instances = [];
+    }
+
     public static function getInstance(string $prefix, array $config = [])
     {
         $task = Request::getCmd('task', '');

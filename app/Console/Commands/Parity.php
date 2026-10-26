@@ -24,8 +24,11 @@ use Throwable;
  */
 class Parity extends Command
 {
-    protected $signature = 'fec:parity {path* : Public paths to compare}
+    protected $signature = 'fec:parity {path?* : Public paths to compare}
+                            {--option= : Compare every canonical registry URL of a component (com_authors)}
+                            {--limit=0 : With --option, stop after N paths (0 = all)}
                             {--save : Write the normalised documents to storage/app/parity/}
+                            {--in-process : Render v3 in this process instead of one process per path (debugging)}
                             {--context=3 : Diff context lines}
                             {--main : Compare only the <main> element (default: whole <body>)}';
 
@@ -33,8 +36,19 @@ class Parity extends Command
 
     public function handle(): int
     {
+        $paths = (array) $this->argument('path');
+        if ($option = (string) $this->option('option')) {
+            $paths = array_merge($paths, $this->registryPaths($option, (int) $this->option('limit')));
+            $this->info(count($paths).' path(s) for '.$option);
+        }
+        if ($paths === []) {
+            $this->error('Give at least one path or --option=com_x');
+
+            return self::INVALID;
+        }
+
         $failed = 0;
-        foreach ((array) $this->argument('path') as $path) {
+        foreach ($paths as $path) {
             $path = '/'.ltrim((string) $path, '/');
             $this->line('');
             $this->info("== $path");
@@ -43,6 +57,7 @@ class Parity extends Command
             } catch (Throwable $e) {
                 $this->error('live fetch failed: '.$e->getMessage());
                 $failed++;
+                $failing[] = $path;
 
                 continue;
             }
@@ -51,6 +66,7 @@ class Parity extends Command
             } catch (Throwable $e) {
                 $this->error('v3 render failed: '.$e->getMessage());
                 $failed++;
+                $failing[] = $path;
 
                 continue;
             }
@@ -58,12 +74,29 @@ class Parity extends Command
             $ok = $this->compare($path, $live, $v3);
             if (! $ok) {
                 $failed++;
+                $failing[] = $path;
             }
         }
         $this->line('');
         $this->line($failed === 0 ? '<info>PARITY: all green</info>' : "<error>PARITY: $failed path(s) differ</error>");
+        foreach ($failing ?? [] as $path) {
+            $this->line('  '.$path);
+        }
 
         return $failed === 0 ? self::SUCCESS : self::FAILURE;
+    }
+
+    /** Canonical SEF paths of a component as the registry holds them, oldest first. @return list<string> */
+    private function registryPaths(string $option, int $limit): array
+    {
+        $rows = \Illuminate\Support\Facades\DB::connection('fec')->table('sh404sef_urls')
+            ->where('rank', 0)
+            ->where('newurl', 'like', '%option='.$option.'%')
+            ->orderBy('id')
+            ->when($limit > 0, fn ($q) => $q->limit($limit))
+            ->pluck('oldurl');
+
+        return array_values(array_unique(array_map(fn ($u) => '/'.ltrim((string) $u, '/'), $rows->all())));
     }
 
     /** @return array{status: int, html: string} */
@@ -82,8 +115,35 @@ class Parity extends Command
         return ['status' => $response->status(), 'html' => $response->body()];
     }
 
-    /** @return array{status: int, html: string} */
+    /**
+     * One fresh PHP process per path (fec:parity:render): legacy code keeps
+     * per-request state in statics that a web request never carries over.
+     *
+     * @return array{status: int, html: string}
+     */
     private function renderV3(string $path): array
+    {
+        if ($this->option('in-process')) {
+            return $this->renderInProcess($path);
+        }
+        $process = proc_open([PHP_BINARY, base_path('artisan'), 'fec:parity:render', $path], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, base_path());
+        if (! is_resource($process)) {
+            throw new \RuntimeException('cannot start the render process');
+        }
+        $out = (string) stream_get_contents($pipes[1]);
+        $err = (string) stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $code = proc_close($process);
+        if (! preg_match('/^STATUS:(\d+)\n/', $out, $m)) {
+            throw new \RuntimeException('render process failed (exit '.$code.'): '.mb_strimwidth(trim($err.$out), 0, 400, '...'));
+        }
+
+        return ['status' => (int) $m[1], 'html' => substr($out, strlen($m[0]))];
+    }
+
+    /** @return array{status: int, html: string} */
+    private function renderInProcess(string $path): array
     {
         $host = (string) parse_url((string) config('fec.site_url'), PHP_URL_HOST);
         $request = Request::create('https://'.$host.$path, 'GET', [], [], [], [

@@ -108,6 +108,9 @@ final class Runtime
 
         Factory::reset();
         Request::reset();
+        Route::reset();
+        Uri::reset();
+        Controller::reset();
     }
 
     private static function constant(string $name, mixed $value): void
