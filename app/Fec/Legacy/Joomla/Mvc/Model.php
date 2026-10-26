@@ -36,22 +36,22 @@ class Model
         $this->state = new Registry($config['state'] ?? []);
     }
 
-    public function getName(): string
+    public function getName()
     {
         return $this->name;
     }
 
-    public function getDbo(): Database
+    public function getDbo()
     {
         return $this->_db;
     }
 
-    public function setDbo(Database $db): void
+    public function setDbo(Database $db)
     {
         $this->_db = $db;
     }
 
-    public function getState(?string $property = null, mixed $default = null): mixed
+    public function getState(?string $property = null, mixed $default = null)
     {
         if (! $this->__state_set) {
             $this->populateState();
@@ -61,24 +61,24 @@ class Model
         return $property === null ? $this->state : $this->state->get($property, $default);
     }
 
-    public function setState(string $property, mixed $value = null): mixed
+    public function setState(string $property, mixed $value = null)
     {
         return $this->state->set($property, $value);
     }
 
-    protected function populateState(): void
+    protected function populateState()
     {
     }
 
     /** @return list<object> */
-    protected function _getList(string|\Stringable $query, int $limitstart = 0, int $limit = 0): array
+    protected function _getList(string|\Stringable $query, int $limitstart = 0, int $limit = 0)
     {
         $this->_db->setQuery($query, $limitstart, $limit);
 
         return $this->_db->loadObjectList();
     }
 
-    protected function _getListCount(string|\Stringable $query): int
+    protected function _getListCount(string|\Stringable $query)
     {
         $this->_db->setQuery('SELECT COUNT(*) FROM ('.(string) $query.') AS fec_count');
 

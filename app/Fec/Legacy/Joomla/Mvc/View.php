@@ -66,12 +66,12 @@ class View
         }
     }
 
-    public function display(?string $tpl = null): void
+    public function display(?string $tpl = null)
     {
         echo $this->loadTemplate($tpl);
     }
 
-    public function loadTemplate(?string $tpl = null): string
+    public function loadTemplate(?string $tpl = null)
     {
         $file = $tpl !== null && $tpl !== '' ? $this->_layout.'_'.$tpl : $this->_layout;
         $file = preg_replace('/[^A-Z0-9_\.-]/i', '', $file);
@@ -99,7 +99,7 @@ class View
         return $this->_output;
     }
 
-    public function setLayout(string $layout): string
+    public function setLayout(string $layout)
     {
         if (str_contains($layout, ':')) {
             [, $layout] = explode(':', $layout, 2);
@@ -110,12 +110,12 @@ class View
         return $previous;
     }
 
-    public function getLayout(): string
+    public function getLayout()
     {
         return $this->_layout;
     }
 
-    public function setLayoutExt(string $value): string
+    public function setLayoutExt(string $value)
     {
         $previous = $this->_layoutExt;
         $this->_layoutExt = $value;
@@ -123,19 +123,19 @@ class View
         return $previous;
     }
 
-    public function getName(): string
+    public function getName()
     {
         return $this->_name;
     }
 
-    public function getModel(?string $name = null): ?Model
+    public function getModel(?string $name = null)
     {
         $name = strtolower($name ?? $this->_defaultModel);
 
         return $this->_models[$name] ?? null;
     }
 
-    public function setModel(Model $model, bool $default = false): Model
+    public function setModel(Model $model, bool $default = false)
     {
         $name = strtolower($model->getName());
         $this->_models[$name] = $model;
@@ -147,7 +147,7 @@ class View
     }
 
     /** Joomla's get(): the default model's get<Property>(), then the view property. */
-    public function get(string $property, ?string $default = null): mixed
+    public function get(string $property, ?string $default = null)
     {
         $model = $this->getModel($default);
         if ($model !== null) {
@@ -160,7 +160,7 @@ class View
         return $this->{$property} ?? null;
     }
 
-    public function assign(string|array $name, mixed $value = null): bool
+    public function assign(string|array $name, mixed $value = null)
     {
         if (is_array($name)) {
             foreach ($name as $k => $v) {
@@ -174,33 +174,33 @@ class View
         return true;
     }
 
-    public function assignRef(string $name, mixed &$value): bool
+    public function assignRef(string $name, mixed &$value)
     {
         $this->{$name} = &$value;
 
         return true;
     }
 
-    public function escape(mixed $var): string
+    public function escape(mixed $var)
     {
         return htmlspecialchars((string) $var, ENT_COMPAT, $this->_charset);
     }
 
-    public function addTemplatePath(string|array $path): void
+    public function addTemplatePath(string|array $path)
     {
         foreach ((array) $path as $p) {
             array_unshift($this->_templatePaths, rtrim($p, '/'));
         }
     }
 
-    public function _addPath(string $type, string|array $path): void
+    public function _addPath(string $type, string|array $path)
     {
         if ($type === 'template') {
             $this->addTemplatePath($path);
         }
     }
 
-    public function setEscape(string $function): void
+    public function setEscape(string $function)
     {
         $this->_escape = $function;
     }

@@ -45,7 +45,7 @@ class Controller
     /** @var array<string, self> */
     private static array $instances = [];
 
-    public static function getInstance(string $prefix, array $config = []): static
+    public static function getInstance(string $prefix, array $config = [])
     {
         $task = Request::getCmd('task', '');
         $type = '';
@@ -97,7 +97,7 @@ class Controller
         $this->registerDefaultTask('display');
     }
 
-    public function registerTask(string $task, string $method): static
+    public function registerTask(string $task, string $method)
     {
         if (in_array(strtolower($method), $this->methods, true) || $method === 'display') {
             $this->taskMap[strtolower($task)] = $method;
@@ -106,14 +106,14 @@ class Controller
         return $this;
     }
 
-    public function registerDefaultTask(string $method): static
+    public function registerDefaultTask(string $method)
     {
         $this->taskMap['__default'] = $method;
 
         return $this;
     }
 
-    public function execute(string $task): mixed
+    public function execute(string $task)
     {
         $this->task = $task;
         $task = strtolower($task);
@@ -122,7 +122,7 @@ class Controller
         return $this->{$this->doTask}();
     }
 
-    public function display(bool $cachable = false, array|bool $urlparams = false): static
+    public function display(bool $cachable = false, array|bool $urlparams = false)
     {
         $viewName = Request::getCmd('view', $this->default_view);
         $viewLayout = Request::getCmd('layout', 'default');
@@ -136,7 +136,7 @@ class Controller
         return $this;
     }
 
-    public function getView(string $name = '', string $type = 'html', string $prefix = '', array $config = []): View
+    public function getView(string $name = '', string $type = 'html', string $prefix = '', array $config = [])
     {
         $name = $name !== '' ? $name : $this->name;
         $prefix = $prefix !== '' ? $prefix : ucfirst($this->name).'View';
@@ -154,7 +154,7 @@ class Controller
         return new $class($config);
     }
 
-    public function getModel(string $name = '', string $prefix = '', array $config = []): Model|false
+    public function getModel(string $name = '', string $prefix = '', array $config = [])
     {
         $name = $name !== '' ? $name : $this->name;
         $prefix = $prefix !== '' ? $prefix : $this->model_prefix;
@@ -171,17 +171,17 @@ class Controller
         return new $class($config);
     }
 
-    public function getTask(): string
+    public function getTask()
     {
         return $this->task;
     }
 
-    public function getName(): string
+    public function getName()
     {
         return $this->name;
     }
 
-    public function setRedirect(string $url, ?string $msg = null, ?string $type = null): static
+    public function setRedirect(string $url, ?string $msg = null, ?string $type = null)
     {
         $this->redirect = $url;
         if ($msg !== null) {
@@ -196,7 +196,7 @@ class Controller
         return $this;
     }
 
-    public function setMessage(string $text, string $type = 'message'): ?string
+    public function setMessage(string $text, string $type = 'message')
     {
         $previous = $this->message;
         $this->message = $text;
@@ -206,7 +206,7 @@ class Controller
     }
 
     /** Joomla's redirect(): nothing if no redirect was set, otherwise the application redirect (an exception here). */
-    public function redirect(): bool
+    public function redirect()
     {
         if ($this->redirect === null) {
             return false;
@@ -221,12 +221,12 @@ class Controller
         throw new RedirectException($url, 303);
     }
 
-    public function addViewPath(string $path): static
+    public function addViewPath(string $path)
     {
         return $this;
     }
 
-    public function addModelPath(string $path, string $prefix = ''): static
+    public function addModelPath(string $path, string $prefix = '')
     {
         return $this;
     }
