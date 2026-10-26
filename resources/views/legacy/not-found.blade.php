@@ -6,7 +6,7 @@
 --}}
 @extends('layouts.fecx')
 
-@section('title', $article?->title ?? '404')
+@section('title', config('fec.legacy.not_found_title', '404'))
 @section('robots', 'noindex, follow')
 @section('canonical', $canonical)
 

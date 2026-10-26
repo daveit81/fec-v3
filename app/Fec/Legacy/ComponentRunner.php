@@ -113,6 +113,12 @@ final class ComponentRunner implements PageHandler
             $response->headers->set($name, $value);
         }
 
+        // Development hostname: make the legacy asset paths point at the live docroot.
+        $live = strtolower((string) parse_url((string) config('fec.site_url'), PHP_URL_HOST));
+        if ($live !== '' && strtolower($request->getHost()) !== $live) {
+            $response->setContent(DevAssets::absolutize((string) $response->getContent(), (string) config('fec.asset_base')));
+        }
+
         return $response;
     }
 
