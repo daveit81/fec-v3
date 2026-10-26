@@ -131,20 +131,38 @@ final class UrlRegistry
         $q = $this->db()->table('sh404sef_urls')
             ->where('rank', 0)
             ->where('newurl', 'like', '%option='.$want['option'].'%');
-        foreach (['id', 'bid', 'cid', 'catid', 'view'] as $key) {
+        foreach (['id', 'bid', 'cid', 'slug', 'topic'] as $key) {
             if (isset($want[$key]) && $want[$key] !== '') {
                 $q->where('newurl', 'like', '%'.$key.'='.$want[$key].'%');
             }
         }
 
-        foreach ($q->orderBy('id')->limit(500)->get(['oldurl', 'newurl']) as $row) {
+        $candidates = $q->orderBy('id')->limit(500)->get(['oldurl', 'newurl']);
+        foreach ($candidates as $row) {
             if (self::significant(self::parseQuery((string) $row->newurl)) === $want) {
+                return '/'.ltrim((string) $row->oldurl, '/');
+            }
+        }
+
+        // Second pass: same option, view and identifiers; a catid or another
+        // decoration the desk wrote differently does not make another page
+        // (Joomla routes an article by id, whatever catid the link carries).
+        $identity = array_intersect_key($want, array_flip(self::IDENTITY_KEYS));
+        if (count($identity) < 2) {
+            return null;
+        }
+        foreach ($candidates as $row) {
+            $have = self::significant(self::parseQuery((string) $row->newurl));
+            if (array_intersect_key($have, array_flip(self::IDENTITY_KEYS)) === $identity) {
                 return '/'.ltrim((string) $row->oldurl, '/');
             }
         }
 
         return null;
     }
+
+    /** Query variables that identify a page on their own (with option and view). */
+    private const IDENTITY_KEYS = ['option', 'view', 'task', 'id', 'bid', 'cid', 'slug', 'topic', 'provider', 'edition', 'kind'];
 
     /**
      * The query variables that identify a page: everything but "lang" and

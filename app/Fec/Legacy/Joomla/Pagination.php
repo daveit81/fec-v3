@@ -186,7 +186,9 @@ class Pagination
             $vars[$k] = (string) $v;
         }
         unset($vars['lang'], $vars['limit'], $vars['start'], $vars['limitstart'], $vars[$this->prefix.'limitstart'], $vars[$this->prefix.'start']);
-        $ordered = ['lang' => 'en', 'limit' => (string) $this->limit] + $vars + [$this->prefix.'start' => (string) max(0, $limitstart)];
+        // sh404SEF renames limitstart to start only when it is not zero: page 1 links keep "limitstart=0".
+        $offsetKey = $limitstart > 0 ? $this->prefix.'start' : $this->prefix.'limitstart';
+        $ordered = ['lang' => 'en', 'limit' => (string) $this->limit] + $vars + [$offsetKey => (string) max(0, $limitstart)];
         $query = http_build_query($ordered);
         $path = $uri->getPath();
 

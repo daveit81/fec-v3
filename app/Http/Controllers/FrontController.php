@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Fec\Url\PageHandler;
+use App\Models\Fec\Article;
 use App\Fec\Url\Router;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -44,7 +45,26 @@ class FrontController extends Controller
             return response()->view('router.unported', ['decision' => $decision, 'path' => '/'.$request->path()], 404);
         }
 
-        abort(404);
+        return $this->notFound($request);
+    }
+
+    /** The 404 the live site serves for a path the registry does not know: sh404SEF's "404" article in the shell. */
+    private function notFound(Request $request): Response
+    {
+        $article = null;
+        $id = (int) config('fec.legacy.not_found_article_id', 0);
+        if ($id > 0) {
+            try {
+                $article = Article::query()->find($id);
+            } catch (\Throwable $e) {
+                $article = null;
+            }
+        }
+
+        return response()->view('legacy.not-found', [
+            'article' => $article,
+            'canonical' => rtrim((string) config('fec.site_url'), '/').'/'.ltrim($request->path(), '/'),
+        ], 404);
     }
 
     private function isDevHost(Request $request): bool

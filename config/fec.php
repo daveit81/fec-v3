@@ -107,6 +107,9 @@ return [
         // "option.view" keys that write to the catalogue (desk views): served with the fec_rw connection.
         'writing_views' => [],
 
+        // sh404SEF's custom 404 page: the jos_content article shown, in the shell, for unknown paths (id 2, "404").
+        'not_found_article_id' => (int) env('FEC_LEGACY_NOT_FOUND_ARTICLE', 2),
+
         // Desk (non-public) views: skipped by fec:parity --option, ported with the redazione login.
         'desk_views' => ['com_authors.dashboard', 'com_authors.blogdesk', 'com_authors.deskadd', 'com_authors.fxshieldadmin', 'com_authors.methodologyadmin', 'com_authors.verification'],
     ],
