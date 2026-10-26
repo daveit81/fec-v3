@@ -1,0 +1,103 @@
+/* ============================================================
+   FEC Casino Comparator v1.0.0 - production asset (No. 02)
+   fec-edition tokens with identical fallbacks; scoped .fec-cmp.
+   ============================================================ */
+.fec-cmp{
+  font-family:inherit;font-size:14.5px;line-height:1.45;color:var(--ink,#14110d);
+  --cmp-paper:var(--paper,#fdfbf6);--cmp-bg:var(--bg,#f7f4ed);--cmp-bg2:var(--bg-2,#efeadf);
+  --cmp-rule:var(--rule,#d9d2c2);--cmp-rule2:var(--rule-2,#e7e0d0);
+  --cmp-ink:var(--ink,#14110d);--cmp-ink3:var(--ink-3,#5a5347);--cmp-ink4:var(--ink-4,#8a8275);
+  --cmp-accent:var(--accent,#0b6b62);--cmp-accent-ink:var(--accent-ink,#074842);
+  --cmp-ok:var(--verified,#1c7a4a);--cmp-ok-soft:var(--verified-soft,#d6ead8);
+  --cmp-warn:var(--warn,#a85a1c);--cmp-warn-soft:var(--warn-soft,#f1ddc0);
+  --cmp-danger:var(--danger,#9a2828);--cmp-danger-soft:var(--danger-soft,#efd9d9);
+}
+.fec-cmp,.fec-cmp *{box-sizing:border-box}
+
+.fec-cmp .cmp-pickers{display:grid;grid-template-columns:repeat(3,1fr) 140px;gap:12px;align-items:end;margin:0 0 16px}
+@media(max-width:860px){.fec-cmp .cmp-pickers{grid-template-columns:1fr 1fr}}
+@media(max-width:540px){.fec-cmp .cmp-pickers{grid-template-columns:1fr}}
+.fec-cmp label{display:block;font-size:12.5px;font-weight:800;margin:0 0 5px;color:var(--cmp-ink)}
+.fec-cmp label small{font-weight:400;color:var(--cmp-ink4)}
+.fec-cmp input[type=text],.fec-cmp select{
+  width:100%;background:#fff;color:var(--cmp-ink);border:1px solid var(--cmp-rule);
+  border-radius:10px;padding:9px 11px;font:inherit;font-size:14px;
+}
+.fec-cmp input:focus-visible,.fec-cmp select:focus-visible{
+  outline:3px solid rgb(11 107 98 / .30);outline-offset:2px;
+}
+.fec-cmp input::placeholder{color:var(--cmp-ink4)}
+
+.fec-cmp .cmp-samop{display:none;gap:10px;align-items:flex-start;border-radius:10px;
+  background:var(--cmp-warn-soft);border:1px solid var(--cmp-warn);color:var(--cmp-warn);
+  padding:11px 13px;font-size:13px;margin:0 0 16px}
+.fec-cmp .cmp-samop.show{display:flex}
+.fec-cmp .cmp-samop b{font-weight:800}
+
+.fec-cmp .cmp-status{color:var(--cmp-ink3);font-size:13.5px;padding:8px 2px 14px}
+
+.fec-cmp .cmp-scroll{overflow-x:auto}
+.fec-cmp .cmp-table{width:100%;border-collapse:separate;border-spacing:0;
+  background:var(--cmp-paper);border:1px solid var(--cmp-rule2);border-radius:14px;overflow:hidden;min-width:640px}
+.fec-cmp .cmp-table th,.fec-cmp .cmp-table td{
+  padding:11px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--cmp-rule2);font-size:13.5px}
+.fec-cmp .cmp-table tr:last-child th,.fec-cmp .cmp-table tr:last-child td{border-bottom:0}
+.fec-cmp .cmp-table thead th{background:var(--cmp-bg2);font-weight:900;font-size:14.5px}
+.fec-cmp .cmp-table thead th .cmp-review{display:block;font-size:11.5px;font-weight:700;
+  color:var(--cmp-accent-ink);text-decoration:underline;text-underline-offset:2px;margin-top:3px}
+.fec-cmp .cmp-table tbody th.cmp-rowlabel{width:190px;color:var(--cmp-ink3);font-weight:800;font-size:11.5px;
+  text-transform:uppercase;letter-spacing:.05em;font-family:ui-monospace,Menlo,monospace;background:var(--cmp-bg)}
+.fec-cmp .cmp-muted{color:var(--cmp-ink4);font-size:12px;margin-top:4px}
+.fec-cmp .cmp-sameowner{color:var(--cmp-warn);font-weight:800}
+
+.fec-cmp .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:800}
+.fec-cmp .pill.ok{background:var(--cmp-ok-soft);color:var(--cmp-ok)}
+.fec-cmp .pill.no{background:var(--cmp-danger-soft);color:var(--cmp-danger)}
+.fec-cmp .pill.warn{background:var(--cmp-warn-soft);color:var(--cmp-warn)}
+.fec-cmp .pill.neutral{background:var(--cmp-bg2);color:var(--cmp-ink3)}
+
+.fec-cmp details{margin-top:4px}
+.fec-cmp summary{cursor:pointer;font-size:12px;color:var(--cmp-accent-ink);font-weight:700}
+.fec-cmp .chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.fec-cmp .chip{background:var(--cmp-bg2);border:1px solid var(--cmp-rule2);border-radius:999px;
+  padding:2px 8px;font-size:11px;font-family:ui-monospace,Menlo,monospace;text-transform:uppercase}
+
+.fec-cmp .cmp-note{color:var(--cmp-ink4);font-size:12px;margin:14px 2px 0}
+
+/* full-width tool band inside the rg-page layout (same cascade note as wcal:
+   .fecx .wrap padding shorthand loads later, so specificity (0,3,0)) */
+.fecx .rg-page .cmp-tool{padding-top:36px;padding-bottom:0}
+
+/* ---------- review-page launcher band (F3) ---------- */
+.fec-cmpl{
+  background:var(--paper,#fdfbf6);border:1px solid var(--rule-2,#e7e0d0);
+  border-radius:14px;padding:16px 18px;margin:22px 0;
+  font-size:14px;color:var(--ink,#14110d);
+}
+.fec-cmpl,.fec-cmpl *{box-sizing:border-box}
+.fec-cmpl .cmpl-head{font-weight:900;font-size:15px;margin:0 0 10px}
+.fec-cmpl .cmpl-row{display:flex;gap:8px}
+.fec-cmpl input[type=text]{
+  flex:1;background:#fff;color:var(--ink,#14110d);
+  border:1px solid var(--rule,#d9d2c2);border-radius:10px;
+  padding:9px 11px;font:inherit;font-size:14px;min-width:0;
+}
+.fec-cmpl input:focus-visible,.fec-cmpl .cmpl-btn:focus-visible{
+  outline:3px solid rgb(11 107 98 / .30);outline-offset:2px;
+}
+.fec-cmpl .cmpl-btn{
+  background:var(--ink,#14110d);color:var(--paper,#fdfbf6);
+  border:1px solid var(--ink,#14110d);border-radius:10px;
+  padding:9px 18px;font:inherit;font-weight:900;font-size:13.5px;cursor:pointer;
+}
+.fec-cmpl .cmpl-btn[disabled]{opacity:.5;cursor:not-allowed}
+.fec-cmpl .cmpl-btn:not([disabled]):hover{opacity:.92}
+.fec-cmpl .cmpl-sisters{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px}
+.fec-cmpl .cmpl-sis-label{font-size:12px;font-weight:800;color:var(--warn,#a85a1c)}
+.fec-cmpl .cmpl-sis{
+  display:inline-block;background:var(--warn-soft,#f1ddc0);color:var(--warn,#a85a1c);
+  border:1px solid var(--warn,#a85a1c);border-radius:999px;
+  padding:4px 12px;font-size:12.5px;font-weight:800;text-decoration:none;
+}
+.fec-cmpl .cmpl-sis:hover{filter:brightness(.96)}
+@media (max-width:540px){.fec-cmpl .cmpl-row{flex-direction:column}}

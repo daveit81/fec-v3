@@ -1,0 +1,1 @@
+-- com_authors 2.7.52 -- gutters restored on trust and methodology pages (CSS only), schema unchanged

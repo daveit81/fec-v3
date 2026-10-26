@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+    <!-- Menu Manager renders <message> inside an unescaped title="..." attribute:
+         never use double quotes or angle brackets in it. -->
+    <layout title="Editorial dashboard (com_authors, gated)">
+        <message><![CDATA[Editorial dashboard: RTP database editor. Gated to whitelisted Joomla user IDs. Not meant to be linked publicly.]]></message>
+    </layout>
+    <fields name="request">
+        <!-- No URL params required: the dashboard auto-loads top-priority slots
+             ordered by active bonus count. Filters are query string only. -->
+    </fields>
+</metadata>

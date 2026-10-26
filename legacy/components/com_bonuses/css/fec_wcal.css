@@ -1,0 +1,226 @@
+/* ============================================================
+   FEC Wagering Calculator v1.2.0 - production asset (F2)
+   Themed on the fec-edition token set (.fecx warm paper palette).
+   Fallback values ARE the edition values, so the widget renders
+   identically on pages without the .fecx scope.
+   ============================================================ */
+.fec-wcal{
+  font-family:inherit;
+  font-size:14.5px;line-height:1.45;color:var(--ink,#14110d);
+  -webkit-font-smoothing:antialiased;
+  --wc-surface:var(--paper,#fdfbf6);
+  --wc-surface-2:var(--bg,#f7f4ed);
+  --wc-inset:var(--bg-2,#efeadf);
+  --wc-line:var(--rule-2,#e7e0d0);
+  --wc-line-2:var(--rule,#d9d2c2);
+  --wc-text:var(--ink,#14110d);
+  --wc-muted:var(--ink-3,#5a5347);
+  --wc-faint:var(--ink-4,#8a8275);
+  --wc-accent:var(--accent,#0b6b62);
+  --wc-accent-ink:var(--accent-ink,#074842);
+  --wc-accent-soft:var(--accent-soft,#d9e9e5);
+  --wc-ok:var(--verified,#1c7a4a);
+  --wc-ok-soft:var(--verified-soft,#d6ead8);
+  --wc-warn:var(--warn,#a85a1c);
+  --wc-warn-soft:var(--warn-soft,#f1ddc0);
+  --wc-r:14px;
+  --wc-r-sm:10px;
+}
+.fec-wcal,.fec-wcal *{box-sizing:border-box}
+
+/* ---------- widget root ---------- */
+.fec-wcal{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:20px;align-items:start}
+@media (max-width:900px){.fec-wcal{grid-template-columns:1fr}}
+
+.fec-wcal .wc-card{
+  background:var(--wc-surface);border:1px solid var(--wc-line);
+  border-radius:var(--wc-r);padding:20px;
+}
+.fec-wcal .wc-card h2{
+  font-weight:900;font-size:17px;letter-spacing:-.01em;
+  margin:0 0 16px;color:var(--wc-text);
+}
+.fec-wcal .wc-sub{
+  font-size:11px;font-weight:900;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--wc-faint);display:block;margin:22px 0 10px;
+}
+.fec-wcal .wc-sub:first-of-type{margin-top:0}
+
+/* ---------- form ---------- */
+.fec-wcal .wc-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:480px){.fec-wcal .wc-grid2{grid-template-columns:1fr}}
+.fec-wcal .wc-field{margin:0 0 12px}
+.fec-wcal label{
+  display:block;font-size:12.5px;font-weight:800;color:var(--wc-text);
+  margin:0 0 5px;
+}
+.fec-wcal label small{font-weight:400;color:var(--wc-muted)}
+.fec-wcal input[type=number],
+.fec-wcal input[type=text],
+.fec-wcal select{
+  width:100%;background:#fff;color:var(--wc-text);
+  border:1px solid var(--wc-line-2);border-radius:var(--wc-r-sm);
+  padding:9px 11px;font:inherit;font-size:14px;
+  font-variant-numeric:tabular-nums;
+}
+.fec-wcal input:focus-visible,.fec-wcal select:focus-visible,
+.fec-wcal button:focus-visible{
+  outline:3px solid rgb(11 107 98 / .30);outline-offset:2px;
+}
+.fec-wcal input::placeholder{color:var(--wc-faint)}
+
+.fec-wcal .wc-seg{display:flex;gap:6px;flex-wrap:wrap}
+.fec-wcal .wc-seg button{
+  flex:1 1 auto;background:#fff;color:var(--wc-muted);
+  border:1px solid var(--wc-line-2);border-radius:999px;padding:8px 12px;
+  font:inherit;font-size:12.5px;font-weight:800;cursor:pointer;white-space:nowrap;
+}
+.fec-wcal .wc-seg button:hover{border-color:var(--wc-faint)}
+.fec-wcal .wc-seg button[aria-pressed=true]{
+  background:var(--wc-text);color:var(--wc-surface);border-color:var(--wc-text);
+}
+.fec-wcal .wc-hint{font-size:12px;color:var(--wc-muted);margin:5px 0 0}
+
+/* ---------- results ---------- */
+.fec-wcal .wc-results{position:sticky;top:calc(var(--fec-topbar-h,72px) + 12px)}
+@media (max-width:900px){.fec-wcal .wc-results{position:static}}
+.fec-wcal .wc-bonusline{
+  display:flex;justify-content:space-between;gap:10px;align-items:baseline;
+  padding:7px 0;border-bottom:1px dashed var(--wc-line-2);font-size:13.5px;
+}
+.fec-wcal .wc-bonusline:last-of-type{border-bottom:0}
+.fec-wcal .wc-bonusline .k{color:var(--wc-muted)}
+.fec-wcal .wc-bonusline .v{
+  font-weight:800;font-variant-numeric:tabular-nums;
+  text-align:right;white-space:nowrap;color:var(--wc-text);
+}
+.fec-wcal .wc-big{
+  margin:4px 0 14px;padding:16px;border-radius:var(--wc-r);
+  background:var(--wc-surface-2);
+  border:1px solid var(--wc-line);
+}
+.fec-wcal .wc-big .n{
+  font-weight:900;font-variant-numeric:tabular-nums;
+  font-size:clamp(26px,5vw,34px);color:var(--wc-accent-ink);letter-spacing:-.02em;
+}
+.fec-wcal .wc-big .l{font-size:12px;color:var(--wc-muted);margin-top:2px}
+
+/* chip-stack progress: the signature element */
+.fec-wcal .wc-chips{display:flex;gap:3px;margin:12px 0 6px}
+.fec-wcal .wc-chips span{
+  flex:1;height:14px;border-radius:4px;background:var(--wc-inset);
+  border:1px solid var(--wc-line);position:relative;
+}
+.fec-wcal .wc-chips span.on{
+  background:repeating-linear-gradient(90deg,var(--wc-accent) 0 6px,var(--wc-accent-ink) 6px 8px);
+  border-color:var(--wc-accent-ink);
+}
+.fec-wcal .wc-chips span.done{background:var(--wc-ok);border-color:var(--wc-ok)}
+.fec-wcal .wc-progress-label{
+  display:flex;justify-content:space-between;
+  font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;
+  color:var(--wc-muted);
+}
+
+.fec-wcal .wc-flag{
+  display:flex;gap:9px;align-items:flex-start;border-radius:var(--wc-r-sm);
+  padding:10px 12px;font-size:12.5px;margin:10px 0 0;
+}
+.fec-wcal .wc-flag.warn{background:var(--wc-warn-soft);border:1px solid var(--wc-warn);color:var(--wc-warn)}
+.fec-wcal .wc-flag.info{background:var(--wc-accent-soft);border:1px solid var(--wc-accent);color:var(--wc-accent-ink)}
+.fec-wcal .wc-flag b{font-weight:800}
+.fec-wcal .wc-flag .ico{flex:0 0 auto;margin-top:1px}
+
+/* ---------- saved bonuses ---------- */
+.fec-wcal .wc-saved{grid-column:1 / -1}
+.fec-wcal .wc-saved ul{list-style:none;margin:0;padding:0}
+.fec-wcal .wc-saved li{
+  display:flex;gap:12px;align-items:center;justify-content:space-between;
+  border:1px solid var(--wc-line);border-radius:var(--wc-r-sm);
+  padding:10px 14px;margin:0 0 8px;
+  background:#fff;flex-wrap:wrap;
+}
+.fec-wcal .wc-saved .meta{min-width:0}
+.fec-wcal .wc-saved .meta .t{font-weight:800;font-size:13.5px}
+.fec-wcal .wc-saved .meta .s{
+  font-size:11.5px;color:var(--wc-muted);font-variant-numeric:tabular-nums;
+}
+.fec-wcal .wc-saved .act{display:flex;gap:6px}
+.fec-wcal .wc-btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  background:var(--wc-text);color:var(--wc-surface);border:1px solid var(--wc-text);
+  border-radius:12px;
+  padding:10px 16px;font:inherit;font-weight:900;font-size:13.5px;cursor:pointer;
+  text-decoration:none;line-height:1;
+}
+.fec-wcal .wc-btn:hover{opacity:.92}
+.fec-wcal .wc-btn.ghost{
+  background:#fff;color:var(--wc-text);border:1px solid var(--wc-line-2);
+}
+.fec-wcal .wc-btn.ghost:hover{opacity:1;background:var(--wc-surface-2);border-color:var(--wc-faint)}
+.fec-wcal .wc-btn.sm{padding:7px 11px;font-size:12.5px;border-radius:999px}
+.fec-wcal .wc-btn[disabled]{opacity:.55;cursor:not-allowed}
+.fec-wcal .wc-btn .wc-ico{margin-right:7px;flex:0 0 auto}
+.fec-wcal .wc-actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.fec-wcal .wc-empty{color:var(--wc-muted);font-size:13px;padding:6px 2px}
+
+.fec-wcal .wc-foot{
+  grid-column:1 / -1;color:var(--wc-muted);font-size:12px;
+  border-top:1px solid var(--wc-line);padding-top:14px;
+}
+@media (prefers-reduced-motion:no-preference){
+  .fec-wcal .wc-chips span{transition:background .25s,border-color .25s}
+  .fec-wcal .wc-big .n{transition:color .2s}
+}
+
+/* ---------- standalone page furniture (view=wcalc) ---------- */
+.fec-wcal-page{max-width:1060px;margin:0 auto;padding:24px 16px 64px}
+.fec-wcal-page .wc-eyebrow{
+  font-size:11px;font-weight:900;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--accent,#0b6b62);margin:0 0 10px;
+}
+.fec-wcal-page h1{
+  font-weight:900;font-size:clamp(28px,4vw,42px);line-height:1.05;
+  margin:0 0 10px;letter-spacing:-.02em;color:var(--ink,#14110d);
+}
+.fec-wcal-page .wc-intro{max-width:66ch;color:var(--ink-3,#5a5347);margin:0 0 26px}
+.fec-wcal-h2{
+  font-weight:900;font-size:22px;letter-spacing:-.01em;
+  margin:34px 0 14px;color:var(--ink,#14110d);
+}
+
+/* ---------- explainer article under the widget (view=wcalc) ---------- */
+.fec-wcal-page .wc-article{
+  max-width:760px;margin:44px 0 0;color:var(--ink-2,#2a2620);
+}
+.fec-wcal-page .wc-article h2{
+  font-weight:900;font-size:20px;letter-spacing:-.01em;
+  margin:30px 0 10px;color:var(--ink,#14110d);
+}
+.fec-wcal-page .wc-article p{margin:0 0 14px;line-height:1.62;font-size:15px}
+.fec-wcal-page .wc-byline{
+  display:flex;gap:12px;align-items:center;
+  border-top:1px solid var(--rule-2,#e7e0d0);
+  padding:18px 0 4px;margin-top:8px;
+}
+.fec-wcal-page .wc-byline-avatar{
+  width:48px;height:48px;border-radius:50%;object-fit:cover;
+  border:1px solid var(--rule,#d9d2c2);
+}
+.fec-wcal-page .wc-byline-kicker{
+  font-size:10.5px;font-weight:900;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-4,#8a8275);
+}
+.fec-wcal-page .wc-byline-name{
+  font-weight:900;font-size:14.5px;color:var(--ink,#14110d);text-decoration:none;
+}
+.fec-wcal-page a.wc-byline-name:hover{color:var(--accent-ink,#074842);text-decoration:underline}
+.fec-wcal-page .wc-byline-role{font-size:13px;color:var(--ink-3,#5a5347)}
+
+/* ---------- full-width tool band inside the rg-page layout ----------
+   Specificity (0,3,0) on purpose: .fecx .wrap in fec-edition.css sets
+   the shorthand padding:0 28px and loads AFTER this sheet (component
+   CSS precedes template CSS), so an equal-specificity rule loses the
+   vertical padding. Matches the ~32-40px rhythm the au-main/rg-main
+   grid gives the disclosure page after its hero. ---------- */
+.fecx .rg-page .wcal-tool{padding-top:36px;padding-bottom:0}

@@ -1,0 +1,1 @@
+-- com_authors 2.7.45 -- cockpit recalc task and safety_engine_path option, schema unchanged

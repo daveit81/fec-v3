@@ -1,0 +1,1 @@
+-- com_authors 2.7.50 -- Menu Manager XML fixes (no quotes in layout messages, plain titles), schema unchanged

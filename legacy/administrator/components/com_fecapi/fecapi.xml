@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="component" version="2.5" method="upgrade">
+  <name>com_fecapi</name>
+  <author>FreeExtraChips</author>
+  <version>0.1.0</version>
+  <description>FEC API – Bonus Draft Endpoint</description>
+
+  <files folder="site">
+    <filename>fecapi.php</filename>
+    <filename>controller.php</filename>
+    <folder>controllers</folder>
+    <folder>models</folder>
+    <folder>helpers</folder>
+  </files>
+
+  <administration>
+    <files folder="admin">
+      <filename>index.html</filename>
+    </files>
+  </administration>
+</extension>

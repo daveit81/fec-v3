@@ -1,0 +1,212 @@
+{
+    "nd": {
+        "title": "No Deposit Bonus",
+        "count": "114",
+        "url": "index.php?option=com_bonuses&lang=en&type=nd&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=nd&view=show"
+    },
+    "nds": {
+        "title": "No Deposit Spins",
+        "count": "208",
+        "url": "index.php?option=com_bonuses&lang=en&subtype=nd&type=fs&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&subtype=nd&type=fs&view=show"
+    },
+    "fs": {
+        "title": "Free Spins",
+        "count": 277,
+        "url": "index.php?option=com_bonuses&lang=en&type=fs&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=fs&view=show"
+    },
+    "fsx": {
+        "title": "Extra Spins",
+        "count": 0,
+        "url": "index.php?option=com_bonuses&lang=en&type=fsx&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=fsx&view=show"
+    },
+    "fp": {
+        "title": "Free Play",
+        "count": "9",
+        "url": "index.php?option=com_bonuses&lang=en&type=fp&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=fp&view=show"
+    },
+    "wbp": {
+        "title": "Welcome Bonus",
+        "count": 0,
+        "url": "index.php?option=com_bonuses&lang=en&type=wbp&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=wbp&view=show"
+    },
+    "su": {
+        "title": "1st Deposit Match",
+        "count": "378",
+        "url": "index.php?option=com_bonuses&lang=en&type=su&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=su&view=show"
+    },
+    "2d": {
+        "title": "2nd Deposit Match",
+        "count": "35",
+        "url": "index.php?option=com_bonuses&lang=en&type=2d&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=2d&view=show"
+    },
+    "3d": {
+        "title": "3rd Deposit Match",
+        "count": "30",
+        "url": "index.php?option=com_bonuses&lang=en&type=3d&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=3d&view=show"
+    },
+    "4d": {
+        "title": "4th Deposit Match",
+        "count": "16",
+        "url": "index.php?option=com_bonuses&lang=en&type=4d&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=4d&view=show"
+    },
+    "5d": {
+        "title": "5th Deposit Match",
+        "count": "7",
+        "url": "index.php?option=com_bonuses&lang=en&type=5d&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=5d&view=show"
+    },
+    "6d": {
+        "title": "6th Deposit Match",
+        "count": 0,
+        "url": "index.php?option=com_bonuses&lang=en&type=6d&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=6d&view=show"
+    },
+    "7d": {
+        "title": "7th Deposit Match",
+        "count": 0,
+        "url": "index.php?option=com_bonuses&lang=en&type=7d&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=7d&view=show"
+    },
+    "8d": {
+        "title": "8th Deposit Match",
+        "count": 0,
+        "url": "index.php?option=com_bonuses&lang=en&type=8d&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=8d&view=show"
+    },
+    "9d": {
+        "title": "9th Deposit Match",
+        "count": 0,
+        "url": "index.php?option=com_bonuses&lang=en&type=9d&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=9d&view=show"
+    },
+    "10d": {
+        "title": "10th Deposit Match",
+        "count": 0,
+        "url": "index.php?option=com_bonuses&lang=en&type=10d&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=10d&view=show"
+    },
+    "hr": {
+        "title": "High Roller Bonus",
+        "count": "23",
+        "url": "index.php?option=com_bonuses&lang=en&type=hr&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=hr&view=show"
+    },
+    "sl": {
+        "title": "Slots Bonus",
+        "count": "22",
+        "url": "index.php?option=com_bonuses&lang=en&type=sl&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=sl&view=show"
+    },
+    "bj": {
+        "title": "BlackJack Bonus",
+        "count": "16",
+        "url": "index.php?option=com_bonuses&lang=en&type=bj&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=bj&view=show"
+    },
+    "vp": {
+        "title": "Video Poker Bonus",
+        "count": "5",
+        "url": "index.php?option=com_bonuses&lang=en&type=vp&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=vp&view=show"
+    },
+    "rl": {
+        "title": "Reload Bonus",
+        "count": "8",
+        "url": "index.php?option=com_bonuses&lang=en&type=rl&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=rl&view=show"
+    },
+    "cb": {
+        "title": "CashBack Bonus",
+        "count": "15",
+        "url": "index.php?option=com_bonuses&lang=en&type=cb&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=cb&view=show"
+    },
+    "db": {
+        "title": "Deposit Bonus",
+        "count": "18",
+        "url": "index.php?option=com_bonuses&lang=en&type=db&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=db&view=show"
+    },
+    "fc": {
+        "title": "Free Cash",
+        "count": "4",
+        "url": "index.php?option=com_bonuses&lang=en&type=fc&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=fc&view=show"
+    },
+    "mon": {
+        "title": "Monday Bonus",
+        "count": 0,
+        "url": "index.php?option=com_bonuses&lang=en&type=mon&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=mon&view=show"
+    },
+    "tue": {
+        "title": "Tuesday Bonus",
+        "count": "2",
+        "url": "index.php?option=com_bonuses&lang=en&type=tue&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=tue&view=show"
+    },
+    "wed": {
+        "title": "Wednesday Bonus",
+        "count": 0,
+        "url": "index.php?option=com_bonuses&lang=en&type=wed&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=wed&view=show"
+    },
+    "thu": {
+        "title": "Thursday Bonus",
+        "count": "1",
+        "url": "index.php?option=com_bonuses&lang=en&type=thu&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=thu&view=show"
+    },
+    "fri": {
+        "title": "Friday Bonus",
+        "count": 0,
+        "url": "index.php?option=com_bonuses&lang=en&type=fri&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=fri&view=show"
+    },
+    "sat": {
+        "title": "Saturday Bonus",
+        "count": "1",
+        "url": "index.php?option=com_bonuses&lang=en&type=sat&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=sat&view=show"
+    },
+    "sun": {
+        "title": "Sunday Bonus",
+        "count": 0,
+        "url": "index.php?option=com_bonuses&lang=en&type=sun&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=sun&view=show"
+    },
+    "wb": {
+        "title": "Weekend Bonus",
+        "count": "4",
+        "url": "index.php?option=com_bonuses&lang=en&type=wb&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=wb&view=show"
+    },
+    "wkb": {
+        "title": "Weekly Bonus",
+        "count": "1",
+        "url": "index.php?option=com_bonuses&lang=en&type=wkb&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=wkb&view=show"
+    },
+    "crypto": {
+        "title": "Crypto Bonuses",
+        "count": 0,
+        "url": "index.php?option=com_bonuses&lang=en&type=crypto&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=crypto&view=show"
+    },
+    "sweeps": {
+        "title": "Sweeps Casino Bonuses",
+        "count": 0,
+        "url": "index.php?option=com_bonuses&lang=en&type=sweeps&view=show",
+        "newurl": "index.php?option=com_bonuses&lang=en&type=sweeps&view=show"
+    }
+}

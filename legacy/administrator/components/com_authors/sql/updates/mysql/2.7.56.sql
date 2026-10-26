@@ -1,0 +1,1 @@
+-- com_authors 2.7.56 -- Payout Index card: font resolver fallback chain (site fonts, DejaVu, Liberation, any TTF), schema unchanged

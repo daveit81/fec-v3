@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+	<fieldset name="component" label="Partner Desk Settings">
+		<field
+			name="form_enabled"
+			type="radio"
+			default="1"
+			label="Form enabled"
+			description="Disable to temporarily close submissions while keeping the dashboard available."
+		>
+			<option value="1">Yes</option>
+			<option value="0">No</option>
+		</field>
+		<field
+			name="notify_email"
+			type="text"
+			default=""
+			label="Notification email"
+			description="Where new-submission alerts are sent. Empty = site mailfrom address."
+		/>
+		<field
+			name="max_per_day"
+			type="text"
+			default="3"
+			label="Max submissions per IP per 24h"
+			description="Rolling window rate limit."
+		/>
+		<field
+			name="min_seconds"
+			type="text"
+			default="8"
+			label="Minimum fill time (seconds)"
+			description="Submissions faster than this are rejected as bots."
+		/>
+	</fieldset>
+</config>

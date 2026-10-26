@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <fieldset name="component"
+              label="COM_AUTHORS_CONFIG_LABEL"
+              description="COM_AUTHORS_CONFIG_DESC">
+        <!-- Thresholds live in models/methodology.php constants. -->
+        <field name="safety_engine_path"
+               type="text"
+               default=""
+               size="60"
+               label="Safety engine path"
+               description="Full server path to safety-engine.php (the FXShield score engine, deployed next to frank-config.php). Used by the cockpit Recalc button; leave empty to disable web recalc. Example: /home/freeextr/fec-engines/safety-engine.php" />
+    </fieldset>
+</config>

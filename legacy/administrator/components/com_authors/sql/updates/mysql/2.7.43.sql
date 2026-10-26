@@ -1,0 +1,1 @@
+-- com_authors 2.7.43 -- deskadd edit mode is code-only, schema unchanged

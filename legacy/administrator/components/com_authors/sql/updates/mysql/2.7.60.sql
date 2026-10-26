@@ -1,0 +1,1 @@
+-- com_authors 2.7.60 -- byline policy wording: portraits described as stylised renderings of the editors, schema unchanged

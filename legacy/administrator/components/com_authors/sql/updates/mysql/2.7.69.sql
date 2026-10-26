@@ -1,0 +1,1 @@
+-- com_authors 2.7.69 -- blog desk draft state in a hidden field (template, js, controller), schema unchanged

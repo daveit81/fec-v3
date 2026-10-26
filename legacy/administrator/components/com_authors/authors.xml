@@ -1,0 +1,1324 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="component" version="2.5" method="upgrade">
+    <name>com_authors</name>
+    <author>FreeExtraChips Editorial</author>
+    <creationDate>2026-10-22</creationDate>
+    <copyright>(C) FreeExtraChips</copyright>
+    <license>Proprietary</license>
+    <authorEmail>editorial@freeextrachips.com</authorEmail>
+    <authorUrl>https://www.freeextrachips.com</authorUrl>
+    <version>2.7.94</version>
+    <description><![CDATA[
+        FreeExtraChips editorial team profiles, methodology pages, and trust hub.
+
+        V2.7.94 — Slots index: the hero gap, for real
+          - 2.7.93 raised padding-top on .slt-index-main but fec-edition.css
+            sets .fecx .wrap { padding: 0 28px } later at equal specificity,
+            so it never applied (nor did the old 20px). Now
+            .fecx.slt-index-page .slt-index-main.wrap carries the top
+            padding (36px, 28px on phones) and restates the side gutters.
+
+        V2.7.93 — Slots index: more air under the hero
+          - .slt-index-main padding-top 20px -> 36px, so the at-a-glance row
+            no longer sits on the stats strip.
+
+        V2.7.92 — Slots index: phone layout
+          - Hero strip: labels wrap instead of truncating ("Highest RTP ·
+            Mega J…"); under 640px the fifth cell (last verification) spans
+            the whole last row, cells are tighter.
+          - Provider chips: one horizontally scrollable row on phones instead
+            of six wrapped ones; the active chip scrolls into view.
+          - Toolbar: two-column grid under 640px, search and "with active
+            bonuses" full width, count on its own line.
+          - Cards: one column under 480px (the richer card did not fit two
+            columns at 402px), slightly larger RTP figures than the old
+            two-column phone rule.
+
+        V2.7.91 — Slots index (/slots): database page with order, filters and pages
+          - Hero strip with live numbers over the whole database: slots
+            documented, providers, multi-tier titles, highest RTP on file
+            (with the slot name), last verification (relative date computed
+            in the browser from data-ts, the page is edge-cached).
+          - At-a-glance row above the grid: highest RTP on file, widest tier
+            spread, verified most recently, three entries each. Hidden on a
+            provider-filtered page.
+          - Toolbar in the house .wp-controls style: order (recently
+            verified, RTP high/low, widest spread, most bonuses, max win,
+            newest release, A to Z), RTP tiers, RTP band (97%+, 96-97, below
+            96), volatility, search, "with active bonuses only", and a
+            "Showing X of N" count. Client side over the server-rendered
+            cards, state written to the URL with replaceState, read back on
+            load (sort, tier, rtp, vol, bonus, q, p). Without JavaScript the
+            full grid stays visible in server order.
+          - Pager at 24 cards per page with "Show all", same .fec-pg nav as
+            the package and payout indexes; nothing paginates server side,
+            so no ?start= URLs.
+          - Provider chips filter in place on the full page and keep working
+            as /slots/p/ links on a filtered page and without JavaScript.
+          - Cards gain a facts row (tier count and spread in pp, max win,
+            release year), a verified line (date + editor), a "97%+" badge
+            with a teal edge, "No active bonus" instead of silence, and
+            data-* attributes for the sort keys.
+          - Server order is now freshness (last_verified_date, published_at,
+            name) instead of active-bonus count; the model also returns
+            rtp_variants_json, release_year, provider_value and the
+            verifying author (LEFT JOIN casino_authors).
+          - JSON-LD: the CollectionPage gets a mainEntity ItemList with the
+            documented slots (max 100). Legend "How to read a card" under
+            the grid, linked from the hero.
+          - No schema change (2.7.91.sql is a no-op).
+
+        V2.7.90 — Welcome Package Index: two legibility fixes
+          - Rows where a leg is priced at the deposit maximum (core flag
+            cap_unreachable) carry a "<=" mark in the You deposit column with
+            the reason in the tooltip; rule 3 of "How to read" names it. On
+            those rows banner / deposit is not the effective match, and the
+            page now says why instead of looking wrong (Goldbet.io, 550% up
+            to $11,500, $4,000 deposited, 138%).
+          - FAQ "How can an X% banner come out at Y%?" takes X and Y from the
+            widest gap on the page and names the casino; the fixed 2,000% /
+            57% example matched no listed package.
+
+        V2.7.89 — Payout Index: the register says what it measures
+          - "Register data" is the latest data point (newest desk request or
+            newest player receipt); the clock statistics rebuild no longer
+            moves it, so it stops reading as today's date.
+          - "vs declared" prints the signed gap to the minute; "on time" only
+            when measured equals declared (the +/-6 min tolerance is gone).
+          - FXShield tier badge beside each desk-tested casino (live register
+            only); FAQ "Does a fast payout mean the casino is safe?" points
+            to it.
+          - A brand whose first clock is still running joins the collection
+            table (0 of N, 1 running); the separate running band shows only
+            while that table is empty. Running list and count skip brands the
+            desk has closed, suspended or blacklisted, like the two tables.
+          - FAQ "Why is the list so short?" and the Updates rule reworded to
+            match the tables as they are.
+
+        V2.7.88 — Dashboard: the "create new game" provider select lists the site vocabulary
+          - models/dashboard.php getProviders() returns the union of the
+            jReviews software field options (jr_soft, the set the Blog Desk
+            uses) and the providers already in #__games, merged on the
+            normalised name and sorted by name. Before, only #__games was
+            read, so a provider with no active game yet was not offered.
+            When both sides know a provider the value of the existing games
+            wins; a provider known only to jr_soft takes its option value.
+            assets/dashboard.js prints the game count only when above 0.
+            No SQL.
+
+        V2.7.87 — FXRate: casino exclusion aligned with the listings
+          - models/packageindex.php casinoExcluded() and the methodology
+            FXRate stats use the core's fec_fxrate_casino_excluded() (core
+            0.5.1): any non-empty jr_closed / jr_suspended / jr_blacklisted
+            excludes the casino, as every listing query does (jr_x = '').
+            Before, the index kept a casino suspended with a wording other
+            than "susp" (or blacklisted with one other than "bl"/"yes"),
+            the stricter pattern of fec_should_noindex_casino(). Same rule
+            inline when the core predates 0.5.1. No SQL.
+
+        V2.7.86 — FXRate rules v1.3: spins wagering
+          - A leg's free spins carry their own wagering term, apart from
+            the match's (schema 3 spins_wr; core 0.5.0 / render 1.3.0 print
+            "spins: no wagering" / "spins: 40x winnings" / "spins: WR not
+            stated" under the match's term in the ladder). Methodology:
+            rule "Spins wagering (v1.3)", versioning entry, the free-spins
+            FAQ says the line prints it; the index's "Free spins and
+            currencies" rule says the same. 2.7.86.sql sets the fxrate
+            topic to v1.3 / 2026-10-19. Numbers unchanged.
+
+        V2.7.85 — Welcome Package Index: casino chips
+          - Both tables print the site's casino chip (the initial on the
+            brand's own hue) before the casino name, via fec_casino_chip()
+            at 28px when the common lib is loaded, else a local fallback
+            with the same algorithm (crc32 of the lowercased name mod 360)
+            so the colour matches the cards and heroes. Markup: the cell
+            content is wrapped in .wp-cas (flex) with the text in
+            .wp-cas-txt; page.css adds the three rules. Decorative only
+            (aria-hidden), nothing else changes. No SQL.
+
+        V2.7.84 — Welcome Package Index: track labels for linked packages
+          - A package with the generic title "Welcome Package" that is
+            linked to another one of the same casino (alt_of, either
+            direction) is named by its opener's type: High Roller Package
+            (hr), Crypto Package (crypto), Standard Package (su). Rows read
+            "High Roller Package · alternative to the Standard Package" and
+            the reverse instead of both saying "alternative to the Welcome
+            Package". A stored title always wins; a casino with one package
+            still shows no track label. models/packageindex.php rows carry
+            opener_type and track_label (render 1.2.1 does the same on the
+            bands and the casino block). No SQL.
+
+        V2.7.83 — FXRate: alternative tracks (alt_of)
+          - Welcome Package Index: models/packageindex.php selects p.alt_of
+            and gives every row title_full, alt_of and alt_titles (the
+            packages of the same casino linked as alternatives, either
+            direction, among those listed); both tables print "alternative
+            to the <title>" under the track title; reading rule "Two
+            packages at one casino"; page.css .wp-alt.
+          - methodology/fxrate: reading rule "Two packages at one casino".
+            No SQL (alt_of has been in the packages table since schema 1;
+            the dashboard panel now sets it, render 1.2.0 prints it).
+
+        V2.7.82 — Welcome Package Index: "Terms stated" counts complete legs
+          - In the Awaiting-terms table a leg counts as stated only with
+            both its match rate and its cap (or as a spins leg): a package
+            whose four legs all have a rate but one lacks a cap read
+            "4 of 4" while unpriced; it now reads "3 of 4", which names the
+            missing piece. Header carries a title saying so. No SQL.
+
+        V2.7.81 — FXRate rules v1.2: maximum cashout on legs
+          - Requires schema 2 of jos_fec_bonus_package_legs (max_cashout,
+            max_cashout_kind; fxrate_schema2.sql) and calc core 0.4.0: the
+            index and the methodology stats select the two columns (the
+            row's own for real legs) and pass them to the core.
+          - Welcome Package Index: rows carry cashout_capped (positions);
+            both tables mark capped packages with a triangle in the
+            Deposits column (title says why), a checkbox "Hide packages
+            with a max cashout" joins the controls, reading rule "Maximum
+            cashout" added; page.css .wp-capped.
+          - methodology/fxrate: reading rule "Maximum cashout" (reported
+            as stated, never priced), versioning v1.2; 2.7.81.sql sets the
+            topic version.
+
+        V2.7.80 — FXRate: entry line documented
+          - methodology/fxrate: reading rule "The entry line" (core 0.3.2 /
+            render 1.0.5: the stated minimum deposits added up against the
+            deposit needed to collect every cap, shown under the four
+            numbers when every summed leg states a minimum) and the v1.1
+            changelog entry extended (entry line, sub-unit money with up to
+            eight decimals). No SQL.
+
+        V2.7.79 — FXRate rules v1.1: spins legs
+          - A deposit that buys free spins and no match ("3rd deposit: 100
+            free spins") is a spins leg: counted as a deposit of the ladder,
+            its spins in the headline, left out of the four numbers, which
+            price the match legs alone (calc core fec_fxrate.php 0.3.0, leg
+            kind 'spins'; render 1.0.4). Before, such a leg kept the whole
+            package at "not stated".
+          - methodology/fxrate: reading rule "Spins legs", versioning list
+            (v1.1 / v1.0), one FAQ; 2.7.79.sql sets the topic version to
+            v1.1. models/methodology.php getFxrateStats() passes leg spins
+            to the core so the counts follow the rule.
+          - Welcome Package Index: models/packageindex.php passes leg spins
+            to the core, counts a spins leg as stated, exposes spins_legs;
+            both tables mark such packages with a star in the Deposits
+            column (title says why); reading rule 5 extended; page.css
+            .wp-spinsleg.
+
+        V2.7.78 — Welcome Package Index: canonical path
+          - The page's own URL is AuthorsModelPackageindex::INDEX_PATH
+            (/bonuses/welcome-packages), no longer the JRoute menu route,
+            which carried the parent menu alias (/casinobonuses/...).
+            views/page/view.html.php: for topic welcome-packages the head
+            canonical, og:type/og:title/og:url and the WebPage node of the
+            JSON-LD graph take that path; the template's breadcrumb,
+            ItemList and Dataset ids follow it. Every inbound link already
+            used the constant. The public path must resolve on the site
+            side (sh404SEF URL edited to bonuses/welcome-packages, or the
+            menu item under a parent whose alias is bonuses); the old
+            route should 301 to it.
+
+        V2.7.77 — Welcome Package Index: restricted-country note
+          - The visitor country comes from the site detector
+            (fec_detect_country: Cloudflare CF-IPCountry, then GeoIP; its
+            own default never counts as a known country). When it is
+            known, a package whose operator excludes that country by its
+            own terms (jReviews jr_restrictedcountries, or the opener
+            bonus country_no, or a country_ok list that omits it; the rule
+            of fec_decide_state, "no-restrictions" never blocked) carries a
+            "Restricted in {Country}" note under the casino name in both
+            tables, with the country name from the site list, and a
+            checkbox "Hide packages restricted in {Country}" joins the
+            controls. The row stays listed and counted: the numbers do not
+            depend on where the reader is. Unknown country = no note, no
+            checkbox. models/packageindex.php data($countrycode) selects
+            ob.country_ok, ob.country_no, jc.jr_restrictedcountries and
+            adds geoBlocked() and the row flag geo_blocked; template
+            data-geo on rows, the client filter and one sentence in the
+            note under the table; page.css .wp-geo, .wp-ctl--check.
+
+        V2.7.76 — Welcome Package Index: pages
+          - Both tables page client side, 25 rows per page, with the site
+            .fec-pg pager drawn under each (previous / numbers with
+            ellipsis / next / "Show all N" and back), a "Showing a-b of N"
+            count, page reset on every sort or filter, scroll back to the
+            controls when a page link is below the fold. Server markup is
+            unchanged: without the script every row is visible, and the
+            JSON-LD ItemList still carries them all.
+
+        V2.7.75 — Welcome Package Index: casino-level exclusion
+          - models/packageindex.php and AuthorsModelMethodology::getFxrateStats()
+            join #__jreviews_content and drop packages of casinos that are
+            closed (jr_closed set), blacklisted (jr_blacklisted contains bl
+            or yes) or suspended (jr_suspended contains susp): the rule of
+            the bonus listings and of fec_should_noindex_casino(). A casino
+            under review (jr_flag *flagged*) stays listed with an "Under
+            review" mark (.wp-flag). The index template says so under
+            Exclusions. Same rule shipped in fec_fxrate_render.php 1.0.3
+            (band, casino block, card pill) and fxrate_report.php 1.0.1.
+
+        V2.7.74 — FEC Welcome Package Index (FXRate)
+          - New live page topic "welcome-packages" (2.7.74.sql, kind page,
+            sort 26): "FEC Welcome Package Index: Every Multi-Deposit
+            Bonus, Priced", by David Romano, reviewed by Ethan Walker.
+            Menu item to create: Page view, slug welcome-packages, alias
+            welcome-packages under the Bonuses item -> /bonuses/welcome-packages
+            (models/packageindex.php INDEX_PATH).
+          - models/packageindex.php (read-only, static): one query over the
+            active packages and legs, priced with the calculation core
+            components/com_bonuses/helpers/fec_fxrate.php (loaded guarded),
+            same counting rules as the band and the methodology stats.
+            Rows: brand, track, review url, opener bonus url, deposits,
+            advertised text, deposit, effective, first-leg match, turnover,
+            ratio; priced rows effective-desc, unpriced rows brand-asc;
+            stats for the hero and the intro. Core or tables missing =
+            empty state, never a number.
+          - views/page/tmpl/default_welcome-packages.php: hero with live
+            strip, intro (numbers first, "a list, not a ranking"), the
+            index table with client-side order (effective, gap, advertised,
+            deposit, turnover, first deposit, A-Z), deposits filter and
+            casino search (vanilla inline script, server-rendered first
+            paint), "Awaiting terms" table for unpriced packages, how to
+            read, FAQ; JSON-LD: unordered ItemList + Dataset + FAQPage.
+          - assets/page.css section 16 (.wp-*): controls bar, first-leg
+            marker, not-stated state; tables reuse the .pi-* primitives.
+
+        V2.7.73 — FXRate methodology (FEC Tools No. 05)
+          - New live topic "fxrate" (2.7.73.sql, sort 37): "How FXRate
+            Works: Welcome Packages, Advertised vs Effective", by David
+            Romano, reviewed by Ethan Walker, rules v1.0 / 2026-10-15.
+            Rendered by views/methodology/tmpl/default_fxrate.php: the
+            principle, why the banner sum is not a rate, the four numbers,
+            two packages worked by hand, the reading rules (missing caps,
+            deposit limits, wagering base, spins, currencies, expired
+            legs, rounding), what FXRate is not, where it appears, where
+            the terms come from, verify-it-yourself, live numbers, FAQ.
+          - AuthorsModelMethodology::getFxrateStats(): one query over the
+            active welcome packages (#__fec_bonus_packages + legs, real
+            rows read through #__bonuses) priced with the calculation core
+            components/com_bonuses/helpers/fec_fxrate.php (loaded guarded):
+            packages tracked/priced, casinos, legs, median advertised and
+            effective match, median and widest ratio, packages below 100%
+            and at 50% or less. Core or tables missing = dashes, never a
+            made-up number. Hooked in views/methodology/view.html.php.
+          - The public band, casino block and card pill live in
+            com_bonuses (fec_fxrate_render.php 1.0.1); this page is what
+            they should link to as the method.
+
+        V2.7.72 — Blog posts linked to RTP-verified slots
+          - #__fec_blog_meta.slot_gid / slot_rel (2.7.72.sql): a post points
+            at a #__slot_rtp slot as "game" (about that slot) or "family"
+            (sequel, variant, jackpot network). The desk fills it on save by
+            matching the game name of the title (helpers/blogslot.php: the
+            longest slot name contained in the title; "game" when the part
+            before "by Studio" / the colon is exactly that name); the
+            Details fold gets a "Verified slot" select plus the relation.
+          - Slot page (/slots/<slug>): "From the blog" section after the
+            bonuses, up to 4 posts, the ones about the slot first, each
+            labelled About this slot / Same family; JSON-LD VideoGame
+            gains subjectOf for the "game" posts (BlogPosting @id =
+            post URL + #blogposting, matching fec_blog.php 1.0.9).
+          - The post side (verified RTP box, about/mentions in JSON-LD) is
+            in fec_blog.php 1.0.9. One-off backfill of the 711 imported
+            posts: fec_blog_slot_links.php (dry run + CSV, then --commit).
+
+        V2.7.71 — Editorial Standards: How we use AI
+          - New #ai-assistance section after the fact-checking workflow
+            (and in the TOC) plus a "Do you use AI to write reviews?" FAQ
+            entry. It answers the "How" questions of Google's helpful-
+            content guidance (updated 2026-10-05): tools may draft and
+            check, every fact is verified by the signing editor against
+            its primary source, verdicts/flags/scores are human, nothing
+            is published automatically, no invented profiles, portraits
+            or reader reviews. Every sentence is a factual claim about
+            the desk; keep it literally true. Topic stamped v1.3 /
+            2026-10-13 (2.7.71.sql; fallback in models/methodology.php
+            aligned). Schema unchanged.
+
+        V2.7.70 — Blog desk: Draft is a checkbox, one Save button
+          - 2.7.69 moved the state into a hidden field set on click; the
+            script that submits the desk form runs before that click handler,
+            so every save still published. The state is now a Draft checkbox
+            (task_state=draft when ticked): an ordinary field that every
+            submit carries. One Save button whose label follows the box
+            (Publish / Save changes / Save draft / Unpublish to draft).
+          - The edit view falls back on an &n= flag of the redirect URL for
+            its notice when the session notice is missing; every save is
+            logged in one line (blogdesk save user= id= state= ok=).
+            Schema unchanged (2.7.70.sql is a comment).
+
+        V2.7.69 — Blog desk: "Save draft" / "Unpublish to draft" lost on submit
+          - A script on the site submits the desk form with form.submit(),
+            which drops the submitter button from the POST (seen live:
+            task_state missing, every save published). The state now
+            travels in a hidden task_state field set by the click on either
+            button (blogdesk.js); the buttons keep task_state_btn for a
+            script-free submit, and the controller prefers the button when
+            it is there. Schema unchanged (2.7.69.sql is a comment).
+
+        V2.7.68 — Blog desk: pictures go to images/posts/YYYY/
+          - images/blog/ was the wrong folder on this host: a rewrite rule
+            sends every path containing "blog/" to /casino-bonus-blog/..., so
+            the uploaded picture 301-ed to a 404 (cPanel error page with its
+            SSI notice). New uploads land in images/posts/YYYY/<alias>.jpg;
+            override with define('FEC_BLOG_IMAGE_DIR', ...). Posts saved
+            with the old path need their picture uploaded again from the
+            desk. Schema unchanged (2.7.68.sql is a comment).
+
+        V2.7.67 — Blog desk: links to 410 pages dropped on save
+          - /online-casinos/software|banking|countries|languages|currencies|
+            type, /casino-reviews, /reviews, /countries and any /x/tag path
+            answer 410 Gone in .htaccess. AuthorsHelperBlogtext::cleanHref()
+            now returns '' for those (rule shared with fec_blog.php 1.0.6,
+            FEC_BLOG_GONE_RE), so a pasted or typed link to one of them is
+            unwrapped to plain text, in HTML and in plain mode. Schema
+            unchanged (2.7.67.sql is a comment). The 710 imported posts are
+            cleaned once by scripts/blog/fec_blog_links_410.php.
+
+        V2.7.66 — Blog desk: front-end editor of the Casino Bonus Blog
+          - New view=blogdesk (non-SEF, like the other editorial tools:
+            /index.php?option=com_authors&view=blogdesk). Who gets in: a desk
+            user (DASHBOARD_ALLOWED_USERS) sees and edits every blog post and
+            may sign with any active byline or "FreeExtraChips Editorial"; a
+            contributor (Joomla user mapped by casino_authors.joomla_user_id)
+            sees and edits the posts signed by their profile. Guests get the
+            login link; a logged-in user without a profile a dead end.
+          - The editor asks for three things: title, text, picture. The text
+            is pasted HTML (cleaned through a DOM allow-list: p, h2-h4,
+            strong/em, a, lists, blockquote, tables, img from /images) or
+            plain text with light conventions (blank line = paragraph,
+            "## " = section, **bold**, *italic*, "- " lists, "> " quotes,
+            [text](url) and bare URLs). Detection is automatic (structural
+            tags decide), the source text of plain posts is kept for
+            re-editing (fec_blog_meta.source_text).
+          - Everything else is derived on save by helpers/blogtext.php, the
+            importer heuristics ported: intro/fulltext split, meta
+            description (<= 155 chars), kind, provider (title "by Studio",
+            title scan, single studio in the intro; jr_soft options via
+            AuthorsHelperBlogdesk::softMap), Game facts (RTP, volatility,
+            max win, grid, release date; only when stated once). A "Details"
+            fold overrides type and provider; desk users also pick the byline.
+          - #__content row written through JTableContent (asset, alias from
+            the title, unique in the category and never changed on edit,
+            publish_up from a site-local date, scheduling when in the future,
+            draft = state 0, created follows publish_up while unpublished);
+            images JSON from the uploaded picture (GD re-encode, 1600 px long
+            edge, JPEG 85, images/blog/YYYY/<alias>.jpg); metadata.author and
+            created_by_alias/author_id from the byline. Caches cleaned
+            (com_content, page, com_authors).
+          - List: own posts newest first, Published / Scheduled / Draft
+            filter, title search, 25 per page, thumbnail, detected label,
+            views, Edit / View.
+          - 2.7.66.sql (MariaDB): fec_blog_meta.eb_post_id nullable (desk
+            posts have no EasyBlog id), source_mode / source_text columns.
+          - assets/blogdesk.css + blogdesk.js (word count, HTML/plain
+            indicator, image preview, unsaved-text guard, localStorage backup
+            with restore bar, Ctrl/Cmd+Enter publishes).
+
+        V2.7.65 — Blog contributors: Nik Davos
+          - 2.7.65.sql seeds the profile of the Casino Bonus Blog's outside
+            contributor (pen name Nik Davos, slug nik-davos, author_type
+            contributor, joined_year 2016, joomla_user_id 9156, bio as he
+            wrote it). Idempotent on the slug; avatar_url left empty until
+            his portrait lands (initials over the type hue meanwhile).
+          - Profile page: new "Blog posts" tab (#__content rows of the blog
+            category signed by the profile, 20 per page, thumbnail +
+            provider/kind label + date, routed through fec_blog.php when
+            installed). It is the landing tab for a profile that has posts
+            and no bonuses. Posts are linked to the profile through
+            #__content.author_id, the FEC byline column (fallback
+            created_by = joomla_user_id when the column is absent), so the
+            "FreeExtraChips Editorial" posts never land on a person. The
+            blog category is excluded from Guides; latest activity
+            considers posts.
+          - Contributor profiles (author_type contributor): hero eyebrow
+            "Contributing writer", pen-name line says "one real writer",
+            stats strip leads with Blog posts and shows only non-zero
+            counters, empty tabs hidden, "Writes for → Casino Bonus Blog"
+            in Quick facts. Editors' pages unchanged apart from the extra
+            Blog posts tab/tile when they have posts. The credentials box
+            badge reads "FXCheck verified" only for authors with bonuses or
+            FXCheck reports, "Signed byline" otherwise.
+          - Team page: "Blog posts" stat and a "Recent posts" list (last 3)
+            on cards without recent bonuses; latest-activity date includes
+            posts. Byline policy paragraph 1 now covers regular contributors
+            (template + menu-param default; an already-saved menu item keeps
+            its stored paragraph until edited in Options → Bylines).
+          - Editorial Standards #bylines: "Contributors, same rules" bullet;
+            topic stamped v1.2 / 2026-10-13 (2.7.65.sql; fallback in
+            models/methodology.php aligned).
+          - AuthorsHelper: blogCatid(), blogOwnerWhere(),
+            contentHasAuthorColumn(), loadBlogHelper(), blogPostUrl(),
+            blogIndexUrl(), blogPostLabel(), blogPostThumb(), blogDate().
+            bylines.css gains the .au-blog-row / .blog-chip rules.
+
+        V2.7.64 — Editions sidebar: label and meta stacked (page.css only)
+          - .pi-editions rows no longer put the label and the meta side by
+            side: in the narrow sidebar column the meta pushed the label
+            into a four-line wrap. Applies to both serial pages.
+
+        V2.7.63 — Licence Watch: current edition canonical + permalink
+          - The live URL shows the latest published edition, so its stamped
+            URL (/online-casinos/licence-watch/YYYY-MM) was a self-canonical
+            duplicate until the next edition. Now the stamped page of the
+            current edition canonicalises to the live page; once superseded it
+            canonicalises to itself and the sidebar links it. The sidebar also
+            shows a permalink on the current edition.
+
+        V2.7.62 — Edition URLs registered with sh404SEF
+          - sh404SEF has no plugin for com_authors: it builds our URLs through
+            the Joomla router without the menu anchor (an edition came out as
+            /page/<slug>/YYYY-MM) and it decodes only URLs present in its own
+            table, so /online-casinos/<slug>/YYYY-MM was a 404 for both serial
+            pages. New helpers/sef.php (AuthorsHelperSef::registerEdition)
+            writes the record itself: oldurl = the anchored path, newurl = the
+            non-SEF query with the Itemid of the page's menu item; stale 404
+            records and the stray /page/ form are removed. Called at every
+            Licence Watch freeze and publish (removed on draft deletion) and at
+            every Payout Index freeze, before the bot and the newsletter link
+            to the page. No-op when sh404SEF is not installed.
+
+        V2.7.61 — Licence Watch: quarterly licence register with its own editor
+          - New page topic licence-watch (kind='page', 2.7.61.sql seeds the
+            registry row, sort_order 25; hardcoded fallback in models/page.php),
+            template views/page/tmpl/default_licence-watch.php, read-mostly
+            model models/licencewatch.php. Two layers never merged: the
+            declared map (jr_jurisdiction of every LIVE listing: state=1,
+            jr_closed and jr_suspended empty, catid 8) and the verified layer
+            (Operator Atlas current operator links → entities → licences,
+            grouped by regulator family and confidence). Payload also carries
+            the Curacao split (confirmed / pending / unverified claims / ghost
+            sub-licences), Tobique and Anjouan, corporate geography, payment
+            shells, the no-regulator buckets, and the list of listings whose
+            declared licence disagrees with the verified one.
+          - New table #__fec_licence_watch_editions: one row per edition
+            YYYY-MM with status draft|published, frozen payload, diff vs the
+            previous published edition, the Atlas events of the window and the
+            three desk-written sections (overview, quarter, bottom_line, plus
+            an optional title). Drafts render only for the desk user with
+            ?preview=1 (noindex); the live page shows the latest published
+            edition, /online-casinos/licence-watch/YYYY-MM a given one.
+            Every table, figure and register paragraph on the page is
+            generated from the frozen payload; Dataset JSON-LD on published
+            editions; canonical on edition pages.
+          - Router: edition stamps now resolve for any serial topic
+            (fast-payouts, licence-watch), the topic taken from the active
+            menu item's slug; /page/<slug>/YYYY-MM fallback kept.
+          - Task licencewatch.snapshot (key-gated like payoutindex.snapshot,
+            same /home/freeextr/conf/fec_payout_index.php) freezes a draft and
+            emails FEC_PI_NOTIFY_TO; cron on the first day of each quarter.
+          - Desk tab "Licence Watch" in the review dashboard (fec_dash_api.php
+            lw_* and atlas_event_* actions, bundle rebuilt): editions list with
+            Freeze / Refreeze / Edit / Preview / Publish / Delete, the editor
+            with frozen numbers beside three TinyMCE fields, and the Atlas
+            licence-events log (five fields) that feeds the next edition.
+          - assets/page.css: .lw-* (draft banner, logged-events list).
+
+        V2.7.60 — Byline policy: portraits wording
+          - Editorial Standards #bylines and the team-page policy box now
+            say what the portraits are ("stylised renderings of the editors
+            themselves, not stock images or invented faces") instead of
+            promising a production method. Template and menu-param defaults
+            aligned; an already-saved menu item keeps its stored paragraph 2
+            until edited in Options → Bylines. Schema unchanged.
+
+        V2.7.59 — Byline policy: pen names declared
+          - Team page: a "Why our editors write under pen names" box under
+            the Bylines section head. States that every name is a
+            professional pen name of one real editor, that editorial
+            responsibility sits with the publisher, that profiles contain
+            nothing invented and no stock or generated portraits, and
+            points to the correction policy. Copy editable from the menu
+            item params (show_bylines_policy, bylines_policy_label,
+            bylines_policy_p1..p3, bylines_policy_link_label,
+            bylines_policy_url); defaults mirrored in the template.
+          - Profile page: one-line "Professional pen name · one real
+            editor behind it · How our bylines work" in the hero, same
+            .au-meta-row rhythm as the Languages line.
+          - Editorial Standards: new "Bylines and pen names" section
+            (#bylines) after Author credentials, listed in the TOC. Topic
+            stamped v1.1 / 2026-10-09 (2.7.59.sql; hardcoded fallback in
+            models/methodology.php aligned).
+          - JSON-LD: Organization gains publishingPrinciples pointing at
+            the Editorial Standards page, on both the team page and the
+            profile page. The Organization @id is shared across com_authors,
+            so the property propagates to the whole graph. Person nodes
+            unchanged: name, url, jobTitle, description, knowsAbout,
+            knowsLanguage, image only when avatar_url is set; no sameAs.
+          - New assets/bylines.css (two patterns, token fallbacks), loaded
+            by views/authors and views/author with the methodology.css
+            cache-buster pattern. Schema unchanged.
+
+        V2.7.56 — Payout Index card: font fallback chain
+          - renderCard() no longer requires a serif bold: the resolver walks
+            site fonts (name heuristics), then DejaVu / Liberation in the
+            usual system dirs, then any TTF it can find (bold-ish for bold
+            roles), and only gives up with no TrueType file at all. First
+            dry run on the host reported "no TTF fonts found" because only
+            DejaVu Sans is installed there. Schema unchanged.
+
+        V2.7.55 — FEC Payout Index: monthly editions
+          - New table #__fec_payout_index_editions (2.7.55.sql): one row per
+            edition YYYY-MM with the frozen payload (desk, players,
+            collecting, feed totals), the diff vs the previous edition, the
+            card path, the newsletter paragraph and announce_x/tg/dc stamps.
+          - AuthorsModelPayoutindex::snapshot(): freezes the live register,
+            computes the diff (new entries, retests, position moves,
+            departures, player medians published, totals), renders a
+            1200x630 PNG card with GD into /images/payout-index/ (fonts from
+            fec_private/fonts, DejaVu fallback), writes the row and emails the
+            desk via fec_resend_send (newsletter paragraph ready to paste)
+            when FEC_PI_NOTIFY_TO is set.
+          - New controller task payoutindex.snapshot (GET, key from
+            /home/freeextr/conf/fec_payout_index.php, JSON out; params
+            edition=YYYY-MM, force=1, dry=1). Cron: one curl on the 1st.
+          - Edition pages /online-casinos/fast-payouts/YYYY-MM: router parses
+            the trailing stamp under the menu anchor (and /page/fast-payouts/
+            YYYY-MM as fallback); page view loads the edition, sets title,
+            meta, canonical, og:image (card) and the JSON-LD URL; template
+            renders the frozen tables, a "What changed since the previous
+            edition" box, the editions list in the sidebar, no FAQ/Dataset.
+            The live page lists editions and uses the latest card as og:image.
+          - fecxbot_cron.php (shipped alongside) announces each new edition
+            once per channel: Telegram sendPhoto + button, X text (card via
+            og:image), Discord embed with image.
+
+        V2.7.54 — Payout Index: Bing SEO analyzer fixes
+          - Title shortened to "Fastest Paying Online Casinos, Measured"
+            (39 chars, 56 with the site suffix; the FEC Payout Index name
+            stays in the eyebrow, the copy, the ItemList and the Dataset).
+            Meta description cut to 153 chars (the old 232-char text was
+            being truncated with an ellipsis by the view). Reviewer avatar
+            gets a real alt and explicit dimensions. Migration 2.7.54.sql
+            updates the registry row; fallback in models/page.php aligned.
+
+        V2.7.53 — Payout Index: brands still collecting clocks
+          - New third table in the player lane, "Clocks collected so far":
+            every enabled brand with 1..threshold-1 stopped live clocks, with
+            clocks stopped (n of threshold), running now and the last receipt
+            (time, grade, date). Ordered by clocks collected, then recency —
+            never by time. No median, mean or bar under threshold: receipts are
+            already public facts, the aggregate is what the FXClock contract
+            withholds. Data from AuthorsModelPayoutindex::collectingRows()
+            (computed from #__fec_clocks, excludes closed / suspended /
+            blacklisted brands). Latest-receipts list is shown only when this
+            table is empty; stats strip now shows the raw stopped-clock count
+            from the first clock, since the table below explains it.
+            Schema unchanged (2.7.53.sql is a comment).
+
+        V2.7.52 — gutters, the real fix
+          - Root cause found in fec-edition.css: .fecx .au-main { padding:
+            32px 0 48px } is declared after .fecx .wrap { padding: 0 28px } at
+            equal specificity, so on any element carrying both classes the
+            side padding collapses to zero (V2.7.51's longhand on .rg-main
+            could not undo it). page.css now sets .fecx .wrap.rg-main and
+            .fecx .wrap.rg-footer-byline (three classes, no !important) to the
+            .wrap geometry: 28px sides, 18px under 760px. methodology.css gets
+            the equivalent for <section class="au-main wrap"> on .me-page, so
+            FXShield / FXClock / FXCheck methodology pages and the hub align
+            with their hero on desktop and keep gutters on phones.
+            Schema unchanged (2.7.52.sql is a comment).
+
+        V2.7.51 — mobile gutters on trust pages + Payout Index table tweaks
+          - assets/page.css: .rg-main and .rg-footer-byline used the padding
+            shorthand "40px 0 50px", which zeroed the horizontal padding .wrap
+            provides; on phones every kind='page' topic (Responsible Gambling,
+            Affiliate Disclosure, Privacy Policy, FEC Payout Index) rendered
+            flush against the viewport edge. Longhand padding-top/bottom now.
+          - Payout Index tables on phones: casino column min-width, one-line
+            short CTA ("Time yours" / "Add yours"), date column hidden under
+            720px, "Swipe sideways" hint under each table. No data change.
+            Schema unchanged (2.7.51.sql is a comment).
+
+        V2.7.50 — Menu Manager type picker fix
+          - Joomla 2.5 prints each layout <message> inside an unescaped
+            title="..." attribute in the menu-item type picker, so the double
+            quotes in views/page and views/slots default.xml broke the
+            attribute and spilled text + onclick into the list. Messages
+            rewritten without quotes or angle brackets; untranslated
+            COM_AUTHORS_* layout titles replaced with plain labels
+            (Editorial page, Slots RTP index, Editorial dashboard). Schema
+            unchanged (2.7.50.sql is a comment).
+
+        V2.7.49 — FEC Payout Index (fast payout hub)
+          - New editorial page kind='page' slug 'fast-payouts', template
+            views/page/tmpl/default_fast-payouts.php, data from the new
+            read-only models/payoutindex.php. Two lanes, never merged:
+            desk-tested withdrawals from #__fec_payout_tests (measured vs
+            declared, request date from the linked ST_PAYOUT event, Staff
+            Verified badge + link to the FXShield report when first-party
+            verified) and FXClock player medians from #__fec_clock_stats
+            (threshold read from /home/freeextr/fxclock/config.php, default
+            10). Below threshold the page shows the clocks running now and
+            the latest receipts instead of a weak median. Brands flagged
+            closed / suspended / blacklisted in jReviews are excluded from
+            both lanes; unpublished reviews are dropped. ItemList + Dataset
+            + FAQPage JSON-LD. Byline Mark Sullivan, reviewer David Romano.
+            Migration 2.7.49.sql seeds the registry row (sort_order 24);
+            hardcoded fallback added in models/page.php; .pi-* styles
+            appended to assets/page.css (section 14). Menu item to create:
+            com_authors Page view, slug fast-payouts, child of online-casinos.
+
+        V2.7.41 — Privacy Policy page
+          - New editorial page /page/privacy-policy (kind='page', live), written
+            against the site's REAL data flows: server logs + Cloudflare, GA4
+            analytics, newsletter with country segmentation and signed click
+            tracking, reader submissions, affiliate outbound links and the
+            pseudonymous reporting received back. No display-ad networks, no
+            data sale — stated explicitly. Template default_privacy-policy.php
+            follows the trust-page pattern (hero, byline, aside, JSON-LD).
+            Hardcoded fallback added in models/page.php; migration 2.7.41.sql
+            seeds the registry row (sort_order 23, schema WebPage). Site files
+            in this package are built from the DEPLOYED tree (preserves
+            server-side extras edit.php / step.php).
+
+        V2.7.40 — honest upload-error messages
+          - When a file is rejected by PHP's own limits (upload_max_filesize per
+            file, or post_max_size for the whole request), the wizard now says
+            exactly that and names the file, instead of the misleading "No file
+            received". Detects post_max_size overflow (empty $_FILES + large
+            CONTENT_LENGTH) and per-file INI_SIZE errors. Does not change the
+            limits themselves — those are server (php.ini) settings — but makes
+            the cause diagnosable at a glance.
+
+        V2.7.39 — multi-file evidence upload in the verification wizard
+          - The evidence upload now accepts several files at once
+            (input multiple; name="evidence_file[]"). The controller normalizes
+            PHP's column-wise $_FILES structure and processes each file through
+            the existing single-file model.store() (validation, MIME sniffing,
+            safe naming, cataloging unchanged — reused per file). Reports a
+            summary ("N files uploaded") and names any that failed without
+            losing the ones that succeeded. Falls back to the legacy single
+            shape if an older cached form posts a scalar. Bounded by PHP's
+            max_file_uploads / post_max_size on the server.
+
+        V2.7.38 — unify editorial "page" topics into the topic registry
+          - The page topics (responsible-gambling, affiliate-disclosure, about)
+            were hardcoded in models/page.php and not editable from the admin.
+            Migration 2.7.38.sql adds `kind` ('methodology' | 'page') and
+            `schema_type` columns and brings the 3 page topics into
+            #__methodology_topics. The page model already reads them (DB wins,
+            hardcoded fallback). The topic admin now shows two sections —
+            "Methodology topics" and "Editorial pages" — and routes each View
+            link to the correct view (page topics -> view=page, not
+            /methodology/). saveTopic preserves kind on edit so a page can't be
+            silently reclassified. Routing safety: the methodology view rejects
+            page-kind slugs (404) so /methodology/<page-slug> can't render with
+            the wrong template. Migration is re-runnable and never clobbers
+            editor metadata edits.
+
+        V2.7.37 — dossier reads footer entity + named clauses from verification
+          - factSheetData() now opens the committed verification JSON and
+            extracts the footer entity / reg number / licence number / regulator
+            and the specific predatory T&C clauses flagged (by name, from the
+            8-item checklist). The dossier's tier and clauses sections show these
+            real values instead of [DA CONFERMARE] placeholders. The engine
+            tables only hold the tier and a clause count; the qualitative detail
+            lives in the verification payload, which the dossier now reads.
+
+        V2.7.36 — FRank score in dossier + auto divergence flag
+          - factSheetData() now pulls the FRank score (table #__frank, field
+            frankvalue 0-10, plus directory rank) keyed by content id. The
+            dossier's "FRank vs FXShield" section shows the real FRank instead
+            of a placeholder and auto-computes a DIVERGENCE FLAG when the two
+            disagree by >=2 pts on a 0-10 scale (e.g. King Billy: product 8.7,
+            safety 55 -> flagged as the headline angle). The synthetic MD also
+            carries a FRank context line. Defensive: null if the table is absent.
+
+        V2.7.35 — internal Dossier export (detailed)
+          - New "Dossier" button per scored casino, separate from the synthetic
+            "Export MD". Produces a rich INTERNAL working document: baseline
+            field-by-field with points, events with full context (source_type,
+            evidence_note, status — the staff-test vs watchdog distinction),
+            payout detail, and interpretive prompts (FRank-vs-FXShield, tier
+            rationale, payout honesty, clauses, aggregator divergence) with
+            [DA CONFERMARE] placeholders for the editor's verification notes.
+            factSheetData() now also selects baseline points for this.
+
+        V2.7.34 — quick desk-baseline entry (Add desk casino)
+          - New "+ Add desk casino" form in the FXShield cockpit: pick a casino,
+            fill the 9 baseline fields (desk estimate, confidence D) with a live
+            score preview, optionally record one event. Writes baseline
+            (verified_first_party = 0) + optional event; does NOT recompute from
+            the web tier (score appears at next cron / manual engine run).
+            Fact-events pass the dupe_guard unique index. Field codes verified
+            to match the engine exactly (license_tier, adr, entity_registered,
+            license_footer, no_fragmentation, rg_2fa, rg_limits,
+            rg_selfexclusion, tc_fairness).
+
+        V2.7.33 — fix: hide system events from report & MD export
+          - SYSTEM_RECALC (and any future system/technical timeline annotation,
+            weight 0) is now filtered out of the Verification Report's
+            "Recorded events" and the MD fact-sheet's ledger list. These are
+            internal formula-version markers, not facts about the casino. The
+            events section also hides entirely when no substantive events remain.
+
+        V2.7.32 — fix: Verification Report missing verification date
+          - factSheetData() now selects verified_at from the baseline, so the
+            report's "Verification date" row renders the real date instead of
+            a dash. Template guards against zero/empty datetimes.
+
+        V2.7.31 — Verification Report: SEO title + meta
+          - The report page now sets a proper document title ("[Casino] —
+            FXShield Verification Report | FreeExtraChips"), meta description,
+            explicit robots index,follow, and a canonical URL. Indexable on
+            purpose (unique, verifiable content). A JS fallback guarantees the
+            title (and thus the print-to-PDF filename) even if tmpl=component
+            stripped the document head on the active site template.
+
+        V2.7.30 — FXShield Verification Report (print-ready)
+          - New "Report" button in the FXShield admin cockpit, shown only for
+            first-party verified casinos. Opens a sober, institutional one-page
+            verification record (view=fxreport): real score/tier/confidence,
+            licence cap, payout speed (PRG), and recorded ledger events
+            INCLUDING negatives. Not an approval seal - an attestation that a
+            first-party check happened. Print to PDF via the browser; footer
+            points back to the methodology page for authenticity. Desk-only
+            casinos are refused (no verification = no report).
+
+        V2.7.29 — verification pre-fill from last committed (truthful)
+          - Starting a new verification for an already-verified casino now
+            pre-fills every field from the last committed verification, so the
+            editor confirms/edits instead of re-typing. Carried fields are
+            flagged "not yet reconfirmed" with a banner; each step save clears
+            the fields reviewed. Crucially, verified_first_party dates are NOT
+            faked: a field never reconfirmed this session keeps its previous
+            verified_at, so confidence/freshness stay honest.
+
+        V2.7.28 — FXShield fact-sheet export (MD)
+          - New "Export MD" button per scored casino in the FXShield admin
+            cockpit. Downloads a Markdown fact-sheet carrying the six
+            fxshield_* fields for the review generator plus context (baseline
+            breakdown, ledger events, payout test, additional licences,
+            evidence count). Read-only. Flags first-party vs desk-only.
+
+        V2.7.27 — additional licences (multi-licence operators)
+          - Step 1 now accepts repeatable additional licences (regulator +
+            number), exhibition only: they do NOT affect tier or score. The
+            principal licence still drives the tier. Shown in the step 6
+            preview and on the public panel as "Also licensed by ...". For
+            multi-licence operators like Videoslots and BitStarz.
+
+        V2.7.26 — evidence gallery B4.3 (review step)
+          - Step 6 (review) now shows an evidence gallery: thumbnails for
+            public image files (click to open), a PDF tile for public PDFs,
+            and a lock marker for private files (withdrawal/KYC) which are
+            never rendered, only noted. Each tile tagged public/private.
+          - AuthorsModelVerificationEvidence::listPublicForCasino(): returns
+            ONLY public files from COMMITTED verifications — the safe source
+            for the public casino page. Drafts and private files can never
+            surface (verified by query test).
+          - Gallery styles in dashboard.css (fxv-gallery, fxv-ev-card).
+          - The public casino-page hook is intentionally not wired yet: it
+            depends on the jReviews casino template, confirmed separately.
+
+        V2.7.25 — evidence upload UI B4.2 (per-step in the wizard)
+          - Each wizard step (1-5) now shows an evidence box for that step's
+            field: the files already attached (with type/size and a delete
+            button) and an upload control. Upload and delete are their own
+            POST tasks (verification.uploadEvidence / .deleteEvidence), gated
+            + CSRF, isolated from the field-save flow so a failed upload never
+            loses typed fields. Each box is tagged public ("publishable as
+            proof") or private ("never published") so the editor sees where a
+            file will go before uploading.
+          - Controller reads the file from $_FILES directly (reliable across
+            Joomla versions) and routes via AuthorsModelVerificationEvidence.
+          - Deletes allowed only pre-commit; committed verifications are locked.
+          - Evidence-box styles in dashboard.css (fxv-ev-* namespace).
+
+        V2.7.24 — evidence upload backend B4.1 (no UI yet)
+          - New table #__fec_verification_evidence (2.7.24.sql): catalog of
+            uploaded screenshots per verification — verification, casino, step,
+            field, visibility, original label, random stored name, real MIME,
+            size, uploader, timestamp.
+          - New AuthorsModelVerificationEvidence: secure upload. Validates by
+            real file content (finfo), not extension — a PHP file renamed .jpg
+            is rejected. Routes public vs private BY FIELD (system-decided):
+            footer/RG/ADR/T&C -> public images/fxshield; withdrawal/KYC ->
+            private /home/freeextr/fxshield-evidence (outside webroot, deny).
+            Files stored under a random unguessable name; original name kept
+            only as a label. 8 MB cap; orphan file removed if cataloging fails.
+          - Backend only: the per-step upload UI (B4.2) and the review/public
+            gallery (B4.3) build on this.
+
+        V2.7.23 — verification commit B3.2 (write-through)
+          - The step-6 Commit button is now live. AuthorsModelVerification::
+            commitVerification() writes the preview through, transactionally:
+            baseline rows upserted with verified_first_party=1 and today's
+            date + per-field evidence URL; the payout event into the ledger
+            (dated to the withdrawal request, source_type=staff_test); the
+            payout_tests row linked to that event; optional KYC-obstruction
+            event; then the draft -> committed.
+          - Anti-double-commit (a committed row refuses re-commit); whole
+            write wrapped in a transaction with rollback on any failure.
+          - No score recompute from the web tier (no shell_exec): the weekly
+            cron or a manual safety-engine.php --casino=ID recalculates. The
+            success message says so.
+          - Re-verifying a casino upserts its baseline (no duplicate rows),
+            so periodic re-checks update rather than accumulate.
+
+        V2.7.22 — add Tobique (TGC) to the regulator list
+          - Tobique Gaming Commission added to regulatorTierMap at T4, in the
+            exotic group alongside Anjouan. New 2023 sovereign regulator
+            (Tobique First Nation, Canada); direct-to-operator licensing and
+            fund segregation, but too young and outside domestic regimes to
+            sit at T3. A publicly verifiable seal (validate.thetgc.ca) can be
+            recorded as evidence on the verification.
+
+        V2.7.21 — wizard step 1: regulator dropdown drives the tier
+          - The free-text "Regulator" field is now a dropdown of 18 common
+            regulators (AuthorsModelVerification::regulatorTierMap), each
+            mapped to its licence tier. Picking a regulator auto-selects the
+            verified tier, removing the class of error where a T1 tier could
+            sit next to an offshore/corporate entity.
+          - The tier stays overridable (edge cases exist), but the wizard now
+            warns when: (a) the licence was "not found" in the registry yet the
+            tier still equals the regulator's implied tier (should drop), or
+            (b) a manual tier is higher than the regulator supports.
+          - New field regulator_key persists the choice; the clean regulator
+            label is still stored in 'regulator' for the record.
+
+        V2.7.20 — verification commit preview B3.1 (read-only step 6)
+          - Wizard gains step 6: a read-only review showing exactly what a
+            commit will write — baseline field points and total, the payout
+            ledger event, the Payout Reality Gap, and the confidence factors.
+            Step 5 "Save & review" advances here. Nothing is written yet; the
+            commit button is present but disabled (B3.2 wires it).
+          - AuthorsModelVerification::computeCommitPreview() translates a draft
+            into baseline/event/PRG/confidence, with warnings for incomplete
+            data. The same structure will drive the actual write, so preview
+            and commit cannot diverge.
+
+        V2.7.19 — fix verification wizard step layout name
+          - Renamed the wizard step template from tmpl/step.php to
+            tmpl/default_step.php. Joomla resolves a layout passed as 'step'
+            to the file default_step.php (the default_ prefix is implicit for
+            sub-layouts); the un-prefixed name raised "Layout default_step not
+            found". Matches the methodologyadmin convention (default_edit.php).
+
+        V2.7.18 — fix verification wizard task dispatch
+          - Wizard forms now submit task="verification.start" /
+            "verification.saveStep" (dotted controller.method form) instead of
+            separate controller= + task= fields. JController::getInstance only
+            routes to the sub-controller when the task carries the dotted
+            prefix; the split fields left task empty, so the POST fell through
+            to a bare index.php?option=com_authors with no view. Matches how
+            methodologyadmin.save already dispatches.
+
+        V2.7.17 — FXShield admin views forced non-SEF
+          - The cockpit (fxshieldadmin) and verification wizard now use raw
+            index.php?option=com_authors URLs everywhere — links, form actions,
+            and controller redirects. JRoute/SEF resolution was collapsing the
+            wizard POST redirect onto /authors; these are internal backend
+            screens that never need SEF (same treatment com_bonuses gives its
+            private dashboard tasks).
+          - Router no longer emits or parses fxshield-admin / fxshield-verify
+            segments; sh404SEF leaves the raw URLs untouched.
+          - HTML attribute contexts use &amp;; controller redirects use raw &.
+
+        V2.7.16 — fixes for the B2 verification wizard
+          - AuthorsModelVerification now extends JModel. JController's dispatch
+            instantiates the task's model and calls JModel methods (setState);
+            the bare class crashed with "undefined method setState()". All
+            other component models already extend JModel.
+          - Migration SQL comments slimmed to single-line form (2.7.12,
+            2.7.14): a comma-bearing prose comment was mis-parsed by Joomla's
+            SQL splitter and raised error 1064 on install.
+
+        V2.7.15 — FXShield verification wizard B2 (multi-step UI)
+          - New gated view=verification at /fxshield-verify: a per-page,
+            five-step wizard (footer & licence / RG tools / ADR / T&C clauses /
+            test withdrawal) with a progress bar. Saves to the draft at every
+            step, so a verification can be paused after requesting a withdrawal
+            and resumed when it lands. Launcher lists scored casinos to start
+            against and open drafts to resume.
+          - New AuthorsControllerVerification: start + saveStep tasks, each
+            hard-gated by isAuthorized() AND a Joomla form token (CSRF). POST
+            inputs are typed and whitelisted per step; tri-state radios map to
+            true/false/null, clause checkboxes to booleans.
+          - Cockpit (/fxshield-admin) gains a "Verify" action column.
+          - Wizard styles added to dashboard.css (fxv-* namespace).
+          - Still NO write-through to baseline/events/payout_tests: B2 collects
+            into the draft only. The commit that writes a real score (B3) is
+            the next release; the final step notes this.
+
+        V2.7.14 — FXShield verification workflow B1 (draft storage)
+          - New table #__fec_verifications (2.7.14.sql): historical archive of
+            first-party verification sessions, one row per attempt, never
+            overwritten. JSON payload for partial progress across days while a
+            test withdrawal matures. status draft -> committed (one-way).
+          - New AuthorsModelVerification: create/load/save-progress/list draft
+            CRUD with a canonical 38-field schema (the single source of truth
+            shared with the future commit step). POST keys whitelisted to the
+            schema; wizard step is monotonic (never regresses); committed rows
+            immutable. All prepared/quoted queries.
+          - No UI yet: this is the storage layer only. The multi-step wizard
+            with progress bar (B2) and the write-through commit to baseline/
+            events/payout_tests (B3) build on top of this.
+
+        V2.7.13 — FXShield admin cockpit (Phase A, read-only)
+          - New gated frontend view=fxshieldadmin at /fxshield-admin: a
+            read-only status table of every casino with an FXShield footprint
+            (score, tier, confidence, baseline completeness X/9, active events,
+            PRG, 30-day delta, caps, last first-party check date). Summary
+            strip surfaces the work queue: scored, not-yet-scored, need-
+            verification (confidence D), incomplete baseline, confidence A/B/C/D
+            spread. Rows at confidence D are highlighted.
+          - AuthorsModelMethodology::getFxshieldDashboard(): one row per casino
+            across the fec_* tables joined to #__content titles; silent
+            degradation to empty if the engine tables aren't deployed.
+          - Gated to DASHBOARD_ALLOWED_USERS (same as methodologyadmin);
+            noindex,nofollow. No write paths — the verification workflow with
+            progress (Phase B) and generic event entry (Phase C) come later.
+          - Cockpit styles appended to dashboard.css (fxa-* namespace).
+          - No SQL migration: this release reads existing tables only.
+
+        V2.7.12 — FXShield methodology page
+          - New /methodology/fxshield topic publishing the complete FXShield
+            safety-index formula (SI v1.0): baseline weights, hard caps, event
+            taxonomy with half-lives, decay, FXCheck signal, Payout Reality
+            Gap, group-risk transfer rates, A-D confidence grades, dispute
+            process and version history.
+          - New tmpl/default_fxshield.php following the fxcheck/rtp template
+            family (au-*/me-* primitives, TOC sidebar, details/summary FAQ).
+            Emits FAQPage JSON-LD (5 Q&A) alongside the standard Article graph.
+          - AuthorsModelMethodology::getFxshieldStats(): live counters from
+            the safety-engine tables (#__fec_safety_scores /
+            #__fec_safety_events) with silent degradation while the engine
+            isn't deployed. Pre-launch the stats strip renders static formula
+            facts (scale, event-type count, confidence range) instead of
+            zeros; it switches to live counters automatically at first
+            engine run. engine_live flag exposed to the template.
+          - Generic .me-table style added to methodology.css for the formula
+            tables (me-status-table is FXCheck-specific).
+          - Seeded via 2.7.12.sql as status='draft' (hidden, view 404s).
+            Launch checklist: verify 'mark-sullivan' exists in
+            #__casino_authors (byline degrades silently if missing), flip
+            status to 'live' + set last_updated from /methodology-admin,
+            then add the llms.txt entry.
+
+        V2.7.11 — Asset cache-busting fix
+          - Latent bug: $manifestVersion in dashboard/view.html.php was
+            HARDCODED to '2.7.2' and never bumped. Browsers cached
+            dashboard.js?v=2.7.2 across releases 2.7.3 through 2.7.10, so
+            any JS-side feature shipped in those versions (new dashboard
+            controls, the Create New Game form added in 2.7.10) appeared
+            "broken" until users hard-refreshed. Other view files had no
+            cache-buster at all on their CSS.
+          - Fix: every addStyleSheet/addScript across all views now uses
+            filemtime() of the asset file as the version stamp. Cache
+            invalidates automatically on every file update -> no more
+            manual bump, no more stale-asset bugs.
+          - Files touched: site/views/dashboard, slot, slots, methodology,
+            methodologyhub, methodologyadmin, page.
+
+        V2.7.10 — Create new game from dashboard
+          - New "Create new game" CTA on the Add Slot search panel. Appears
+            both when search returns no results and below existing matches.
+          - Inline form with game_name (pre-filled from search query if any),
+            provider selector populated from distinct rows in jos_games, and
+            a type select (slot / scratchcards). Selecting "Add a new
+            provider" reveals a free-text input.
+          - Backend: AuthorsModelDashboard::getProviders() and
+            createGameAndStub() inserts into #__games (with MAX(gid)+1, no
+            AUTO_INCREMENT in the legacy schema) then creates the slot_rtp
+            stub via the existing createSlotStub flow. Idempotent on
+            (game_name, provider_value): re-running with same inputs reuses
+            the existing gid.
+          - Provider value is normalised to the *slug* format the legacy
+            table expects (lowercase, hyphenated, asterisks-wrapped).
+          - Two new controller tasks: listProviders (GET) and createGame
+            (POST + CSRF).
+
+        V2.7.9 — Volatility ENUM expansion (Very High + Extreme)
+          - #__slot_rtp.volatility ENUM extended from 5 to 7 values:
+            adds 'very-high' and 'extreme' for modern high-volatility slots
+            (Reactoonz 10/10, Dead or Alive 2, NetEnt MAX titles).
+          - Dashboard Add Slot form selector includes the two new values.
+          - Frontend display goes through a new AuthorsHelper::volatilityLabel()
+            mapper that humanises slugs ('very-high' -> 'Very High',
+            'med-high' -> 'Medium-High'). Unknown values fall back to a safe
+            ucwords/replace formatting.
+          - SQL migration 2.7.9.sql is idempotent. Existing rows with legacy
+            values remain valid.
+
+        V2.7.8 — Methodology cards: version + last_updated + frank refresh
+          - The /methodology hub now renders each card with its version and
+            last_updated date, separated by a thin top border, formatted as
+            "v2.0 · updated 28 May 2026". Reads version/last_updated columns
+            that already exist on #__methodology_topics; the model has been
+            loading them since 2.7.3, only the template was missing the render.
+          - Leading 'v' is stripped before render so legacy values like 'v3'
+            don't show as 'vv3'.
+          - SQL migration 2.7.8.sql refreshes the FRank record (status=external,
+            external_url=/who-is-frank, version=2.0, last_updated=2026-05-28,
+            sort_order=1) and reorders all four cards: FRank, Editorial
+            Standards, RTP Verification, FXCheck.
+          - Backward compatible: records without version or last_updated render
+            without the meta row, identical to 2.7.7 layout.
+
+        V2.7.7 — Edit form layout filename fix
+          - Renamed views/methodologyadmin/tmpl/edit.php to default_edit.php.
+            Joomla layout templates follow the naming pattern
+            <layout>_<tpl>.php where <layout> defaults to 'default' and
+            <tpl> is the parameter passed to parent::display($tpl).
+            display('edit') therefore looks up default_edit.php, not edit.php.
+            With the wrong name, JView::display() threw
+            "Layout default_edit not found" on the Edit action.
+          - Lesson (regression #29): Joomla layout files for the same
+            view but different sub-templates must use the
+            default_<suffix>.php naming convention, not just <suffix>.php.
+
+        V2.7.6 — Controller whitelist fix
+          - Added 'methodologyadmin' to the allowedViews whitelist in
+            controller.php. Without this, the front controller silently
+            forced view=authors for any methodologyadmin request,
+            regardless of menu/router/Itemid configuration.
+          - Root cause of the "stuck on authors page" issue debugged
+            in V2.7.3 through V2.7.5. The router fix and menu item
+            creation were correct but never reached the view dispatch
+            because controller.php rejected the view name upstream.
+          - Lesson: when adding any new view to the component, four
+            places must be updated together: view class, template,
+            controller.php allowedViews whitelist, and router.php
+            BuildRoute/ParseRoute. Missing the whitelist is the silent
+            failure case.
+
+        V2.7.5 — Methodology admin route hardening
+          - Changed the SEF URL for view=methodologyadmin from
+            /editorial/methodologies (V2.7.4) to /methodology-admin
+            (single segment). The /editorial/* path was being captured
+            by an existing Joomla menu alias 'editorial' before this
+            router could run, forcing view=authors regardless of the
+            component router's intent.
+          - Single-segment URLs sit at the same precedence level as the
+            top-level component routes (/authors, /slots, /methodology)
+            and don't conflict with multi-segment menu hierarchies.
+          - Lesson: when adding new SEF URLs, check the live menu tree
+            first. Same regression family as the /slots/p/<provider>
+            path-routing fix in V2.6.x — Joomla menu aliases beat
+            component routers on path prefix match.
+
+        V2.7.4 — Router fix for methodologyadmin
+          - Added SEF route /editorial/methodologies → view=methodologyadmin
+            in router.php (both BuildRoute and ParseRoute).
+          - Fixes redirect bug where /index.php?option=com_authors&view=methodologyadmin
+            was being canonicalised by Joomla to /authors?view=methodologyadmin
+            (default Itemid fallback) and then ParseRoute on the 'authors'
+            segment forced view=authors, silently dropping the requested
+            view. Same redirect chain that affects any new view added to
+            the component without an explicit router branch.
+          - Lesson: every new front-end view name needs an entry in both
+            BuildRoute and ParseRoute, even for admin/non-public views
+            that aren't intended to be SEF-friendly. The non-SEF raw URL
+            still gets routed through SEF resolution and falls into the
+            default Itemid trap.
+
+        V2.7.3 — Methodology pages admin (Phase 1: metadata)
+          - New table #__methodology_topics (slug, status, title, tagline,
+            short_description, description, author_slug, reviewer_slug,
+            version, last_updated, tmpl, external_url, sort_order,
+            created_at, updated_at).
+          - Migration 2.7.3.sql seeds the four current topics (fxcheck,
+            rtp-verification, editorial-standards, frank) via INSERT IGNORE.
+          - AuthorsModelMethodology::getTopics() now reads from the DB
+            table, with the hardcoded array preserved as fallback for
+            zero-downtime upgrades.
+          - AuthorsModelMethodology::saveTopic() persists metadata changes
+            (UPDATE if slug exists, INSERT otherwise).
+          - New frontend admin view methodologyadmin with:
+              · default.php — list of topics with status badges, byline
+                summary, last-updated stamp, and Edit/View action buttons
+              · edit.php — form for status, title, tagline, descriptions,
+                author/reviewer dropdowns (from #__casino_authors active),
+                version, last_updated (with "Today" bump button), tmpl,
+                external_url, sort_order
+          - New controller methodologyadmin.php with save task. CSRF token
+            required, slug pattern enforced, title required.
+          - Dashboard header gets a "Methodology pages" link (ghost btn,
+            new .dashx-btn-link CSS class).
+          - Both view and controller gate on AuthorsModelDashboard::isAuthorized()
+            — same allowed-user list as the RTP dashboard.
+
+          Body content of each methodology page remains in the template
+          file (default_<slug>.php) — Phase 1 covers only the metadata
+          layer that changes most often. Phase 2 (DB-backed body sections
+          and FAQ CRUD) is a separate, optional follow-up.
+
+        V2.7.2 — Editorial Standards page CSS fix
+          - Patch on default_editorial-standards.php template (introduced
+            in 2.7.1). The template was using author-page class names
+            (au-hero-card, au-hero-body, au-sidebar children) and missing
+            the .fecx wrapper, so the methodology-scoped CSS in
+            methodology.css didn't apply.
+          - Now mirrors default_rtp-verification.php scaffolding precisely:
+              wrapper div.fecx.me-page, me-hero-card / me-hero-body,
+              eyebrow / me-title / me-tagline typography, au-sidebar with
+              au-side-card children, .me-status-table div-grid pattern
+              (4-column) instead of HTML table, .me-numbered for the
+              source-tier list, and the "Spot an error?" CTA card.
+
+        V2.7.1 — Editorial Standards methodology page
+          - Promoted editorial-standards from coming_soon to live in the
+            methodology registry. Authored by Sabrina O'Connell, reviewed
+            by Ethan Walker. Version v1.
+          - New template default_editorial-standards.php covers:
+              1. Editorial independence (affiliate vs editorial wall)
+              2. Source hierarchy (4 tiers: provider primary, regulator
+                 certificate, in-game observation, operator T&C)
+              3. Fact-checking workflow (5-step author + peer review pipeline)
+              4. Update cadence (per-data-type refresh targets: 180d for RTP,
+                 30d for bonus terms, 48h for country restrictions, etc.)
+              5. Correction policy (visible correction notes for material
+                 errors, change-log for minor edits)
+              6. Conflict-of-interest policy (financial relationships, gift
+                 acceptance, editor-as-player rules, personal SEO exclusions)
+              7. Author credentials (specialism areas + bylined work links)
+              8. FAQ (7 entries covering commission concerns, casino
+                 selection, aggregator exclusion, dispute resolution)
+          - Sidebar TOC with 8 anchors + related methodologies links
+            (RTP, FXCheck, affiliate disclosure, hub).
+          - URL: /methodology/editorial-standards (or
+            ?option=com_authors&view=methodology&topic=editorial-standards).
+          - Completes the methodology hub coverage: How we verify (hub),
+            RTP verification, FXCheck, Editorial standards. The "trust
+            hub" architecture is now feature-complete from a content
+            standpoint.
+
+        V2.7.0 — Author profile RTP verifications tab
+          - New 5th tab on /authors/<slug>: "RTP verifications".
+            Server-routed (?tab=rtp-verifications), default tab unchanged.
+          - New hero stat in the strip: "RTP verifications" count, sitting
+            between Casinos covered and FXCheck reports. Strip grows from
+            4 to 5 columns; flex-wrap handles narrow viewports.
+          - Tab content: list of slots verified by this author, sorted by
+            last_verified_date desc. Each row links to /slots/<slug> and
+            shows game name, provider (uppercased mono eyebrow), RTP
+            value (single or multi-tier range), and relative time since
+            last verification.
+          - Empty state: "X is currently building their verification log"
+            for authors with 0 published verifications.
+          - getCountsForAuthor() extended to return rtp_verifications,
+            using the existing #__slot_rtp.verified_by_author_id column.
+            Filtered by published=1 AND retired=0 for accurate live count.
+          - getVerifiedSlots() new method, INNER JOIN to #__games for
+            game_name + provider_name, LIMIT 50.
+
+          Bidirectional EEAT signal: slot detail pages already show
+          "Verified by <Author>" linking to the author profile. Now the
+          reverse path is closed — author profile lists their verified
+          slots. Each verification is internally cross-linked, multiplying
+          the link-equity surface and giving AI Mode + Googlebot a clear
+          authorship pattern to validate expertise claims.
+
+        V2.6.9 — Dashboard pagination + state visibility
+          - Paginated slot list: 50 per page, prev/next nav with current
+            range "1-50 of 858", preserves search + status filter across
+            pages. Default limit reduced from 100 to 50 for usability.
+          - New AuthorsModelDashboard::getSlotsCount() returns total
+            matching the search filter (not the status filter, which is
+            computed PHP-side).
+          - At-a-glance state badge next to each slot name:
+              LIVE     -> published=1 retired=0
+              DRAFT    -> has_rtp record but not published
+              RETIRED  -> retired=1 (yellow badge)
+              (no badge) -> no slot_rtp record yet
+          - "Visit" link (small launch icon) on each LIVE slot row,
+            opens /slots/<slug> in a new tab. Skipped on draft/retired
+            so the icon only appears where it's actionable.
+
+        V2.6.8 — Retired slot flag
+          - New columns on #__slot_rtp: retired (TINYINT), retired_at
+            (DATETIME), retired_reason (VARCHAR 255). Migration 2.6.8.sql
+            is idempotent (ADD COLUMN IF NOT EXISTS).
+          - Dashboard: "Mark as retired" checkbox in the slot form, plus
+            reason input that appears when retired is checked. retired_at
+            is set automatically on first retire (same pattern as
+            published_at).
+          - Retired flag is orthogonal to published:
+              published=1 retired=0 -> normal live page (default after publish)
+              published=1 retired=1 -> visible with banner + noindex
+              published=0 retired=1 -> hidden entirely from public site
+              published=0 retired=0 -> draft
+          - Public /slots/<slug> detail page: prominent banner at top of
+            main content when retired ("Slot retired" + reason + date).
+            robots meta switches to noindex.
+          - Public /slots index excludes retired slots from listing and
+            from provider filter aggregation.
+          - fec_common_lib_26 slot link helper also excludes retired
+            slots from URL resolution -> "Game" row on bonus pages stays
+            plain text for retired slot references.
+
+        V2.6.7 — Dashboard "Add slot" editor + accumulated fixes
+          - New "+ Add slot" button in the dashboard header opens a modal
+            search over #__games (slot type, not already in #__slot_rtp).
+            Click a result -> creates a stub row in #__slot_rtp with auto-
+            slugified URL segment and opens it in the editor panel.
+          - searchGames + addSlot AJAX tasks with CSRF guard.
+          - Active bonuses on slot pages: filter via LEFT JOIN on
+            #__jreviews_content with jr_closed NOT LIKE '%yes%' (jReviews
+            uses asterisk-delimited multi-value pattern; previous = 'yes'
+            check missed *yes* values).
+          - Slot link in fec_common_lib_26 (com_bonuses bonus details
+            specifics card): "Game" row now links to /slots/<slug> with an
+            info icon when the slot is published in com_authors. Other
+            specifics rows (e.g. Game Provider) remain plain text via the
+            is_slot_link flag.
+          - Provider filter on /slots: path-based routing /slots/p/<slug>
+            replaces query-string filter to bypass canonical-enforcement
+            SEF plugins that were stripping ?provider=X and redirecting
+            to the home page.
+          - Author signature card on slot detail pages (Verified by row
+            with avatar, role, bio, profile link).
+          - "Verified by" select in the dashboard form persists correctly
+            (controller now reads the form value before falling back to
+            the logged-in user).
+          - dashboard.js renderAuthorSelect uses window.FXDashboard
+            directly instead of the FXD alias from outer closure.
+          - Dashboard asset cache-buster derived from manifest version.
+          - FAQ in /methodology/rtp-verification wrapped in .me-faq
+            container so the methodology.css details/summary styles apply.
+
+        V2.6.6 - V2.6.0 — see git history
+    ]]></description>
+
+    <!-- DB schema install: runs on fresh install. IF NOT EXISTS guards make
+         this safe even if tables already exist (e.g. when Joomla re-installs
+         the same version). -->
+    <install>
+        <sql>
+            <file driver="mysql" charset="utf8">sql/install/mysql/install.mysql.utf8.sql</file>
+        </sql>
+    </install>
+
+    <!-- DB schema updates: Joomla 2.5/3.x picks up /admin/sql/updates/mysql/X.X.X.sql
+         files matching versions newer than the currently-installed one and runs
+         them in sequence on Extensions → Manager → Update. -->
+    <update>
+        <schemas>
+            <schemapath type="mysql">sql/updates/mysql</schemapath>
+        </schemas>
+    </update>
+
+    <!-- Site (frontend) files: copied to /components/com_authors/ -->
+    <files folder="site">
+        <filename>authors.php</filename>
+        <filename>controller.php</filename>
+        <filename>router.php</filename>
+        <folder>assets</folder>
+        <folder>controllers</folder>
+        <folder>helpers</folder>
+        <folder>models</folder>
+        <folder>views</folder>
+    </files>
+
+    <!-- Admin section: minimal, no backend UI. SQL migrations live here. -->
+    <administration>
+        <menu>COM_AUTHORS</menu>
+        <files folder="admin">
+            <filename>config.xml</filename>
+            <filename>index.html</filename>
+            <folder>sql</folder>
+        </files>
+    </administration>
+</extension>

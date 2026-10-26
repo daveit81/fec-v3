@@ -1,0 +1,1 @@
+-- com_authors 2.7.44 -- adds LIC_CHANGED event code and cockpit edit-baseline link, schema unchanged

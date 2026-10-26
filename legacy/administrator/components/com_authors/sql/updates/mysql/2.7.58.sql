@@ -1,0 +1,1 @@
+-- com_authors 2.7.58 -- cockpit recalc-all task and sharper per-casino recalc diagnosis, schema unchanged

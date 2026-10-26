@@ -1,0 +1,1 @@
+-- com_authors 2.7.53 -- Payout Index: clocks collected so far table for brands under the FXClock threshold, schema unchanged

@@ -1,0 +1,2 @@
+-- com_authors 2.7.54 -- Payout Index title and meta description shortened for Bing (title 39 chars, meta 153 chars), schema unchanged
+UPDATE `#__methodology_topics` SET `title` = 'Fastest Paying Online Casinos, Measured', `description` = 'Fastest paying online casinos ranked by measured withdrawal time: desk tests from request to receipt vs the declared window, plus FXClock player medians.' WHERE `slug` = 'fast-payouts' AND `kind` = 'page';

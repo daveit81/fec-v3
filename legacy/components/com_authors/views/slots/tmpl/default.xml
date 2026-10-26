@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+    <!-- Menu Manager renders <message> inside an unescaped title="..." attribute:
+         never use double quotes or angle brackets in it. -->
+    <layout title="Slots RTP index (com_authors)">
+        <message><![CDATA[Public index page of all published slot RTP records. URL: /slots (set the menu item alias to slots for the canonical clean URL). Slot detail pages under /slots/ are resolved automatically by the component router once this menu item exists as the anchor.]]></message>
+    </layout>
+    <fields name="request">
+        <!-- No params required; the index lists all published slots
+             ordered by active bonus count. Provider filter is a
+             query string on the live URL (?provider=NetEnt). -->
+    </fields>
+</metadata>

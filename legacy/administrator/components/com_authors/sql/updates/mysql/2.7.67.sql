@@ -1,0 +1,1 @@
+-- com_authors 2.7.67 -- blog desk drops links to 410 paths on save (helper only), schema unchanged

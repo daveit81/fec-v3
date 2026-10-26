@@ -1,0 +1,1 @@
+-- com_authors 2.7.68 -- blog desk uploads to images/posts/YYYY/ (model only), schema unchanged

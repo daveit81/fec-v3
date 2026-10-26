@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension version="2.5" type="template" client="site">
+  <name>fec_v2_preview</name>
+  <creationDate>2026-01-23</creationDate>
+  <author>FreeExtraChips</author>
+  <authorEmail>dfiocchetta@hotmail.it</authorEmail>
+  <version>1.0.0</version>
+  <description>FEC v2 preview template (logged-in only)</description>
+
+  <files>
+    <filename>index.php</filename>
+    <filename>component.php</filename>
+    <filename>error.php</filename>
+    <folder>css</folder>
+    <folder>js</folder>
+    <folder>html</folder>
+  </files>
+
+  <positions>
+    <position>fec_top</position>
+    <position>fec_header</position>
+    <position>fec_nav</position>
+    <position>fec_above</position>
+    <position>fec_below</position>
+    <position>fec_footer</position>
+    <position>debug</position>
+  </positions>
+
+  <config>
+    <fields name="params">
+      <fieldset name="basic">
+        <field name="show_header" type="radio" default="1" label="Show header">
+          <option value="1">Yes</option>
+          <option value="0">No</option>
+        </field>
+        <field name="show_footer" type="radio" default="1" label="Show footer">
+          <option value="1">Yes</option>
+          <option value="0">No</option>
+        </field>
+        <field name="container_width" type="list" default="1200" label="Container width">
+          <option value="960">960</option>
+          <option value="1140">1140</option>
+          <option value="1200">1200</option>
+          <option value="1360">1360</option>
+        </field>
+        <field name="show_debug" type="radio" default="0" label="Show debug module position">
+          <option value="1">Yes</option>
+          <option value="0">No</option>
+        </field>
+      </fieldset>
+    </fields>
+  </config>
+</extension>

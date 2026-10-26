@@ -1,0 +1,1 @@
+-- com_authors 2.7.64 -- editions sidebar rows stacked (CSS only), schema unchanged

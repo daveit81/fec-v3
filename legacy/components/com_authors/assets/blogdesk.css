@@ -1,0 +1,299 @@
+/* com_authors — Blog desk (V2.7.66)
+ *
+ * Front-end editor of the Casino Bonus Blog. Scoped to .fecx .bdk; tokens
+ * from fec-edition.css with fallbacks so the page reads correctly even when
+ * the editorial stylesheet is not loaded on this route.
+ */
+
+.fecx .bdk {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--ink, #14110d);
+  box-sizing: border-box;
+}
+.fecx .bdk *, .fecx .bdk *::before, .fecx .bdk *::after { box-sizing: border-box; }
+
+/* ---- header ------------------------------------------------------------ */
+.fecx .bdk-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--rule, rgba(20, 17, 13, .1));
+}
+.fecx .bdk-eyebrow {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent-ink, #0b6b62);
+  margin-bottom: 6px;
+}
+.fecx .bdk-eyebrow a { color: inherit; text-decoration: none; border-bottom: 1px solid rgba(11, 107, 98, .35); }
+.fecx .bdk-head h1 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 30px;
+  line-height: 1.15;
+  letter-spacing: -.01em;
+  margin: 0 0 8px;
+}
+.fecx .bdk-sub { margin: 0; max-width: 640px; font-size: 14px; line-height: 1.55; color: var(--ink-3, #5a5347); }
+.fecx .bdk-head-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ---- buttons / chips ----------------------------------------------------- */
+.fecx .bdk-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--rule, rgba(20, 17, 13, .14));
+  background: var(--paper, #fff);
+  color: var(--ink, #14110d);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.fecx .bdk-btn:hover { border-color: var(--accent, #0b6b62); color: var(--accent-ink, #0b6b62); }
+.fecx .bdk-btn-primary { background: var(--ink, #14110d); color: #fff; border-color: var(--ink, #14110d); }
+.fecx .bdk-btn-primary:hover { background: var(--accent, #0b6b62); border-color: var(--accent, #0b6b62); color: #fff; }
+.fecx .bdk-btn-small { padding: 7px 12px; font-size: 13px; }
+.fecx .bdk-btn-ghost { background: transparent; }
+.fecx .bdk-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.fecx .bdk-chip {
+  padding: 6px 12px;
+  border-radius: 100px;
+  border: 1px solid var(--rule, rgba(20, 17, 13, .14));
+  font-size: 13px;
+  color: var(--ink-2, #3a342c);
+  text-decoration: none;
+  background: var(--paper, #fff);
+}
+.fecx .bdk-chip.active { background: var(--ink, #14110d); color: #fff; border-color: var(--ink, #14110d); }
+
+/* ---- toolbar ------------------------------------------------------------- */
+.fecx .bdk-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+}
+.fecx .bdk-search { display: flex; gap: 6px; flex: 1 1 260px; }
+.fecx .bdk-search input {
+  flex: 1;
+  padding: 9px 12px;
+  border: 1px solid var(--rule, rgba(20, 17, 13, .14));
+  border-radius: 8px;
+  font-size: 14px;
+  background: var(--paper, #fff);
+}
+.fecx .bdk-total { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; color: var(--ink-3, #5a5347); }
+
+/* ---- notices ------------------------------------------------------------- */
+.fecx .bdk-msg {
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--rule, rgba(20, 17, 13, .12));
+  border-left-width: 4px;
+  background: var(--paper, #fff);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 18px;
+}
+.fecx .bdk-msg a { color: var(--accent-ink, #0b6b62); font-weight: 600; margin-left: 6px; }
+.fecx .bdk-msg-ok    { border-left-color: #1c7a4a; }
+.fecx .bdk-msg-info  { border-left-color: var(--accent, #0b6b62); }
+.fecx .bdk-msg-error { border-left-color: #9a2828; background: #fff6f5; }
+
+/* ---- list ---------------------------------------------------------------- */
+.fecx .bdk-list { display: flex; flex-direction: column; gap: 8px; }
+.fecx .bdk-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--rule, rgba(20, 17, 13, .1));
+  border-radius: 10px;
+  background: var(--paper, #fff);
+}
+.fecx .bdk-row:hover { border-color: rgba(11, 107, 98, .4); }
+.fecx .bdk-thumb {
+  flex: 0 0 72px;
+  width: 72px;
+  height: 46px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(20, 17, 13, .08);
+  background: repeating-linear-gradient(135deg, rgba(20, 17, 13, .06) 0 6px, transparent 6px 12px);
+}
+.fecx .bdk-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.fecx .bdk-main { flex: 1; min-width: 0; }
+.fecx .bdk-title {
+  display: block;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--ink, #14110d);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.fecx .bdk-title:hover { color: var(--accent-ink, #0b6b62); }
+.fecx .bdk-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 5px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 12px;
+  color: var(--ink-3, #5a5347);
+}
+.fecx .bdk-meta a { color: var(--accent-ink, #0b6b62); text-decoration: none; }
+.fecx .bdk-dim { opacity: .65; }
+.fecx .bdk-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 100px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+.fecx .bdk-badge-live  { background: rgba(28, 122, 74, .1); color: #1c7a4a; border-color: rgba(28, 122, 74, .25); }
+.fecx .bdk-badge-sched { background: rgba(11, 107, 98, .08); color: #0b6b62; border-color: rgba(11, 107, 98, .25); }
+.fecx .bdk-badge-draft { background: rgba(20, 17, 13, .05); color: #5a5347; border-color: rgba(20, 17, 13, .14); }
+.fecx .bdk-badge-new   { background: rgba(20, 17, 13, .05); color: #5a5347; border-color: rgba(20, 17, 13, .14); }
+.fecx .bdk-actions { display: flex; gap: 6px; flex: 0 0 auto; }
+.fecx .bdk-empty {
+  padding: 48px 20px;
+  text-align: center;
+  color: var(--ink-3, #5a5347);
+  border: 1px dashed var(--rule, rgba(20, 17, 13, .18));
+  border-radius: 10px;
+}
+.fecx .bdk-pagination { margin-top: 20px; }
+.fecx .bdk-pagination ul { list-style: none; display: flex; gap: 6px; flex-wrap: wrap; padding: 0; margin: 0; }
+.fecx .bdk-pagination li a, .fecx .bdk-pagination li span {
+  display: inline-block; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--rule, rgba(20, 17, 13, .14)); font-size: 13px; text-decoration: none; color: var(--ink, #14110d);
+}
+
+/* ---- editor -------------------------------------------------------------- */
+.fecx .bdk-cols { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 28px; align-items: start; }
+.fecx .bdk-field { margin-bottom: 18px; }
+.fecx .bdk-lbl, .fecx .bdk-card-title {
+  display: block;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-3, #5a5347);
+  margin-bottom: 6px;
+}
+.fecx .bdk-lbl-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.fecx .bdk-counter { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11px; color: var(--ink-3, #5a5347); }
+.fecx .bdk-form input[type=text],
+.fecx .bdk-form input[type=datetime-local],
+.fecx .bdk-form select,
+.fecx .bdk-form textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--rule, rgba(20, 17, 13, .16));
+  border-radius: 8px;
+  background: var(--paper, #fff);
+  color: var(--ink, #14110d);
+  font-size: 15px;
+  font-family: inherit;
+}
+.fecx .bdk-form input[type=text]:focus, .fecx .bdk-form textarea:focus, .fecx .bdk-form select:focus {
+  outline: none;
+  border-color: var(--accent, #0b6b62);
+  box-shadow: 0 0 0 3px rgba(11, 107, 98, .12);
+}
+.fecx .bdk-form #bdk-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.25;
+  padding: 12px 14px;
+}
+.fecx .bdk-form #bdk-body {
+  min-height: 520px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 17px;
+  line-height: 1.6;
+  padding: 16px 18px;
+  resize: vertical;
+  tab-size: 2;
+}
+.fecx .bdk-form #bdk-body.bdk-is-html { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px; line-height: 1.5; }
+.fecx .bdk-hint { font-size: 12.5px; line-height: 1.5; color: var(--ink-3, #5a5347); margin-top: 6px; }
+.fecx .bdk-help { margin-top: 10px; font-size: 13px; color: var(--ink-2, #3a342c); }
+.fecx .bdk-help summary { cursor: pointer; color: var(--accent-ink, #0b6b62); font-weight: 600; }
+.fecx .bdk-help ul { margin: 8px 0 0; padding-left: 18px; line-height: 1.55; }
+.fecx .bdk-help code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; background: rgba(20, 17, 13, .06); padding: 1px 5px; border-radius: 4px; }
+
+.fecx .bdk-card {
+  border: 1px solid var(--rule, rgba(20, 17, 13, .1));
+  border-radius: 12px;
+  background: var(--paper, #fff);
+  padding: 16px 16px 14px;
+  margin-bottom: 16px;
+}
+.fecx .bdk-card .bdk-field:last-of-type { margin-bottom: 12px; }
+.fecx .bdk-details summary { cursor: pointer; list-style: none; }
+.fecx .bdk-details summary::-webkit-details-marker { display: none; }
+.fecx .bdk-details summary::before { content: "▸ "; }
+.fecx .bdk-details[open] summary::before { content: "▾ "; }
+.fecx .bdk-details[open] summary { margin-bottom: 12px; }
+.fecx .bdk-image {
+  aspect-ratio: 5 / 3;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(20, 17, 13, .08);
+  background: repeating-linear-gradient(135deg, rgba(20, 17, 13, .06) 0 8px, transparent 8px 16px);
+  display: grid;
+  place-items: center;
+  margin-bottom: 10px;
+}
+.fecx .bdk-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fecx .bdk-image img[hidden] { display: none; }
+.fecx .bdk-image-empty { font-size: 12px; color: var(--ink-3, #5a5347); font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+.fecx .bdk-form input[type=file] { width: 100%; font-size: 13px; }
+.fecx .bdk-check { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-top: 10px; }
+.fecx .bdk-draft-check { margin: 4px 0 10px; font-weight: 600; }
+.fecx .bdk-draft-check input { width: 16px; height: 16px; }
+.fecx .bdk-buttons { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.fecx .bdk-buttons .bdk-btn { flex: 1 1 auto; justify-content: center; }
+.fecx .bdk-cancel { display: inline-block; margin-top: 12px; font-size: 13px; color: var(--ink-3, #5a5347); }
+
+/* ---- 403 ----------------------------------------------------------------- */
+.fecx .bdk-403 { max-width: 520px; margin: 60px auto; text-align: center; }
+.fecx .bdk-403 h1 { font-family: Georgia, "Times New Roman", serif; font-size: 30px; margin: 0 0 14px; }
+.fecx .bdk-403 p { font-size: 15px; line-height: 1.6; color: var(--ink-3, #5a5347); }
+
+/* ---- responsive ---------------------------------------------------------- */
+@media (max-width: 860px) {
+  .fecx .bdk-cols { grid-template-columns: 1fr; }
+  .fecx .bdk-form #bdk-body { min-height: 380px; }
+}
+@media (max-width: 600px) {
+  .fecx .bdk { padding: 16px 12px 48px; }
+  .fecx .bdk-head h1 { font-size: 24px; }
+  .fecx .bdk-row { flex-wrap: wrap; }
+  .fecx .bdk-actions { width: 100%; justify-content: flex-end; }
+  .fecx .bdk-form #bdk-title { font-size: 20px; }
+}
+
+/* 2.7.72: second select of the "Verified slot" field (relation) */
+.fecx .bdk-form select.bdk-sub-select { margin-top: 6px; font-size: 14px; color: var(--ink-3, #5a5347); }

@@ -1,0 +1,144 @@
+/* com_authors — byline policy (V2.7.59)
+ *
+ * Loaded by views/authors (team page) and views/author (profile) on top of
+ * fec-edition.css, which owns the .tm-* / .au-* families and the design
+ * tokens used here. Only the two new patterns live in this file:
+ *
+ *   .tm-byline-policy   note box under the "Bylines" section head on the
+ *                       team page — pen names declared in plain words
+ *   .au-pen-name        one-line pen-name statement in the profile hero,
+ *                       same rhythm as the "Languages" .au-meta-row
+ *   .au-blog-row        V2.7.65 — rows of the "Blog posts" tab (profile)
+ *                       and the blog items on the team card: thumbnail +
+ *                       title + label + date, on top of .au-rtp-row
+ *
+ * Every token has a fallback so the box still reads correctly if a page
+ * is ever rendered outside the .fecx scope.
+ */
+
+/* ---- team page: policy box -------------------------------------------- */
+.tm-byline-policy {
+  background: var(--paper, #fff);
+  border: 1px solid var(--rule, rgba(0, 0, 0, .1));
+  border-left: 3px solid var(--accent, #0f766e);
+  border-radius: var(--radius, 10px);
+  padding: 18px 22px;
+  margin: 0 0 28px;
+  max-width: 760px;
+}
+
+.tm-byline-policy-label {
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-ink, #0f766e);
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.tm-byline-policy p {
+  margin: 0 0 10px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink, #111);
+  max-width: none;
+}
+
+.tm-byline-policy p:last-of-type {
+  margin-bottom: 0;
+}
+
+.tm-byline-policy-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-ink, #0f766e);
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent-soft, rgba(15, 118, 110, .35));
+}
+
+.tm-byline-policy-link:hover {
+  border-bottom-color: var(--accent, #0f766e);
+}
+
+.tm-byline-policy-link svg {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 640px) {
+  .tm-byline-policy {
+    padding: 14px 16px;
+    margin-bottom: 22px;
+  }
+  .tm-byline-policy p {
+    font-size: 14px;
+  }
+}
+
+/* ---- profile hero: pen-name line --------------------------------------- */
+.au-pen-name {
+  color: var(--ink-3, rgba(0, 0, 0, .6));
+}
+
+.au-pen-name a {
+  color: var(--accent-ink, #0f766e);
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent-soft, rgba(15, 118, 110, .35));
+}
+
+.au-pen-name a:hover {
+  border-bottom-color: var(--accent, #0f766e);
+}
+
+/* ---- V2.7.65: blog posts — profile tab rows + team card items ----------- */
+.au-blog-row .thumb {
+  flex: 0 0 56px;
+  width: 56px;
+  height: 36px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: repeating-linear-gradient(135deg, rgba(20, 17, 13, .06) 0 6px, transparent 6px 12px);
+  border: 1px solid rgba(20, 17, 13, .08);
+}
+
+.au-blog-row .thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.au-blog-row .name {
+  font-size: 16px;
+}
+
+@media (max-width: 480px) {
+  .au-blog-row .thumb {
+    flex-basis: 48px;
+    width: 48px;
+    height: 32px;
+  }
+}
+
+/* team card: "Recent posts" items reuse .tm-recent .item; the chip is a
+   small thumbnail (or stripes) instead of the casino initial */
+.tm-recent .item .blog-chip {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: repeating-linear-gradient(135deg, rgba(20, 17, 13, .06) 0 5px, transparent 5px 10px);
+  border: 1px solid rgba(20, 17, 13, .08);
+}
+
+.tm-recent .item .blog-chip img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

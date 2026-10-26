@@ -1,0 +1,39 @@
+/* ============================================================
+   FEC Interactive Decision Notes v1.0.0 - details-page band
+   fec-edition tokens with identical fallbacks; scoped .fec-dn.
+   ============================================================ */
+.fec-dn{
+  font-family:inherit;font-size:14px;line-height:1.5;color:var(--ink,#14110d);
+  background:var(--paper,#fdfbf6);border:1px solid var(--rule-2,#e7e0d0);
+  border-radius:14px;padding:18px 20px;margin:22px 0;
+}
+.fec-dn,.fec-dn *{box-sizing:border-box}
+.fec-dn:empty{display:none}
+.fec-dn .dn-head{font-weight:900;font-size:17px;letter-spacing:-.01em;margin:0 0 6px}
+.fec-dn .dn-sub{color:var(--ink-3,#5a5347);font-size:13px;margin:0 0 14px}
+.fec-dn .dn-q{font-size:11.5px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-4,#8a8275);margin:14px 0 8px}
+.fec-dn .dn-questions .dn-q:first-child{margin-top:4px}
+.fec-dn .dn-seg{display:flex;gap:6px;flex-wrap:wrap}
+.fec-dn .dn-seg button{background:#fff;color:var(--ink-3,#5a5347);
+  border:1px solid var(--rule,#d9d2c2);border-radius:999px;
+  padding:7px 13px;font:inherit;font-size:12.5px;font-weight:800;cursor:pointer}
+.fec-dn .dn-seg button[aria-pressed=true]{
+  background:var(--ink,#14110d);color:var(--paper,#fdfbf6);border-color:var(--ink,#14110d)}
+.fec-dn .dn-seg button:focus-visible{outline:3px solid rgb(11 107 98/.3);outline-offset:2px}
+
+.fec-dn .dn-verdict{border-radius:12px;padding:14px 16px;border:1px solid}
+.fec-dn .dn-verdict.worth{background:var(--verified-soft,#d6ead8);border-color:var(--verified,#1c7a4a);color:#0f3f26}
+.fec-dn .dn-verdict.caution{background:var(--warn-soft,#f1ddc0);border-color:var(--warn,#a85a1c);color:#5c3009}
+.fec-dn .dn-verdict.skip{background:var(--danger-soft,#efd9d9);border-color:var(--danger,#9a2828);color:#571414}
+.fec-dn .dn-vlabel{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;
+  letter-spacing:.08em;text-transform:uppercase;opacity:.8}
+.fec-dn .dn-edit{background:none;border:0;padding:0;font:inherit;font-size:10.5px;
+  letter-spacing:.08em;text-transform:uppercase;text-decoration:underline;cursor:pointer;color:inherit}
+.fec-dn .dn-vtitle{font-weight:900;font-size:18px;letter-spacing:-.01em;margin:3px 0 9px}
+.fec-dn .dn-verdict ul{margin:0;padding:0 0 0 18px}
+.fec-dn .dn-verdict li{margin:0 0 5px;font-size:13px}
+.fec-dn .dn-verdict li b{font-variant-numeric:tabular-nums}
+.fec-dn .dn-vnote{font-size:11.5px;opacity:.8;margin:9px 0 0}
+.fec-dn .dn-vnote a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.fec-dn .dn-questions[hidden]{display:none}

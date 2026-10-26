@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="component" version="2.5" method="upgrade">
+	<name>Partner Desk</name>
+	<author>FreeExtraChips</author>
+	<creationDate>2026-08-13</creationDate>
+	<copyright>FreeExtraChips.com</copyright>
+	<version>1.1.0</version>
+	<description>Private intake desk: affiliate managers submit brand listing proposals through a public form; the editorial desk reviews, approves or rejects them in a private frontend dashboard (login + ACL).</description>
+
+	<install>
+		<sql>
+			<file driver="mysql" charset="utf8">sql/install.mysql.utf8.sql</file>
+		</sql>
+	</install>
+
+	<uninstall>
+		<sql>
+			<file driver="mysql" charset="utf8">sql/uninstall.mysql.utf8.sql</file>
+		</sql>
+	</uninstall>
+
+	<files folder="site">
+		<filename>index.html</filename>
+		<filename>partnerdesk.php</filename>
+		<filename>controller.php</filename>
+		<folder>helpers</folder>
+		<folder>models</folder>
+		<folder>views</folder>
+	</files>
+
+	<administration>
+		<menu>Partner Desk</menu>
+		<files folder="admin">
+			<filename>index.html</filename>
+			<filename>partnerdesk.php</filename>
+			<filename>controller.php</filename>
+			<filename>config.xml</filename>
+			<folder>controllers</folder>
+			<folder>models</folder>
+			<folder>views</folder>
+			<folder>sql</folder>
+		</files>
+	</administration>
+</extension>

@@ -1,0 +1,1 @@
+-- com_authors 2.7.62 -- edition URLs registered with sh404SEF at freeze and publish (helpers/sef.php), schema unchanged

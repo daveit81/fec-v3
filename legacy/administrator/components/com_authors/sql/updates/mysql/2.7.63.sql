@@ -1,0 +1,1 @@
+-- com_authors 2.7.63 -- Licence Watch current edition canonical and permalink (view and template only), schema unchanged

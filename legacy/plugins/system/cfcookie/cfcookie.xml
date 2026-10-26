@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension version="2.5" type="plugin" group="system" method="upgrade">
+    <name>System - CF Cookie</name>
+    <author>Custom</author>
+    <creationDate>May 2026</creationDate>
+    <version>1.0.0</version>
+    <description>Sets cf_loggedin cookie based on auth state for Cloudflare cache bypass</description>
+    <files>
+        <filename plugin="cfcookie">cfcookie.php</filename>
+    </files>
+</extension>

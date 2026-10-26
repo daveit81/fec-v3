@@ -1,0 +1,1 @@
+-- com_authors 2.7.57 -- recalc engine path corrected to public_html/frank, schema unchanged

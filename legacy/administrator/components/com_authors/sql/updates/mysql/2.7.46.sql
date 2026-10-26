@@ -1,0 +1,1 @@
+-- com_authors 2.7.46 -- formula label bump to SI v1.1 and methodology changelog entry, schema unchanged

@@ -1,0 +1,1 @@
+-- com_authors 2.7.51 -- trust-page mobile gutters and Payout Index table tweaks (CSS and template only), schema unchanged

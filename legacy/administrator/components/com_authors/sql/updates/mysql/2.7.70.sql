@@ -1,0 +1,1 @@
+-- com_authors 2.7.70 -- blog desk draft checkbox (template, js, controller, view), schema unchanged
