@@ -59,22 +59,28 @@ rm -rf "$DST"
 mkdir -p "$DST"
 cd "$SRC"
 
+# No process substitution (< <(find ...)): CageFS has no /dev/fd, so the file
+# list goes through a temporary file instead.
+list="$(mktemp "${TMPDIR:-/tmp}/legacy-snapshot.XXXXXX")"
+trap 'rm -f "$list"' EXIT
+
 total=0
 for root in "${ROOTS[@]}"; do
   if [[ ! -e "$root" ]]; then
     printf '%-48s (not on the live site, skipped)\n' "$root"
     continue
   fi
-  n=0
-  while IFS= read -r -d '' f; do
-    cp --parents -p "$f" "$DST/"
-    n=$((n + 1))
-  done < <(find "$root" -type f \
+  find "$root" -type f \
       \( -name '*.php' -o -name '*.xml' -o -name '*.ini' -o -name '*.sql' -o -name '*.css' -o -name '*.js' \
          -o -name '*.html' -o -name '*.htm' -o -name '*.json' -o -name '*.txt' -o -name '*.md' -o -name '.htaccess' \) \
       ! -path '*/conf/*' ! -path '*/cache/*' ! -path '*/logs/*' ! -path '*/tmp/*' \
       ! -name '*_bk*' ! -name '*_before_*' ! -name '*.bak' ! -name '*.orig' ! -name '*.log' \
-      -print0)
+      -print0 > "$list"
+  n=0
+  while IFS= read -r -d '' f; do
+    cp --parents -p "$f" "$DST/"
+    n=$((n + 1))
+  done < "$list"
   printf '%-48s %5d files\n' "$root" "$n"
   total=$((total + n))
 done
