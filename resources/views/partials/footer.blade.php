@@ -1,14 +1,13 @@
 {{--
-    Footer of templates/fecv2/index.php, verbatim. The newsletter block that
-    the legacy lib renders first inside the footer (fec_render_email_capture_block
-    'footer', compact) is deliberately absent: its form posts to the legacy
-    /subscribe.php with a server-side signature and comes back with the
-    newsletter port. Slot kept so the position is explicit.
+    Footer of templates/fecv2/index.php, verbatim. The newsletter block is the
+    legacy lib's fec_render_email_capture_block('footer', compact), rendered
+    by the "template" slice with the Joomla secret (fec.legacy.secret), so its
+    signed form posts to the legacy /subscribe.php exactly as before.
 --}}
 @php($social = config('fec.social'))
 <footer class="fec-footer" role="contentinfo">
   <div class="fec-footer__inner fec-container">
-@yield('footer_newsletter')
+{!! \App\Fec\Legacy\TemplateLib::newsletterBlock('footer', ['variant' => 'compact', 'skip_if_other_rendered' => true]) !!}
 
     <div class="fec-footer__top">
       <a class="fec-footer__brand" href="/">
@@ -73,11 +72,11 @@
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span>X</span>
       </a>
-      <a class="fec-footer__soc" href="{{ $social['telegram'] }}" target="_blank" rel="noopener" aria-label="FreeExtraChips on Telegram">
+      <a class="fec-footer__soc" href="{{ \App\Fec\Legacy\TemplateLib::telegramUrl('footer_social') }}" target="_blank" rel="noopener" aria-label="FreeExtraChips on Telegram">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M22 2 11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 2 15 22l-4-9-9-4 20-7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span>Telegram</span>
       </a>
-      <a class="fec-footer__soc" href="{{ $social['discord'] }}" target="_blank" rel="noopener" aria-label="FreeExtraChips on Discord">
+      <a class="fec-footer__soc" href="{{ \App\Fec\Legacy\TemplateLib::discordUrl('footer_social') }}" target="_blank" rel="noopener" aria-label="FreeExtraChips on Discord">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 12h4M8 10v4M15 13h.01M18 11h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.152A4 4 0 0 0 17.32 5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span>Discord</span>
       </a>

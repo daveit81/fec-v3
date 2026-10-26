@@ -79,7 +79,9 @@ function do_nothing() { return; }
 
 <meta name="google-site-verification" content="AsFjo2DAOMAtcRiSNQMHr3IHZd0Z0-AKPe29ACju3tE" />
 </head>
-<body class="fecv2 fecx @yield('body_class')">
+@php($bodyClass = trim($__env->yieldContent('body_class')))
+@php($mainClass = trim($__env->yieldContent('main_class')))
+<body class="fecv2 fecx{{ $bodyClass !== '' ? ' '.$bodyClass : '' }}">
 
 @if ($gtm)
 <noscript>
@@ -136,15 +138,77 @@ function do_nothing() { return; }
       </div>
     </header>
 
-    <main class="fec-main @yield('main_class')" role="main">
+    <main class="fec-main{{ $mainClass !== '' ? ' '.$mainClass : '' }}" role="main">
+        <div id="system-message-container">
+        </div>
 @yield('content')
     </main>
   </div>
 
 @include('partials.footer')
 @include('partials.cookie')
+
+<!-- Search overlay -->
 @include('partials.search')
+
+{!! \App\Fec\Legacy\TemplateLib::newsletterPopup([
+    'heading'      => 'Hold on — your bonus weekly fix',
+    'subhead'      => 'Every Tuesday, the bonuses that actually paid out.',
+    'cta_label'    => 'Send me bonuses',
+    'show_after_ms' => 30000,
+    'show_at_scroll' => 60,
+]) !!}
 
 @stack('scripts')
 </body>
+
+<!-- CSRF token refresh: fetch a fresh token before any POST form submit.
+     Mitigates Joomla's session-token expiry on long-idle pages. -->
+<script>
+(function() {
+    var FORM_SELECTOR = 'form[method="post" i]';
+    var forms = document.querySelectorAll(FORM_SELECTOR);
+
+    forms.forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            if (form.dataset.tokenRefreshed === 'true') {
+                return true;
+            }
+            e.preventDefault();
+
+            var submitBtn = form.querySelector('[type="submit"]');
+            if (submitBtn) submitBtn.disabled = true;
+
+            fetch('/freshtoken.php', {
+                method: 'GET',
+                credentials: 'same-origin',
+                cache: 'no-store'
+            })
+            .then(function(response) {
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                return response.json();
+            })
+            .then(function(data) {
+                if (!data.token) throw new Error('No token in response');
+
+                var freshInput = document.createElement('input');
+                freshInput.type = 'hidden';
+                freshInput.name = data.token;
+                freshInput.value = '1';
+                form.appendChild(freshInput);
+
+                form.dataset.tokenRefreshed = 'true';
+                if (submitBtn) submitBtn.disabled = false;
+                form.submit();
+            })
+            .catch(function(err) {
+                console.error('Token refresh failed:', err);
+                if (submitBtn) submitBtn.disabled = false;
+                form.dataset.tokenRefreshed = 'true';
+                form.submit();
+            });
+        });
+    });
+})();
+</script>
 </html>

@@ -119,6 +119,73 @@ class Menu
     }
 
     /**
+     * The active item and its ancestors (Joomla's $path for mod_menu's
+     * "active" class), innermost last. Empty when nothing is active.
+     *
+     * @return list<int>
+     */
+    public function activeTrail(): array
+    {
+        $item = $this->getActive();
+        $trail = [];
+        $guard = 0;
+        while ($item !== null && $item->id > 0 && $guard++ < 20) {
+            array_unshift($trail, $item->id);
+            $item = $item->parent_id > 0 ? $this->getItem($item->parent_id) : null;
+        }
+
+        return $trail;
+    }
+
+    /**
+     * The trail of the request being rendered, for the navigation partial:
+     * null outside a legacy dispatch (nothing active, as a page with no
+     * menu item had under Joomla).
+     *
+     * @return array{current: int, active: list<int>}|null
+     */
+    public static function currentTrail(): ?array
+    {
+        if (! Factory::hasApplication()) {
+            return null;
+        }
+        $menu = Factory::getApplication()->getMenu();
+        $active = $menu->getActive();
+        if ($active === null) {
+            return null;
+        }
+
+        return ['current' => (int) $active->id, 'active' => $menu->activeTrail()];
+    }
+
+    /**
+     * Add mod_menu's "current"/"active" classes to a rendered menu, in the
+     * order Joomla's default layout writes them: item-N, current, active,
+     * then whatever the markup already had (deeper, parent).
+     *
+     * @param  array{current: int, active: list<int>}|null  $trail
+     */
+    public static function markActive(string $html, ?array $trail): string
+    {
+        if ($trail === null) {
+            return $html;
+        }
+
+        return (string) preg_replace_callback('/class="item-(\d+)((?:\s[^"]*)?)"/', function (array $m) use ($trail) {
+            $id = (int) $m[1];
+            $classes = 'item-'.$id;
+            if ($id === $trail['current']) {
+                $classes .= ' current';
+            }
+            if (in_array($id, $trail['active'], true)) {
+                $classes .= ' active';
+            }
+
+            return 'class="'.$classes.$m[2].'"';
+        }, $html);
+    }
+
+    /**
      * Pick the active item the way Joomla did after routing: the Itemid of
      * the resolved query when present, otherwise the first item whose link
      * carries the same option/view/identifiers.

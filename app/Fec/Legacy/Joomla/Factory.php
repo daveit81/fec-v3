@@ -47,6 +47,11 @@ class Factory
         self::$db = $rw ? self::getDboRw() : new Database('fec');
     }
 
+    public static function hasApplication(): bool
+    {
+        return self::$application !== null;
+    }
+
     public static function getApplication(mixed $id = null, array $config = [], string $prefix = 'J'): Application
     {
         return self::$application ??= new Application;

@@ -198,8 +198,10 @@ class Parity extends Command
     private function normalize(string $html, string $site, string $assets): string
     {
         $html = str_replace([$assets, $site], '', $html);
-        // CSRF tokens, cache busters, nonces: never equal between two requests.
+        // CSRF tokens, signed newsletter forms (fts/fsg), cache busters, nonces: never equal between two requests.
         $html = preg_replace('/name="[a-f0-9]{32,}" value="1"/', 'name="CSRF" value="1"', $html) ?? $html;
+        $html = preg_replace('/name="fts" value="\d+"/', 'name="fts" value="FTS"', $html) ?? $html;
+        $html = preg_replace('/name="fsg" value="[a-f0-9]{64}"/', 'name="fsg" value="FSG"', $html) ?? $html;
         $html = preg_replace('/\?v=\d+/', '?v=N', $html) ?? $html;
         $html = preg_replace('/\s+/', ' ', $html) ?? $html;
         $html = preg_replace('/>\s+</', '><', $html) ?? $html;
@@ -209,8 +211,67 @@ class Parity extends Command
         return trim($html);
     }
 
-    /** @return list<string> a compact unified-ish diff of the two texts */
+    /** @return list<string> unified diff from the system diff when available, else a prefix/suffix sketch */
     private function diff(string $a, string $b, int $context): array
+    {
+        $unified = $this->unifiedDiff($a, $b, $context);
+        if ($unified !== null) {
+            return $unified;
+        }
+
+        return $this->sketchDiff($a, $b, $context);
+    }
+
+    /** @return list<string>|null */
+    private function unifiedDiff(string $a, string $b, int $context): ?array
+    {
+        if (! function_exists('proc_open')) {
+            return null;
+        }
+        $dir = storage_path('app/parity');
+        @mkdir($dir, 0755, true);
+        $fa = tempnam($dir, 'live-');
+        $fb = tempnam($dir, 'v3-');
+        file_put_contents($fa, $a."\n");
+        file_put_contents($fb, $b."\n");
+        $out = [];
+        try {
+            $process = proc_open(['diff', '-U', (string) max(0, $context), '--label', 'live', '--label', 'v3', $fa, $fb], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+            if (! is_resource($process)) {
+                return null;
+            }
+            $text = (string) stream_get_contents($pipes[1]);
+            fclose($pipes[1]);
+            fclose($pipes[2]);
+            $code = proc_close($process);
+            if ($code > 1 || $text === '') {
+                return null;
+            }
+            $lines = explode("\n", rtrim($text, "\n"));
+            $shown = 0;
+            foreach ($lines as $line) {
+                if ($shown++ >= 400) {
+                    $out[] = sprintf('  ... %d more diff lines (see --save files)', count($lines) - 400);
+                    break;
+                }
+                $esc = $this->clip($line);
+                $out[] = match (substr($line, 0, 1)) {
+                    '-' => '<fg=red>'.$esc.'</>',
+                    '+' => '<fg=green>'.$esc.'</>',
+                    '@' => '<fg=cyan>'.$esc.'</>',
+                    default => $esc,
+                };
+            }
+        } finally {
+            @unlink($fa);
+            @unlink($fb);
+        }
+
+        return $out;
+    }
+
+    /** @return list<string> */
+    private function sketchDiff(string $a, string $b, int $context): array
     {
         $al = explode("\n", $a);
         $bl = explode("\n", $b);
