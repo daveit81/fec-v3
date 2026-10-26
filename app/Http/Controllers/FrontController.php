@@ -22,6 +22,18 @@ class FrontController extends Controller
 {
     public function __invoke(Request $request, Router $router): Response
     {
+        $response = $this->respond($request, $router);
+        // Joomla's anonymous pages: "Cache-Control: no-cache" and "Pragma: no-cache", no public caching.
+        if (! $response->headers->has('Pragma') && ! $response->isRedirection()) {
+            $response->headers->set('Pragma', 'no-cache');
+            $response->headers->set('Cache-Control', 'no-cache');
+        }
+
+        return $response;
+    }
+
+    private function respond(Request $request, Router $router): Response
+    {
         $decision = $router->route($request->path());
 
         if ($decision->isRedirect()) {

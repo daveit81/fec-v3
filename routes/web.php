@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\FrontController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\RegistryController;
 use Illuminate\Support\Facades\Route;
@@ -15,9 +14,6 @@ Route::get('/health', HealthController::class)->name('health');
 // Phase 1 probe: what the router decides for a path (?path=/online-casinos/king-billy-casino).
 Route::get('/__registry', RegistryController::class)->name('registry');
 
-// /goto.php lives in routes/stateless.php (no web middleware group).
-
-// Phase 1 kernel: every other GET goes through the URL registry and the
-// run-time patterns (App\Fec\Url\Router). Laravel matches fallback routes
-// last, whatever file registers them, so routes/stateless.php is not shadowed.
-Route::fallback(FrontController::class)->name('front');
+// /goto.php and the public fallback (the URL registry router) live in
+// routes/stateless.php: public pages set no cookies. Desk views, which need
+// the session, get explicit routes in this file when they are ported.
