@@ -145,8 +145,15 @@ class Pagination
             }
             $url = $this->link($base);
             $title = $title ?? $text;
+            // The live site marks the adjacent pages (sh404SEF pagination): rel="next" / rel="prev".
+            $rel = '';
+            if ($base === $this->limitstart + $this->limit) {
+                $rel = ' rel="next"';
+            } elseif ($base === $this->limitstart - $this->limit && $base >= 0) {
+                $rel = ' rel="prev"';
+            }
 
-            return '<a title="'.htmlspecialchars($title, ENT_COMPAT, 'UTF-8').'" href="'.$url.'" class="pagenav">'.$text.'</a>';
+            return '<a title="'.htmlspecialchars($title, ENT_COMPAT, 'UTF-8').'" href="'.$url.'"'.$rel.' class="pagenav">'.$text.'</a>';
         };
 
         $out = ['start' => '', 'previous' => '', 'pages' => [], 'next' => '', 'end' => ''];
@@ -165,6 +172,12 @@ class Pagination
         return $out;
     }
 
+    /**
+     * Links as sh404SEF rewrote them on the live site: the SEF path plus
+     * "lang=en&limit=<limit>&start=<N>" (limitstart renamed to start, the
+     * limit made explicit, the language first), other query variables kept
+     * in between. The runner maps an incoming "start" back to limitstart.
+     */
     private function link(int $limitstart): string
     {
         $uri = Uri::getInstance();
@@ -172,12 +185,9 @@ class Pagination
         foreach ($this->additionalUrlParams as $k => $v) {
             $vars[$k] = (string) $v;
         }
-        if ($limitstart > 0) {
-            $vars[$this->prefix.'limitstart'] = (string) $limitstart;
-        } else {
-            unset($vars[$this->prefix.'limitstart']);
-        }
-        $query = http_build_query($vars);
+        unset($vars['lang'], $vars['limit'], $vars['start'], $vars['limitstart'], $vars[$this->prefix.'limitstart'], $vars[$this->prefix.'start']);
+        $ordered = ['lang' => 'en', 'limit' => (string) $this->limit] + $vars + [$this->prefix.'start' => (string) max(0, $limitstart)];
+        $query = http_build_query($ordered);
         $path = $uri->getPath();
 
         return htmlspecialchars($path.($query !== '' ? '?'.$query : ''), ENT_COMPAT, 'UTF-8');

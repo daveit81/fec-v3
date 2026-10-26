@@ -89,11 +89,18 @@ class Parity extends Command
     /** Canonical SEF paths of a component as the registry holds them, oldest first. @return list<string> */
     private function registryPaths(string $option, int $limit): array
     {
+        $desk = (array) config('fec.legacy.desk_views', []);
         $rows = \Illuminate\Support\Facades\DB::connection('fec')->table('sh404sef_urls')
             ->where('rank', 0)
             ->where('newurl', 'like', '%option='.$option.'%')
             ->orderBy('id')
-            ->when($limit > 0, fn ($q) => $q->limit($limit))
+            ->get(['oldurl', 'newurl'])
+            ->reject(function ($r) use ($desk) {
+                $q = \App\Fec\Url\UrlRegistry::parseQuery((string) $r->newurl);
+
+                return in_array(($q['option'] ?? '').'.'.($q['view'] ?? ''), $desk, true);
+            })
+            ->when($limit > 0, fn ($c) => $c->take($limit))
             ->pluck('oldurl');
 
         return array_values(array_unique(array_map(fn ($u) => '/'.ltrim((string) $u, '/'), $rows->all())));

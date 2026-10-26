@@ -53,6 +53,10 @@ final class ComponentRunner implements PageHandler
                 $seed[$k] = is_array($v) ? json_encode($v) : (string) $v;
             }
         }
+        // sh404SEF renamed limitstart to "start" in every paginated URL: a visitor arrives with start=N.
+        if (isset($seed['start']) && ! isset($seed['limitstart']) && is_numeric($seed['start'])) {
+            $seed['limitstart'] = (string) (int) $seed['start'];
+        }
         JRequest::seed($seed);
         Factory::getApplication()->getMenu()->activateFor($url->query);
 
@@ -73,9 +77,12 @@ final class ComponentRunner implements PageHandler
             return $this->raw($body, $request);
         } catch (Throwable $e) {
             $this->discard($level);
-            // Joomla turned an exception carrying an HTTP code (new Exception('Author not found', 404)) into that error page.
+            // A component exception carrying an HTTP code (new Exception('Author not
+            // found', 404)) became Joomla's system error page on the live site
+            // (templates/system/error.php); the sh404SEF 404 page is for paths the
+            // registry does not know, which never reach a component.
             if ($e->getCode() >= 400 && $e->getCode() < 600) {
-                abort((int) $e->getCode(), $e->getMessage());
+                return response()->view('legacy.system-error', ['code' => (int) $e->getCode(), 'message' => $e->getMessage()], (int) $e->getCode());
             }
             throw $e;
         }

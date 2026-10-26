@@ -106,6 +106,9 @@ return [
 
         // "option.view" keys that write to the catalogue (desk views): served with the fec_rw connection.
         'writing_views' => [],
+
+        // Desk (non-public) views: skipped by fec:parity --option, ported with the redazione login.
+        'desk_views' => ['com_authors.dashboard', 'com_authors.blogdesk', 'com_authors.deskadd', 'com_authors.fxshieldadmin', 'com_authors.methodologyadmin', 'com_authors.verification'],
     ],
 
     'parity' => [
