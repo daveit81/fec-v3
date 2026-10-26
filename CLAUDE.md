@@ -18,6 +18,12 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   the server pulls with a read-only deploy key: `cd /home/freeextr/fecv3 && git pull`.
   Never edit code on the server by hand.
 
+## Legacy snapshot
+
+- `legacy/` is a text-only, read-only copy of our Joomla-era code taken with
+  `scripts/legacy-snapshot.sh` (run as freeextr on the server, then committed from there). It is
+  the input of the mechanical port into `app/Fec/Legacy/`; never deploy, autoload or hand-edit it.
+
 ## Databases
 
 - Default connection (`DB_CONNECTION`, SQLite for now): framework tables only (sessions, cache, jobs, users).
