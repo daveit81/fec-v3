@@ -89,6 +89,30 @@ return [
         'alias_redirect' => filter_var(env('FEC_ROUTER_ALIAS_REDIRECT', false), FILTER_VALIDATE_BOOL),
     ],
 
+    'legacy' => [
+        // Virtual docroot of the ported Joomla-era code (JPATH_SITE for the compatibility layer).
+        'site_path' => env('FEC_LEGACY_SITE_PATH', app_path('Fec/Legacy/site')),
+
+        // Joomla configuration values the ported code reads through JFactory::getConfig().
+        // "secret" signs the newsletter forms (HMAC) on the live site: same value = same signatures.
+        'secret' => env('FEC_LEGACY_SECRET', ''),
+        'sitename' => 'FreeExtraChips',
+
+        // The Joomla user id the desk runs as once the redazione logs in on v3 (DESK_USER_ID on the live site).
+        'desk_user_id' => (int) env('FEC_LEGACY_DESK_USER_ID', 42),
+
+        // Component options (JComponentHelper::getParams): none set on the live site.
+        'params' => [],
+
+        // "option.view" keys that write to the catalogue (desk views): served with the fec_rw connection.
+        'writing_views' => [],
+    ],
+
+    'parity' => [
+        // Origin IP used to fetch the live page past Cloudflare (curl --resolve); empty = public DNS.
+        'origin_ip' => env('FEC_ORIGIN_IP', '170.249.222.58'),
+    ],
+
     'desk_lint' => [
         // Days without a modification after which a live bonus is "stale", and
         // how many of the oldest ones the review queue shows each day (the

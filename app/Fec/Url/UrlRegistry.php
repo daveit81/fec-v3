@@ -156,6 +156,12 @@ final class UrlRegistry
     public static function significant(array $query): array
     {
         unset($query['lang'], $query['Itemid']);
+        // Joomla's "id=12:alias" (JRoute with the article alias) is the row with id=12.
+        foreach (['id', 'catid'] as $key) {
+            if (isset($query[$key]) && preg_match('/^(\d+):/', (string) $query[$key], $m)) {
+                $query[$key] = $m[1];
+            }
+        }
         ksort($query);
 
         return $query;

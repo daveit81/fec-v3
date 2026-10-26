@@ -1,0 +1,1043 @@
+/* ============================================================================
+   com_authors V2.6 — slot.css
+   Public slot pages (/slots and /slots/<slug>).
+   Builds on fec-edition.css tokens + methodology.css primitives.
+   Scoped under .fecx .slt-page or .fecx .slt-index-page.
+   ============================================================================ */
+
+/* ---------- Stat strip warn variant (multi-tier RTP min) ---------- */
+.fecx .slt-page .au-stats-strip .stat.slt-warn .num {
+  color: #8c6610;
+}
+.fecx .slt-page .au-stats-strip .stat.slt-warn .lbl {
+  color: #8c6610;
+  font-weight: 600;
+}
+
+/* ---------- Multi-tier disclosure box ---------- */
+.fecx .slt-tier-box {
+  background: #fbeed7;
+  border: 1px solid #f0d28e;
+  border-left: 4px solid #c89a3a;
+  border-radius: 12px;
+  padding: 20px 22px;
+  margin: 24px 0;
+}
+.fecx .slt-tier-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8c6610;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  margin-bottom: 8px;
+}
+.fecx .slt-tier-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 22px;
+  margin: 0 0 12px;
+  color: #14110d;
+  font-weight: 700;
+}
+.fecx .slt-tier-box p {
+  font-size: 15px;
+  line-height: 1.55;
+  margin: 0 0 14px;
+}
+.fecx .slt-tier-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+.fecx .slt-tier-cell {
+  background: #fff;
+  border: 1px solid #e8d4a8;
+  border-radius: 8px;
+  padding: 14px 8px;
+  text-align: center;
+}
+.fecx .slt-tier-cell.is-top {
+  background: #d4eee9;
+  border-color: #95c9bf;
+}
+.fecx .slt-tier-cell.is-low {
+  background: #f1d6d6;
+  border-color: #d99a9a;
+}
+.fecx .slt-tier-pct {
+  font-size: 24px;
+  font-weight: 700;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  color: #14110d;
+}
+.fecx .slt-tier-cap {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #555;
+  margin-top: 4px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+.fecx .slt-tier-cta {
+  margin-bottom: 0;
+  font-size: 14px;
+  line-height: 1.55;
+}
+.fecx .slt-tier-cta a {
+  color: #0b6b62;
+  font-weight: 600;
+}
+
+/* ---------- Overview spec list ---------- */
+.fecx .slt-overview {
+  margin: 16px 0 32px;
+}
+.fecx .slt-spec {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.fecx .slt-spec > div {
+  background: rgba(20, 17, 13, 0.04);
+  padding: 12px 14px;
+  border-radius: 8px;
+}
+.fecx .slt-spec dt {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #777;
+  margin-bottom: 4px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+.fecx .slt-spec dd {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #14110d;
+}
+.fecx .slt-notes {
+  margin-top: 24px;
+  padding: 14px 16px;
+  border-left: 3px solid #0b6b62;
+  background: rgba(11, 107, 98, 0.05);
+  border-radius: 0 8px 8px 0;
+}
+.fecx .slt-notes h3 {
+  font-family: Georgia, serif;
+  font-size: 14px;
+  margin: 0 0 6px;
+}
+.fecx .slt-notes p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #444;
+}
+
+/* ---------- Sources list ---------- */
+.fecx .slt-sources {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.fecx .slt-sources li {
+  background: #fff;
+  border: 1px solid rgba(20, 17, 13, 0.08);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+.fecx .slt-src-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #777;
+  margin-bottom: 4px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+.fecx .slt-sources a {
+  color: #0b6b62;
+  font-weight: 600;
+  word-break: break-all;
+}
+.fecx .slt-src-archive {
+  font-size: 13px;
+  color: #777;
+}
+.fecx .slt-src-archive a {
+  font-weight: 400;
+  color: #777;
+  text-decoration: underline;
+}
+
+/* ---------- Observations table ---------- */
+.fecx .slt-obs-wrap {
+  overflow-x: auto;
+  margin: 16px 0 32px;
+  border: 1px solid rgba(20, 17, 13, 0.08);
+  border-radius: 10px;
+}
+.fecx .slt-obs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.fecx .slt-obs-table thead th {
+  background: rgba(20, 17, 13, 0.04);
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #555;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-weight: 700;
+  border-bottom: 1px solid rgba(20, 17, 13, 0.08);
+}
+.fecx .slt-obs-table tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(20, 17, 13, 0.06);
+  vertical-align: top;
+}
+.fecx .slt-obs-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.fecx .slt-obs-table .slt-num {
+  text-align: right;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-feature-settings: "tnum";
+}
+.fecx .slt-obs-table tr.is-below td .slt-tag-warn {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 10px;
+  padding: 2px 6px;
+  background: #fbeed7;
+  color: #8c6610;
+  border-radius: 3px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-weight: 700;
+}
+
+/* ---------- Active bonus list ---------- */
+.fecx .slt-bonus-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fecx .slt-bonus-row {
+  background: var(--paper, #fdfbf6);
+  border: 1px solid rgba(20, 17, 13, 0.08);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+.fecx .slt-bonus-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.fecx .slt-bonus-type {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(11, 107, 98, 0.1);
+  color: #0b6b62;
+  padding: 3px 7px;
+  border-radius: 3px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-weight: 700;
+}
+.fecx .slt-bonus-amount {
+  font-size: 16px;
+  font-weight: 700;
+}
+.fecx .slt-bonus-at {
+  color: #999;
+  font-size: 14px;
+}
+.fecx .slt-bonus-casino {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0b6b62;
+}
+.fecx .slt-bonus-casino:not(a) { color: #14110d; }
+.fecx .slt-bonus-meta {
+  font-size: 12.5px;
+  color: #666;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.fecx .slt-bonus-code {
+  background: rgba(20, 17, 13, 0.06);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+/* ---------- Methodology CTA ---------- */
+.fecx .slt-methodology-cta {
+  margin-top: 24px;
+  padding: 16px 18px;
+  background: rgba(11, 107, 98, 0.06);
+  border-left: 3px solid #0b6b62;
+  border-radius: 0 8px 8px 0;
+}
+.fecx .slt-methodology-cta p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+}
+.fecx .slt-methodology-cta a {
+  color: #0b6b62;
+  font-weight: 600;
+}
+
+/* ============================================================================
+   Index page — /slots
+   ============================================================================ */
+
+.fecx .slt-index-main {
+  display: block;
+}
+/* 2.7.94: fec-edition.css declares .fecx .wrap { padding: 0 28px } at equal
+ * specificity and later in the cascade, so a padding-top on .slt-index-main
+ * never applied (the 20px of V2.6 included). Three-class selector out-ranks
+ * it, same trick as methodology.css for .au-main; sides restated so the
+ * .wrap geometry survives (28px, 18px under 760px). */
+.fecx.slt-index-page .slt-index-main.wrap {
+  padding-top: 36px;
+  padding-left: 28px;
+  padding-right: 28px;
+}
+@media (max-width: 760px) {
+  .fecx.slt-index-page .slt-index-main.wrap {
+    padding-top: 28px;
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}
+
+.fecx .slt-index-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 24px 0 24px;
+}
+.fecx .slt-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--paper, #fdfbf6);
+  border: 1px solid rgba(20, 17, 13, 0.15);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #14110d;
+  text-decoration: none;
+}
+.fecx .slt-filter-chip .cnt {
+  font-size: 11px;
+  color: #999;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+.fecx .slt-filter-chip.is-active {
+  background: #14110d;
+  color: #fff;
+  border-color: #14110d;
+}
+.fecx .slt-filter-chip.is-active .cnt {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.fecx .slt-index-grid {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+.fecx .slt-card {
+  background: var(--paper, #fdfbf6);
+  border: 1px solid rgba(20, 17, 13, 0.08);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.1s, box-shadow 0.15s;
+}
+.fecx .slt-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(20, 17, 13, 0.08);
+}
+.fecx .slt-card.is-multi-tier {
+  border-left: 3px solid #c89a3a;
+}
+.fecx .slt-card-link {
+  display: block;
+  padding: 16px 16px 14px;
+  text-decoration: none;
+  color: inherit;
+}
+.fecx .slt-card-head {
+  margin-bottom: 12px;
+}
+.fecx .slt-card-name {
+  font-family: Georgia, serif;
+  font-size: 18px;
+  margin: 0 0 4px;
+  font-weight: 700;
+  color: #14110d;
+  line-height: 1.2;
+}
+.fecx .slt-card-provider {
+  font-size: 12px;
+  color: #0b6b62;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+.fecx .slt-card-stats {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.fecx .slt-card-rtp {
+  display: flex;
+  flex-direction: column;
+}
+.fecx .slt-card-rtp .num {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0b6b62;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-feature-settings: "tnum";
+  line-height: 1;
+}
+.fecx .slt-card-rtp .lbl {
+  font-size: 10px;
+  color: #777;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+.fecx .slt-card-rtp-min .num {
+  color: #8c6610;
+  font-size: 16px;
+}
+.fecx .slt-card-tag {
+  font-size: 11px;
+  background: rgba(20, 17, 13, 0.06);
+  color: #555;
+  padding: 3px 7px;
+  border-radius: 3px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  text-transform: capitalize;
+}
+.fecx .slt-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 11.5px;
+  color: #777;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  padding-top: 10px;
+  border-top: 1px solid rgba(20, 17, 13, 0.06);
+}
+.fecx .slt-card-flag {
+  color: #c89a3a;
+  font-weight: 700;
+}
+
+.fecx .slt-index-footer {
+  margin-top: 32px;
+  padding: 16px 18px;
+  background: rgba(20, 17, 13, 0.04);
+  border-radius: 8px;
+}
+.fecx .slt-index-footer p {
+  margin: 0;
+  font-size: 14px;
+  color: #555;
+  line-height: 1.55;
+}
+.fecx .slt-index-footer a {
+  color: #0b6b62;
+  font-weight: 600;
+}
+
+.fecx .slt-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #888;
+  font-size: 15px;
+}
+
+/* ---------- Mobile refinements ---------- */
+@media (max-width: 640px) {
+  .fecx .slt-tier-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .fecx .slt-tier-pct { font-size: 18px; }
+  .fecx .slt-spec { grid-template-columns: 1fr; }
+  .fecx .slt-index-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .fecx .slt-card-link { padding: 12px; }
+  .fecx .slt-card-name { font-size: 15px; }
+  .fecx .slt-card-rtp .num { font-size: 18px; }
+}
+
+/* ---------- V2.6.2 Bonus link styles + pagination ---------- */
+
+.fecx .slt-bonus-type-link,
+.fecx .slt-bonus-amount-link {
+  text-decoration: none;
+  color: inherit;
+}
+.fecx .slt-bonus-type-link:hover .slt-bonus-type {
+  background: rgba(11, 107, 98, 0.18);
+}
+.fecx .slt-bonus-amount-link:hover .slt-bonus-amount {
+  color: #0b6b62;
+}
+
+.fecx .slt-bonus-details {
+  margin-left: auto;
+  color: #0b6b62;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 12.5px;
+}
+.fecx .slt-bonus-details:hover {
+  text-decoration: underline;
+}
+.fecx .slt-bonus-meta {
+  align-items: center;
+}
+
+.fecx .slt-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 0;
+  margin-top: 16px;
+  border-top: 1px solid rgba(20, 17, 13, 0.08);
+}
+.fecx .slt-page-link {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0b6b62;
+  text-decoration: none;
+  padding: 6px 12px;
+  border: 1px solid rgba(11, 107, 98, 0.3);
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.fecx .slt-page-link:hover {
+  background: rgba(11, 107, 98, 0.08);
+}
+.fecx .slt-page-link.is-disabled {
+  color: #bbb;
+  border-color: rgba(20, 17, 13, 0.08);
+  cursor: not-allowed;
+}
+.fecx .slt-page-info {
+  font-size: 13px;
+  color: #666;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+@media (max-width: 640px) {
+  .fecx .slt-bonus-meta { font-size: 11.5px; }
+  .fecx .slt-bonus-details { font-size: 12px; }
+}
+
+/* ---------- V2.6.6 Author signature card ---------- */
+
+.fecx .slt-author-card {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin: 32px 0 8px;
+  padding: 20px 22px;
+  background: #fff;
+  border: 1px solid rgba(20, 17, 13, 0.1);
+  border-left: 4px solid #0b6b62;
+  border-radius: 12px;
+}
+.fecx .slt-author-avatar {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(11, 107, 98, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(11, 107, 98, 0.2);
+}
+.fecx .slt-author-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.fecx .slt-author-initials {
+  font-family: Georgia, serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: #0b6b62;
+  letter-spacing: 0.02em;
+}
+.fecx .slt-author-body {
+  flex: 1;
+  min-width: 0;
+}
+.fecx .slt-author-eyebrow {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #0b6b62;
+  margin-bottom: 4px;
+}
+.fecx .slt-author-name {
+  font-family: Georgia, serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #14110d;
+  margin: 0 0 4px;
+  line-height: 1.2;
+}
+.fecx .slt-author-name a {
+  color: #14110d;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s;
+}
+.fecx .slt-author-name a:hover {
+  border-bottom-color: #0b6b62;
+}
+.fecx .slt-author-role {
+  font-size: 13px;
+  color: #777;
+  margin-bottom: 8px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+.fecx .slt-author-bio {
+  font-size: 14px;
+  line-height: 1.55;
+  color: #444;
+  margin: 0 0 10px;
+}
+.fecx .slt-author-meta {
+  font-size: 12.5px;
+  color: #666;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+.fecx .slt-author-meta .div {
+  color: #bbb;
+}
+.fecx .slt-author-profile {
+  color: #0b6b62;
+  font-weight: 600;
+  text-decoration: none;
+}
+.fecx .slt-author-profile:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .fecx .slt-author-card {
+    padding: 16px;
+    gap: 12px;
+  }
+  .fecx .slt-author-avatar {
+    width: 56px;
+    height: 56px;
+  }
+  .fecx .slt-author-initials {
+    font-size: 20px;
+  }
+  .fecx .slt-author-name {
+    font-size: 17px;
+  }
+}
+
+/* ---------- V2.6.8 Retired banner ---------- */
+.fecx .slt-retired-banner {
+  background: #fbeed7;
+  border: 1px solid #f0d28e;
+  border-left: 4px solid #c89a3a;
+  border-radius: 12px;
+  padding: 18px 22px;
+  margin: 16px 0 28px;
+}
+.fecx .slt-retired-label {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8c6610;
+  margin-bottom: 8px;
+}
+.fecx .slt-retired-banner p {
+  margin: 0 0 8px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: #14110d;
+}
+.fecx .slt-retired-banner p:last-child {
+  margin-bottom: 0;
+}
+.fecx .slt-retired-reason {
+  padding-top: 6px;
+  border-top: 1px solid rgba(140, 102, 16, 0.18);
+}
+.fecx .slt-retired-when {
+  font-size: 13px;
+  color: #8c6610;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+/* ---------- V2.7.72 From the blog (posts linked to this slot) ---------- */
+.fecx .slt-blog-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fecx .slt-blog-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--paper, #fdfbf6);
+  border: 1px solid rgba(20, 17, 13, 0.08);
+  border-radius: 8px;
+  padding: 10px 14px 10px 10px;
+  text-decoration: none;
+  color: inherit;
+}
+.fecx .slt-blog-row:hover { border-color: rgba(11, 107, 98, 0.35); }
+.fecx .slt-blog-thumb {
+  flex: 0 0 96px;
+  width: 96px;
+  height: 60px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: repeating-linear-gradient(135deg, rgba(20, 17, 13, 0.06) 0 6px, transparent 6px 12px);
+}
+.fecx .slt-blog-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fecx .slt-blog-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.fecx .slt-blog-title { font-size: 15px; font-weight: 600; line-height: 1.3; color: #14110d; }
+.fecx .slt-blog-row:hover .slt-blog-title { color: #0b6b62; }
+.fecx .slt-blog-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; color: #6b655b; }
+.fecx .slt-blog-rel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-weight: 700;
+  color: #6b655b;
+  background: rgba(20, 17, 13, 0.06);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+.fecx .slt-blog-rel.is-game { color: #0b6b62; background: rgba(11, 107, 98, 0.1); }
+.fecx .slt-blog-more { font-size: 14px; color: #6b655b; margin: 0 0 32px; }
+@media (max-width: 600px) {
+  .fecx .slt-blog-thumb { flex-basis: 72px; width: 72px; height: 48px; }
+  .fecx .slt-blog-title { font-size: 14px; }
+}
+
+/* ============================================================================
+   Index page — 2.7.91: hero numbers, at-a-glance rows, toolbar, pager,
+   richer cards. Toolbar and pager classes mirror page.css (.wp-*) so the
+   index matches the Welcome Package / Payout indexes without loading it.
+   ============================================================================ */
+
+/* ---------- Hero stats strip: five cells, whole database ---------- */
+.fecx .slt-index-page .slt-index-stats {
+  grid-template-columns: repeat(5, 1fr);
+}
+.fecx .slt-index-page .slt-index-stats .stat .num time {
+  font-size: 20px;
+  display: inline-block;
+  padding-top: 4px;
+}
+.fecx .slt-index-page .slt-index-stats .stat.slt-warn .num,
+.fecx .slt-index-page .slt-index-stats .stat.slt-warn .lbl {
+  color: #8c6610;
+}
+.fecx .slt-index-page .slt-index-stats .stat .lbl {
+  line-height: 1.35;
+}
+
+/* ---------- At a glance: three short lists ---------- */
+.fecx .slt-glance {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin: 0 0 22px;
+}
+.fecx .slt-glance-col {
+  background: var(--paper, #fdfbf6);
+  border: 1px solid rgba(20, 17, 13, 0.08);
+  border-radius: 12px;
+  padding: 14px 16px 12px;
+}
+.fecx .slt-glance-title {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7a7368;
+  margin-bottom: 8px;
+}
+.fecx .slt-glance-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: slt-glance;
+}
+.fecx .slt-glance-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 0;
+  border-top: 1px solid rgba(20, 17, 13, 0.06);
+  font-size: 14px;
+}
+.fecx .slt-glance-list li:first-child { border-top: 0; }
+.fecx .slt-glance-list li::before {
+  counter-increment: slt-glance;
+  content: counter(slt-glance);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  color: #999;
+  min-width: 12px;
+}
+.fecx .slt-glance-list a {
+  color: #14110d;
+  font-weight: 600;
+  text-decoration: none;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fecx .slt-glance-list a:hover { text-decoration: underline; }
+.fecx .slt-glance-val {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 12px;
+  color: #0b6b62;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ---------- Toolbar (mirrors page.css .wp-controls) ---------- */
+.fecx .slt-index-page .wp-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 16px;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--rule, rgba(0, 0, 0, 0.08));
+  border-radius: var(--radius-sm, 8px);
+  background: var(--bg-2, #f1ede4);
+}
+.fecx .slt-index-page .wp-ctl {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.fecx .slt-index-page .wp-ctl > span {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3, #7a7368);
+}
+.fecx .slt-index-page .wp-ctl select,
+.fecx .slt-index-page .wp-ctl input[type="search"] {
+  font: inherit;
+  font-size: 0.92rem;
+  color: var(--ink, #1c1a17);
+  background: var(--paper, #fdfbf6);
+  border: 1px solid var(--rule, rgba(0, 0, 0, 0.12));
+  border-radius: var(--radius-sm, 8px);
+  padding: 7px 10px;
+  min-height: 36px;
+}
+.fecx .slt-index-page .wp-ctl select:focus,
+.fecx .slt-index-page .wp-ctl input[type="search"]:focus {
+  outline: 2px solid var(--accent-soft, #e3f1ee);
+  border-color: var(--accent, #0b6b62);
+}
+.fecx .slt-index-page .wp-ctl--search input[type="search"] { width: 180px; }
+.fecx .slt-index-page .wp-ctl--check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  align-self: center;
+  padding-top: 14px;
+}
+.fecx .slt-index-page .wp-ctl--check input { width: 16px; height: 16px; margin: 0; }
+.fecx .slt-index-page .wp-ctl--check .wp-check-label {
+  font-family: var(--font-sans, inherit);
+  font-size: 0.88rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-2, #4a443c);
+}
+.fecx .slt-index-page .wp-count {
+  margin-left: auto;
+  align-self: center;
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 0.78rem;
+  color: var(--ink-3, #7a7368);
+  white-space: nowrap;
+}
+.fecx .slt-index-page .wp-none {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border: 1px dashed var(--rule, rgba(0, 0, 0, 0.12));
+  border-radius: var(--radius-sm, 8px);
+  font-size: 0.92rem;
+  color: var(--ink-2, #4a443c);
+}
+.fecx .slt-index-page .wp-pager { padding: 10px 0 4px; }
+.fecx .slt-index-page .wp-pager .pagination { justify-content: flex-start; }
+.fecx .slt-index-page .wp-pager li a { cursor: pointer; }
+
+/* ---------- Cards: facts row, verified line, 97%+ accent ---------- */
+.fecx .slt-card.is-high-rtp {
+  border-left: 3px solid #0b6b62;
+}
+.fecx .slt-card.is-high-rtp.is-multi-tier {
+  border-left: 3px solid #c89a3a;   /* the tier warning wins the edge; the badge says 97%+ */
+}
+.fecx .slt-card-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin: 0 0 10px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11.5px;
+  color: #555;
+}
+.fecx .slt-card-fact.is-warn { color: #8c6610; font-weight: 600; }
+.fecx .slt-card-na { color: #999; }
+.fecx .slt-card-mute { color: #999; }
+.fecx .slt-card-flag.is-high { color: #0b6b62; }
+.fecx .slt-card-verified {
+  margin-top: 8px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  color: #7a7368;
+}
+.fecx .slt-card-verified time { color: #14110d; font-weight: 600; }
+.fecx .slt-card-verified .div { margin: 0 3px; color: #bbb; }
+
+/* ---------- Legend under the grid ---------- */
+.fecx .slt-legend {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 10px 0 0;
+  border-top: 1px solid rgba(20, 17, 13, 0.08);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 18px;
+  font-size: 13px;
+  color: #555;
+  line-height: 1.5;
+}
+.fecx .slt-legend b { color: #14110d; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 980px) {
+  .fecx .slt-index-page .slt-index-stats { grid-template-columns: repeat(3, 1fr); }
+  .fecx .slt-index-page .slt-index-stats .stat:nth-child(3n) { border-right: none; }
+  .fecx .slt-index-page .slt-index-stats .stat:nth-child(-n+3) { border-bottom: 1px solid var(--rule-2, rgba(20, 17, 13, 0.08)); }
+  .fecx .slt-glance { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  /* stats: two columns, the fifth cell takes the whole last row */
+  .fecx .slt-index-page .slt-index-stats { grid-template-columns: repeat(2, 1fr); }
+  .fecx .slt-index-page .slt-index-stats .stat { padding: 14px 16px; }
+  .fecx .slt-index-page .slt-index-stats .stat .num { font-size: 24px; }
+  .fecx .slt-index-page .slt-index-stats .stat .num time { font-size: 18px; }
+  .fecx .slt-index-page .slt-index-stats .stat:nth-child(3n) { border-right: 1px solid var(--rule-2, rgba(20, 17, 13, 0.08)); }
+  .fecx .slt-index-page .slt-index-stats .stat:nth-child(2n) { border-right: none; }
+  .fecx .slt-index-page .slt-index-stats .stat:nth-child(-n+4) { border-bottom: 1px solid var(--rule-2, rgba(20, 17, 13, 0.08)); }
+  .fecx .slt-index-page .slt-index-stats .stat:nth-child(5) { grid-column: 1 / -1; border-right: none; border-bottom: none; }
+
+  /* provider chips: one scrollable row instead of six wrapped ones */
+  .fecx .slt-index-page .slt-index-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin: 18px 0 16px;
+    padding-bottom: 6px;
+  }
+  .fecx .slt-index-page .slt-index-filters::-webkit-scrollbar { display: none; }
+  .fecx .slt-index-page .slt-filter-chip { flex: 0 0 auto; white-space: nowrap; }
+
+  /* toolbar: two columns, search and checkbox full width */
+  .fecx .slt-index-page .wp-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 12px;
+    align-items: end;
+  }
+  .fecx .slt-index-page .wp-ctl select { width: 100%; }
+  .fecx .slt-index-page .wp-ctl--search { grid-column: 1 / -1; }
+  .fecx .slt-index-page .wp-ctl--search input[type="search"] { width: 100%; }
+  .fecx .slt-index-page .wp-ctl--check { grid-column: 1 / -1; padding-top: 2px; }
+  .fecx .slt-index-page .wp-count { grid-column: 1 / -1; margin-left: 0; }
+
+  .fecx .slt-legend { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  /* phones: the richer card needs the full width */
+  .fecx .slt-index-page .slt-index-grid { grid-template-columns: 1fr; gap: 12px; }
+  .fecx .slt-index-page .slt-card-link { padding: 14px 14px 12px; }
+  .fecx .slt-index-page .slt-card-name { font-size: 17px; }
+  .fecx .slt-index-page .slt-card-rtp .num { font-size: 20px; }
+  .fecx .slt-index-page .slt-card-rtp-min .num { font-size: 16px; }
+  .fecx .slt-index-page .slt-card-stats { gap: 10px 14px; }
+}

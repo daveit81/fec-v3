@@ -11,7 +11,8 @@
 # shows exactly what changed on the live site since the last snapshot.
 # Nothing here is ever deployed or autoloaded; see legacy/README.md.
 #
-# Excluded on purpose: conf/ directories (keys), cache/ logs/ tmp/, backups
+# Excluded on purpose: conf/ directories (keys), fec_review_config.php
+# (Turnstile keys, lives next to the component), cache/ logs/ tmp/, backups
 # (*_bk*, *_before_*, *.bak, *.orig), binaries (images, archives, fonts).
 # Run the secret scan printed at the end before committing.
 
@@ -55,7 +56,8 @@ if [[ "$(id -un)" != "freeextr" ]]; then
 fi
 [[ -d "$SRC" ]] || { echo "Docroot not found: $SRC" >&2; exit 1; }
 
-rm -rf "$DST"
+# Rebuild everything but README.md (tracked, written by hand).
+find "$DST" -mindepth 1 ! -name 'README.md' -delete 2>/dev/null || true
 mkdir -p "$DST"
 cd "$SRC"
 
@@ -75,6 +77,7 @@ for root in "${ROOTS[@]}"; do
          -o -name '*.html' -o -name '*.htm' -o -name '*.json' -o -name '*.txt' -o -name '*.md' -o -name '.htaccess' \) \
       ! -path '*/conf/*' ! -path '*/cache/*' ! -path '*/logs/*' ! -path '*/tmp/*' \
       ! -name '*_bk*' ! -name '*_before_*' ! -name '*.bak' ! -name '*.orig' ! -name '*.log' \
+      ! -name 'fec_review_config.php' \
       -print0 > "$list"
   n=0
   while IFS= read -r -d '' f; do
@@ -96,6 +99,9 @@ echo
 echo "Total: $total files in $DST ($(du -sh "$DST" | cut -f1))"
 echo
 echo "Secret scan (file:line only, no values) - review before committing:"
-grep -rnoiE '(api[_-]?key|secret|passw(or)?d|token|bot_?id)\s*(=|=>|:)' "$DST" --include='*.php' --include='*.ini' --include='*.json' \
-  | grep -viE 'csrf|nonce|token_?name|formtoken|JSession|checkToken|getToken|freshtoken|tokenise|placeholder' \
-  | cut -d: -f1,2 | sort | uniq | sed "s#^$DST/#  #" || true
+# Two shapes: "$x = ..." / "'key' => ..." and define('..._KEY', '...').
+{
+  grep -rnoiE '(api[_-]?key|secret|passw(or)?d|token|bot_?id)\s*(=|=>|:)' "$DST" --include='*.php' --include='*.ini' --include='*.json' \
+    | grep -viE 'csrf|nonce|token_?name|formtoken|JSession|checkToken|getToken|freshtoken|tokenise|placeholder'
+  grep -rnoiE "define\s*\(\s*['\"][A-Z0-9_]*(KEY|SECRET|TOKEN|PASS(WORD)?|PWD)[A-Z0-9_]*['\"]\s*,\s*['\"][^'\"]{8,}" "$DST" --include='*.php'
+} | cut -d: -f1,2 | sort | uniq | sed "s#^$DST/#  #" || true

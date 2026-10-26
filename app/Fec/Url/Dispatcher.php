@@ -16,7 +16,9 @@ final class Dispatcher
 {
     /** @var array<string, class-string<PageHandler>> */
     public const HANDLERS = [
-        // phase 2: com_authors.*  phase 3: com_bonuses.*  phase 4: com_content.*, com_atlas.*
+        // phase 2: com_authors, view by view as parity goes green (fec:parity)
+        'com_authors.authors' => \App\Fec\Legacy\ComponentRunner::class,
+        // phase 3: com_bonuses.*  phase 4: com_content.*, com_atlas.*
     ];
 
     /** @return class-string<PageHandler>|null */

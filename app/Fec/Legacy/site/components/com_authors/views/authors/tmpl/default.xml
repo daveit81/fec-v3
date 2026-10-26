@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    FEC V2.1 Editorial Team — menu item params.
+
+    Goes to /components/com_authors/views/authors/tmpl/default.xml
+
+    When the admin creates a menu item that points to
+        index.php?option=com_authors&view=authors
+    Joomla will surface these fields in the "Options" tab of the menu item
+    edit screen. Reachable from the template via:
+        $params = JFactory::getApplication()->getMenu()->getActive()->params;
+        $params->get('hero_title', 'fallback');
+
+    Defaults match the bundled mockup so the page reads correctly out of the
+    box even before the admin sets anything.
+-->
+<metadata>
+    <layout title="Editorial Team (fec-edition)">
+        <message>Team page rendered with the .fecx editorial design system (.tm-* family).</message>
+    </layout>
+
+    <fields name="params">
+
+        <fieldset name="page_meta" label="Page meta">
+            <field
+                name="page_title"
+                type="text"
+                default="Editorial Team — FreeExtraChips"
+                label="HTML page title"
+                description="Sent to &lt;title&gt; and used as the default share title."
+            />
+            <field
+                name="meta_description"
+                type="textarea"
+                rows="3"
+                default="Meet the analysts who verify bonus terms, claim FXCheck reports, and audit casino reviews on FreeExtraChips."
+                label="Meta description"
+            />
+        </fieldset>
+
+        <fieldset name="hero" label="Hero">
+            <field
+                name="hero_eyebrow"
+                type="text"
+                default="Masthead · About the team"
+                label="Eyebrow"
+            />
+            <field
+                name="hero_title"
+                type="textarea"
+                rows="3"
+                default="The analysts behind every FXCheck&#8482; verdict."
+                label="Title"
+                description="Supports inline &lt;em&gt; for accent color (e.g. wrap one word in &lt;em&gt;...&lt;/em&gt;)."
+            />
+            <field
+                name="hero_intro"
+                type="textarea"
+                rows="5"
+                default="Specialists with one job: read the fine print so you don&#39;t have to. We sign up for bonuses, claim them, log the actual terms, and request withdrawals. Every byline on this site links back to a person whose work you can audit."
+                label="Intro paragraph"
+            />
+        </fieldset>
+
+        <fieldset name="principles" label="Principles">
+            <field
+                name="show_principles"
+                type="radio"
+                default="1"
+                label="Show principles section"
+                class="btn-group"
+            >
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </field>
+            <field
+                name="principles_eyebrow"
+                type="text"
+                default="Editorial standards"
+                label="Eyebrow"
+            />
+            <field
+                name="principles_title"
+                type="text"
+                default="How we work."
+                label="Section title"
+            />
+            <field
+                name="principles_methodology_url"
+                type="text"
+                default=""
+                label="Methodology link URL"
+                description="Leave empty to hide the &quot;Read the full methodology&quot; link."
+            />
+
+            <field
+                name="principle1_title"
+                type="text"
+                default="Player-first, never paid placement."
+                label="01 — Title"
+            />
+            <field
+                name="principle1_desc"
+                type="textarea"
+                rows="4"
+                default="Affiliate revenue funds the operation, but no operator buys a listing position, a Frank Score, or an FXCheck verdict. The order of offers on this site is the same whether or not a casino runs an active commercial agreement with us."
+                label="01 — Description"
+            />
+
+            <field
+                name="principle2_title"
+                type="text"
+                default="We claim every bonus we list."
+                label="02 — Title"
+            />
+            <field
+                name="principle2_desc"
+                type="textarea"
+                rows="4"
+                default="Every offer published goes through a sign-up, claim, and terms-verification cycle. Where possible, a specialist also plays through wagering and attempts a withdrawal — and logs what actually happens, not what the promo page promised."
+                label="02 — Description"
+            />
+
+            <field
+                name="principle3_title"
+                type="text"
+                default="Player reports above marketing copy."
+                label="03 — Title"
+            />
+            <field
+                name="principle3_desc"
+                type="textarea"
+                rows="4"
+                default="FXCheck aggregates Yes/No outcomes from real players who claimed the offer. When player data and casino claims diverge, player data wins and the listing is updated within 24 hours."
+                label="03 — Description"
+            />
+
+            <field
+                name="principle4_title"
+                type="text"
+                default="Public corrections, signed names."
+                label="04 — Title"
+            />
+            <field
+                name="principle4_desc"
+                type="textarea"
+                rows="4"
+                default="Errors get flagged on the page itself with the date, the correction, and the editor who made it. There are no silent updates. If we changed our mind, we say so."
+                label="04 — Description"
+            />
+        </fieldset>
+
+        <fieldset name="bylines" label="Bylines">
+            <field
+                name="bylines_eyebrow"
+                type="text"
+                default="Bylines"
+                label="Eyebrow"
+            />
+            <field
+                name="bylines_title"
+                type="text"
+                default="The team."
+                label="Section title"
+            />
+            <field
+                name="bylines_sub"
+                type="textarea"
+                rows="2"
+                default="Click any name to see every article and FXCheck report that person has signed."
+                label="Section subtitle"
+            />
+
+            <field
+                name="show_bylines_policy"
+                type="radio"
+                default="1"
+                label="Show byline policy box"
+                description="Declares that bylines are professional pen names of real editors. Every sentence is a factual claim about the desk — keep it literally true."
+                class="btn-group"
+            >
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </field>
+            <field
+                name="bylines_policy_label"
+                type="text"
+                default="Why our editors write under pen names"
+                label="Byline policy — label"
+            />
+            <field
+                name="bylines_policy_p1"
+                type="textarea"
+                rows="4"
+                default="The names on this page are professional pen names. Each one belongs to one real person, a member of the FreeExtraChips editorial team or a regular contributor, and to that person only. The gambling industry is small and not always friendly, and our writers keep their private identities out of it."
+                label="Byline policy — paragraph 1"
+            />
+            <field
+                name="bylines_policy_p2"
+                type="textarea"
+                rows="4"
+                default="The byline tells you who did the work. Editorial responsibility for everything we publish sits with FreeExtraChips as the publisher. Each profile describes what that editor actually covers and checks. Nothing in these profiles is invented. The portraits are stylised renderings of the editors themselves, not stock images or invented faces."
+                label="Byline policy — paragraph 2"
+            />
+            <field
+                name="bylines_policy_p3"
+                type="textarea"
+                rows="3"
+                default="If something we published is wrong, tell us: corrections are made on the page and signed, as described in our correction policy."
+                label="Byline policy — paragraph 3"
+                description="Leave empty to drop the paragraph."
+            />
+            <field
+                name="bylines_policy_link_label"
+                type="text"
+                default="How our bylines work"
+                label="Byline policy — link label"
+                description="Leave empty to hide the link."
+            />
+            <field
+                name="bylines_policy_url"
+                type="text"
+                default=""
+                label="Byline policy — link URL"
+                description="Leave empty to link to the Bylines section of the Editorial Standards methodology page."
+            />
+        </fieldset>
+
+        <fieldset name="contact" label="Contact CTA">
+            <field
+                name="show_contact"
+                type="radio"
+                default="1"
+                label="Show contact section"
+                class="btn-group"
+            >
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </field>
+            <field
+                name="contact_eyebrow"
+                type="text"
+                default="Tips, corrections, complaints"
+                label="Eyebrow"
+            />
+            <field
+                name="contact_title"
+                type="textarea"
+                rows="2"
+                default="Saw something we got wrong? Tell us."
+                label="Title"
+            />
+            <field
+                name="contact_body"
+                type="textarea"
+                rows="5"
+                default="Player reports keep FXCheck honest. So do correction emails. If a bonus paid differently than we said it would, if a casino changed terms after you claimed, or if you spotted a typo — write us. Real humans read this inbox."
+                label="Body"
+            />
+
+            <field
+                name="contact_action1_label"
+                type="text"
+                default="tips@freeextrachips.com"
+                label="Primary CTA — Label"
+            />
+            <field
+                name="contact_action1_href"
+                type="text"
+                default="mailto:tips@freeextrachips.com"
+                label="Primary CTA — URL"
+            />
+
+            <field
+                name="contact_action2_label"
+                type="text"
+                default="File a correction"
+                label="Secondary CTA — Label"
+                description="Leave empty to hide the secondary button."
+            />
+            <field
+                name="contact_action2_href"
+                type="text"
+                default="mailto:corrections@freeextrachips.com"
+                label="Secondary CTA — URL"
+            />
+        </fieldset>
+
+    </fields>
+</metadata>

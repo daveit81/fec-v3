@@ -1,0 +1,1446 @@
+/* ============================================================================
+ * com_authors / page.css
+ * Editorial / trust / public-service pages (V2.2+).
+ *
+ * Scoped under .fecx so loading on a non-fecx page is a no-op. Reuses fec-edition
+ * tokens (--ink, --bg, --accent, etc.) and the .au-* primitives for hero/main/
+ * sidebar. Adds .rg-* patterns specific to Responsible Gambling and similar.
+ *
+ * Page-level CSS quality bar:
+ *   - Crisis banner is HIGH contrast, immediately readable, prioritized layout.
+ *   - Helpline numbers are LARGE tap targets on mobile (min 44px height).
+ *   - No external font calls; reuses serif/sans tokens.
+ *   - All colors via tokens so dark-mode / theme changes propagate.
+ * ============================================================================ */
+
+
+/* ----------------------------------------------------------------------------
+ * 0. Page shell
+ * -------------------------------------------------------------------------- */
+
+.fecx .rg-page {
+    color: var(--ink);
+    background: var(--bg);
+}
+
+
+/* ----------------------------------------------------------------------------
+ * 1. CRISIS BANNER (top of page)
+ * Red, urgent, but not alarming. Designed to be the first thing a user in
+ * acute distress sees so they get the path forward immediately.
+ * -------------------------------------------------------------------------- */
+
+.fecx .rg-crisis {
+    background: var(--danger-soft, #fdecec);
+    border-top: 1px solid rgba(0, 0, 0, .05);
+    border-bottom: 3px solid var(--danger, #c33);
+    padding: 18px 0;
+}
+
+.fecx .rg-crisis-inner {
+    display: flex;
+    gap: 18px;
+    align-items: flex-start;
+}
+
+.fecx .rg-crisis-icon {
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--danger, #c33);
+    color: #fff;
+    font-weight: 800;
+    font-size: 22px;
+    line-height: 36px;
+    text-align: center;
+    font-family: var(--font-mono, monospace);
+}
+
+.fecx .rg-crisis-body {
+    flex: 1 1 auto;
+    font-size: .95rem;
+    line-height: 1.55;
+}
+
+.fecx .rg-crisis-body strong {
+    color: var(--danger-ink, #8a1f1f);
+    font-weight: 700;
+}
+
+.fecx .rg-crisis-lines {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0 8px;
+    display: grid;
+    gap: 6px 18px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.fecx .rg-crisis-lines li {
+    margin: 0;
+    padding: 0;
+}
+
+.fecx .rg-crisis-lines a {
+    color: var(--danger-ink, #8a1f1f);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.fecx .rg-crisis-lines a strong {
+    font-family: var(--font-mono, monospace);
+    letter-spacing: .02em;
+}
+
+.fecx .rg-cc {
+    display: inline-block;
+    min-width: 90px;
+    font-family: var(--font-mono, monospace);
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--ink-3, #6b6358);
+    margin-right: 6px;
+}
+
+.fecx .rg-crisis-note {
+    margin: 8px 0 0;
+    font-size: .85rem;
+    color: var(--ink-2, #4a443c);
+    font-style: italic;
+}
+
+
+/* ----------------------------------------------------------------------------
+ * 2. HERO (editorial intro)
+ * -------------------------------------------------------------------------- */
+
+.fecx .rg-hero {
+    padding: 50px 0 36px;
+    background: var(--paper);
+    border-bottom: 1px solid rgba(0, 0, 0, .06);
+}
+
+.fecx .rg-hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px 28px;
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(0, 0, 0, .08);
+    font-size: .85rem;
+}
+
+.fecx .rg-hero-byline,
+.fecx .rg-hero-updated {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.fecx .rg-bl-label {
+    font-family: var(--font-mono, monospace);
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--ink-3, #6b6358);
+}
+
+.fecx .rg-hero-byline a {
+    color: var(--ink);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.fecx .rg-hero-byline a:hover {
+    color: var(--accent-ink, #074842);
+    text-decoration: underline;
+}
+
+.fecx .rg-bl-role {
+    font-size: .8rem;
+    color: var(--ink-2, #4a443c);
+    font-style: italic;
+}
+
+.fecx .rg-hero-updated time {
+    font-family: var(--font-mono, monospace);
+    color: var(--ink-2, #4a443c);
+}
+
+.fecx .rg-hero-pledge {
+    margin-top: 24px;
+    padding: 14px 18px;
+    background: var(--accent-soft, #d9e9e5);
+    border-left: 3px solid var(--accent, #0b6b62);
+    border-radius: var(--radius-sm, 8px);
+    font-size: .92rem;
+    color: var(--accent-ink, #074842);
+    line-height: 1.5;
+}
+
+.fecx .rg-hero-pledge strong {
+    font-weight: 700;
+}
+
+
+/* ----------------------------------------------------------------------------
+ * 3. MAIN GRID
+ * -------------------------------------------------------------------------- */
+
+.fecx .rg-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 48px;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .fecx .rg-main {
+        grid-template-columns: 1fr;
+        gap: 32px;
+    }
+}
+
+/* Gutters (V2.7.52). fec-edition.css declares .fecx .au-main { padding: 32px 0 48px }
+ * after .fecx .wrap { padding: 0 28px } at the same specificity, so on
+ * <div class="wrap au-main rg-main"> the side padding collapses to zero and
+ * on phones the content sits flush against the viewport edge. The selectors
+ * below out-rank it (three classes) and restore the .wrap geometry:
+ * 28px sides, 18px under 760px — identical to fec-edition's own breakpoint. */
+.fecx .wrap.rg-main {
+    padding: 40px 28px 50px;
+}
+
+.fecx .wrap.rg-footer-byline {
+    padding-left: 28px;
+    padding-right: 28px;
+}
+
+@media (max-width: 760px) {
+    .fecx .wrap.rg-main {
+        padding: 28px 18px 40px;
+    }
+
+    .fecx .wrap.rg-footer-byline {
+        padding-left: 18px;
+        padding-right: 18px;
+    }
+}
+
+.fecx .rg-content {
+    min-width: 0;
+}
+
+.fecx .rg-content > .rg-section + .rg-section {
+    margin-top: 42px;
+}
+
+.fecx .rg-section h2 {
+    font-family: var(--font-serif, Georgia, serif);
+    font-size: 1.65rem;
+    margin: 0 0 14px;
+    color: var(--ink);
+    line-height: 1.25;
+}
+
+.fecx .rg-section h3 {
+    font-family: var(--font-serif, Georgia, serif);
+    font-size: 1.15rem;
+    margin: 22px 0 8px;
+    color: var(--ink);
+}
+
+.fecx .rg-section p {
+    margin: 0 0 14px;
+    line-height: 1.65;
+    color: var(--ink);
+}
+
+.fecx .rg-lede {
+    font-size: 1.08rem;
+    color: var(--ink-2, #4a443c);
+}
+
+.fecx .rg-content a {
+    color: var(--accent-ink, #074842);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.fecx .rg-content a:hover {
+    color: var(--accent, #0b6b62);
+}
+
+
+/* ----------------------------------------------------------------------------
+ * 4. SIDEBAR
+ * -------------------------------------------------------------------------- */
+
+.fecx .rg-side {
+    position: sticky;
+    top: 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+@media (max-width: 900px) {
+    .fecx .rg-side {
+        position: static;
+        top: auto;
+    }
+}
+
+.fecx .rg-toc ul {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 0;
+}
+
+.fecx .rg-toc li {
+    margin: 0;
+}
+
+.fecx .rg-toc a {
+    display: block;
+    padding: 6px 0;
+    color: var(--ink-2, #4a443c);
+    text-decoration: none;
+    font-size: .9rem;
+    border-bottom: 1px solid rgba(0, 0, 0, .04);
+}
+
+.fecx .rg-toc a:hover {
+    color: var(--accent-ink, #074842);
+}
+
+.fecx .rg-toc li:last-child a {
+    border-bottom: 0;
+}
+
+.fecx .rg-reviewer-card .rg-rc-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+    text-decoration: none;
+    color: var(--ink);
+}
+
+.fecx .rg-rc-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex: 0 0 auto;
+}
+
+.fecx .rg-rc-name {
+    font-weight: 600;
+}
+
+.fecx .rg-rc-role {
+    font-size: .82rem;
+    color: var(--ink-3, #6b6358);
+}
+
+.fecx .rg-rc-bio {
+    margin: 10px 0 0;
+    font-size: .85rem;
+    color: var(--ink-2, #4a443c);
+    line-height: 1.5;
+}
+
+.fecx .rg-disclosure {
+    background: var(--accent-soft, #d9e9e5);
+    border: 1px solid rgba(11, 107, 98, .15);
+}
+
+.fecx .rg-disclosure p {
+    margin: 8px 0 0;
+    font-size: .88rem;
+    color: var(--accent-ink, #074842);
+    line-height: 1.55;
+}
+
+
+/* ----------------------------------------------------------------------------
+ * 5. WARNING SIGNS LIST
+ * -------------------------------------------------------------------------- */
+
+.fecx .rg-signs {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.fecx .rg-signs li {
+    position: relative;
+    padding: 12px 14px 12px 38px;
+    background: var(--paper, #fdfbf6);
+    border-left: 3px solid var(--warn, #c9961f);
+    border-radius: 0 var(--radius-sm, 8px) var(--radius-sm, 8px) 0;
+    font-size: .95rem;
+    line-height: 1.55;
+}
+
+.fecx .rg-signs li::before {
+    content: "!";
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+    text-align: center;
+    background: var(--warn, #c9961f);
+    color: #fff;
+    border-radius: 50%;
+    font-family: var(--font-mono, monospace);
+    font-size: .72rem;
+    font-weight: 800;
+}
+
+
+/* ----------------------------------------------------------------------------
+ * 6. SELF-CHECK
+ * -------------------------------------------------------------------------- */
+
+.fecx .rg-selfcheck {
+    margin: 18px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.fecx .rg-sc-q {
+    display: flex;
+    gap: 16px;
+    padding: 18px;
+    background: var(--paper, #fdfbf6);
+    border: 1px solid rgba(0, 0, 0, .08);
+    border-radius: var(--radius, 14px);
+}
+
+.fecx .rg-sc-n {
+    flex: 0 0 auto;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--accent, #0b6b62);
+    color: #fff;
+    font-family: var(--font-mono, monospace);
+    font-weight: 700;
+    font-size: .85rem;
+    line-height: 42px;
+    text-align: center;
+    letter-spacing: .03em;
+}
+
+.fecx .rg-sc-text {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.fecx .rg-sc-text strong {
+    display: block;
+    font-size: 1.02rem;
+    color: var(--ink);
+    margin-bottom: 4px;
+}
+
+.fecx .rg-sc-hint {
+    display: block;
+    font-size: .85rem;
+    color: var(--ink-2, #4a443c);
+    line-height: 1.55;
+}
+
+.fecx .rg-sc-note {
+    padding: 14px 18px;
+    background: var(--accent-soft, #d9e9e5);
+    border-radius: var(--radius-sm, 8px);
+    font-size: .92rem;
+    color: var(--accent-ink, #074842);
+    line-height: 1.55;
+}
+
+
+/* ----------------------------------------------------------------------------
+ * 7. STEPS LIST (ordered)
+ * -------------------------------------------------------------------------- */
+
+.fecx .rg-steps {
+    list-style: none;
+    counter-reset: rg-step;
+    padding: 0;
+    margin: 16px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.fecx .rg-steps li {
+    counter-increment: rg-step;
+    position: relative;
+    padding: 14px 16px 14px 56px;
+    background: var(--paper, #fdfbf6);
+    border: 1px solid rgba(0, 0, 0, .08);
+    border-radius: var(--radius-sm, 8px);
+    font-size: .95rem;
+    line-height: 1.6;
+}
+
+.fecx .rg-steps li::before {
+    content: counter(rg-step);
+    position: absolute;
+    left: 14px;
+    top: 14px;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    background: var(--accent, #0b6b62);
+    color: #fff;
+    border-radius: 50%;
+    font-family: var(--font-mono, monospace);
+    font-weight: 700;
+    font-size: .85rem;
+}
+
+
+/* ----------------------------------------------------------------------------
+ * 8. TOOLS GRID
+ * -------------------------------------------------------------------------- */
+
+.fecx .rg-tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+    margin-top: 18px;
+}
+
+.fecx .rg-tool {
+    padding: 16px 18px;
+    background: var(--paper, #fdfbf6);
+    border: 1px solid rgba(0, 0, 0, .08);
+    border-radius: var(--radius-sm, 8px);
+}
+
+.fecx .rg-tool h3 {
+    margin: 0 0 8px;
+    font-family: var(--font-sans, sans-serif);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent-ink, #074842);
+}
+
+.fecx .rg-tool p {
+    margin: 0;
+    font-size: .9rem;
+    line-height: 1.55;
+    color: var(--ink-2, #4a443c);
+}
+
+
+/* ----------------------------------------------------------------------------
+ * 9. HELPLINES BY COUNTRY
+ * Critical UX: phone numbers are very large tap targets on mobile.
+ * Min 44px height + 1.2rem+ font size. Numbers always click-to-call (tel:).
+ * -------------------------------------------------------------------------- */
+
+.fecx .rg-helplines {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 18px;
+    margin-top: 18px;
+}
+
+.fecx .rg-helpline {
+    display: flex;
+    gap: 16px;
+    padding: 20px;
+    background: var(--paper, #fdfbf6);
+    border: 1px solid rgba(0, 0, 0, .08);
+    border-radius: var(--radius, 14px);
+}
+
+.fecx .rg-hp-flag {
+    flex: 0 0 auto;
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.fecx .rg-hp-body {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.fecx .rg-hp-body h3 {
+    margin: 0 0 10px;
+    font-family: var(--font-serif, Georgia, serif);
+    font-size: 1.15rem;
+    color: var(--ink);
+}
+
+.fecx .rg-hp-primary {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 14px;
+    background: var(--accent-soft, #d9e9e5);
+    border-left: 3px solid var(--accent, #0b6b62);
+    border-radius: 0 var(--radius-sm, 8px) var(--radius-sm, 8px) 0;
+    margin-bottom: 12px;
+}
+
+.fecx .rg-hp-tel {
+    font-family: var(--font-mono, monospace);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--accent-ink, #074842);
+    text-decoration: none;
+    letter-spacing: .02em;
+    line-height: 1.2;
+}
+
+.fecx .rg-hp-tel:hover {
+    text-decoration: underline;
+}
+
+.fecx .rg-hp-name {
+    font-size: .82rem;
+    color: var(--ink-2, #4a443c);
+    font-style: italic;
+}
+
+.fecx .rg-hp-body p {
+    margin: 0 0 10px;
+    font-size: .9rem;
+    line-height: 1.55;
+    color: var(--ink-2, #4a443c);
+}
+
+.fecx .rg-hp-body p strong {
+    color: var(--ink);
+}
+
+.fecx .rg-hp-self {
+    padding: 10px 12px;
+    background: var(--bg, #f7f4ed);
+    border-radius: var(--radius-sm, 8px);
+    font-size: .85rem !important;
+    line-height: 1.5 !important;
+}
+
+
+/* ----------------------------------------------------------------------------
+ * 10. INTERNATIONAL RESOURCES
+ * -------------------------------------------------------------------------- */
+
+.fecx .rg-international {
+    margin-top: 28px;
+    padding: 20px;
+    background: var(--paper, #fdfbf6);
+    border: 1px solid rgba(0, 0, 0, .08);
+    border-radius: var(--radius, 14px);
+}
+
+.fecx .rg-international h3 {
+    margin: 0 0 12px;
+    font-family: var(--font-serif, Georgia, serif);
+    font-size: 1.05rem;
+    color: var(--ink);
+}
+
+.fecx .rg-international ul {
+    list-style: disc;
+    padding-left: 22px;
+    margin: 0;
+}
+
+.fecx .rg-international li {
+    margin: 6px 0;
+    font-size: .9rem;
+    line-height: 1.6;
+    color: var(--ink-2, #4a443c);
+}
+
+
+/* ----------------------------------------------------------------------------
+ * 11. FAMILY & FRIENDS TIPS
+ * -------------------------------------------------------------------------- */
+
+.fecx .rg-family-tips {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.fecx .rg-family-tips li {
+    padding: 12px 14px;
+    background: var(--paper, #fdfbf6);
+    border-left: 3px solid var(--accent, #0b6b62);
+    border-radius: 0 var(--radius-sm, 8px) var(--radius-sm, 8px) 0;
+    font-size: .92rem;
+    line-height: 1.6;
+    color: var(--ink);
+}
+
+
+/* ----------------------------------------------------------------------------
+ * 12. FOOTER BYLINE (mirrors hub-byline pattern)
+ * -------------------------------------------------------------------------- */
+
+.fecx .rg-footer-byline {
+    padding-top: 22px;
+    padding-bottom: 32px;
+    border-top: 1px solid rgba(0, 0, 0, .08);
+    margin-top: 30px;
+}
+
+
+/* ----------------------------------------------------------------------------
+ * 13. RESPONSIVE TWEAKS
+ * -------------------------------------------------------------------------- */
+
+@media (max-width: 600px) {
+    .fecx .rg-hero {
+        padding: 36px 0 28px;
+    }
+
+    .fecx .rg-section h2 {
+        font-size: 1.4rem;
+    }
+
+    .fecx .rg-helpline {
+        padding: 16px;
+    }
+
+    .fecx .rg-hp-flag {
+        font-size: 1.6rem;
+    }
+
+    .fecx .rg-hp-tel {
+        font-size: 1.2rem;
+    }
+
+    .fecx .rg-crisis-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 18px;
+        line-height: 30px;
+    }
+
+    .fecx .rg-crisis-inner {
+        gap: 12px;
+    }
+}
+
+
+/* ----------------------------------------------------------------------------
+ * 14. PAYOUT INDEX (V2.7.49) — /online-casinos/fast-payouts
+ * Two ranked tables (desk tests, player clocks) plus the running-now band
+ * shown while no brand has a player median. Scoped .pi-* so the other trust
+ * pages are untouched. Numbers in mono, tabular; mobile scrolls the table
+ * sideways inside its own wrapper (the body never scrolls horizontally).
+ * -------------------------------------------------------------------------- */
+
+.fecx .pi-stats {
+    margin-top: 22px;
+}
+
+.fecx .pi-caption {
+    margin: -6px 0 14px;
+    font-size: .92rem;
+    color: var(--ink-3, #7a7368);
+}
+
+.fecx .pi-table-wrap {
+    margin: 0 0 12px;
+    border: 1px solid var(--rule, rgba(0, 0, 0, .08));
+    border-radius: var(--radius-sm, 8px);
+    background: var(--paper, #fdfbf6);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.fecx .pi-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .92rem;
+    min-width: 640px;
+}
+
+.fecx .pi-table th,
+.fecx .pi-table td {
+    padding: 11px 12px;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--rule, rgba(0, 0, 0, .08));
+}
+
+.fecx .pi-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.fecx .pi-table thead th {
+    font-family: var(--font-sans, sans-serif);
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--ink-3, #7a7368);
+    border-bottom: 2px solid var(--rule-2, rgba(0, 0, 0, .12));
+    white-space: nowrap;
+}
+
+.fecx .pi-table .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.fecx .pi-table .pi-rank {
+    width: 44px;
+    text-align: center;
+}
+
+.fecx .pi-rank-chip {
+    display: inline-block;
+    min-width: 26px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: var(--accent-soft, #e3f1ee);
+    color: var(--accent-ink, #074842);
+    font-family: var(--font-mono, monospace);
+    font-size: .8rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.fecx .pi-casino-name {
+    display: block;
+    font-weight: 700;
+    color: var(--ink, #1c1a17);
+    text-decoration: none;
+}
+
+.fecx .pi-casino-name:hover {
+    color: var(--accent-ink, #074842);
+}
+
+.fecx .pi-table .pi-casino {
+    min-width: 170px;
+}
+
+.fecx .pi-casino-cta {
+    display: inline-block;
+    margin-top: 3px;
+    font-size: .78rem;
+    color: var(--accent-ink, #074842);
+    text-decoration: none;
+    border-bottom: 1px dotted currentColor;
+    white-space: nowrap;
+}
+
+.fecx .pi-cta-short {
+    display: none;
+}
+
+.fecx .pi-scroll-hint {
+    display: none;
+    margin: -6px 0 10px;
+    font-size: .78rem;
+    color: var(--ink-3, #7a7368);
+}
+
+.fecx .pi-mono {
+    font-family: var(--font-mono, monospace);
+    font-variant-numeric: tabular-nums;
+}
+
+.fecx .pi-strong {
+    font-weight: 700;
+    color: var(--ink, #1c1a17);
+}
+
+.fecx .pi-sub {
+    display: block;
+    margin-top: 3px;
+    font-size: .76rem;
+    color: var(--ink-3, #7a7368);
+    white-space: nowrap;
+}
+
+.fecx .pi-sub-inline {
+    font-size: .78rem;
+    color: var(--ink-3, #7a7368);
+}
+
+.fecx .pi-receipt {
+    white-space: nowrap;
+}
+
+.fecx .pi-receipt .pi-grade,
+.fecx .pi-receipt time {
+    margin-left: 8px;
+    font-size: .8rem;
+    color: var(--ink-3, #7a7368);
+}
+
+.fecx .pi-delta {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-family: var(--font-mono, monospace);
+    font-size: .8rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.fecx .pi-delta--faster {
+    background: var(--accent-soft, #e3f1ee);
+    color: var(--accent-ink, #074842);
+}
+
+.fecx .pi-delta--slower {
+    background: rgba(201, 120, 20, .12);
+    color: var(--warn, #9a5b00);
+}
+
+.fecx .pi-delta--ontime {
+    background: var(--bg-2, #f1ede4);
+    color: var(--ink-2, #4a443c);
+}
+
+.fecx .pi-date {
+    white-space: nowrap;
+    color: var(--ink-2, #4a443c);
+}
+
+.fecx .pi-verif {
+    white-space: nowrap;
+}
+
+.fecx .pi-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border: 1px solid var(--accent-ink, #074842);
+    border-radius: 999px;
+    font-family: var(--font-sans, sans-serif);
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--accent-ink, #074842);
+}
+
+.fecx .pi-report {
+    margin-left: 6px;
+    font-size: .82rem;
+}
+
+.fecx .pi-note {
+    margin: 0 0 6px;
+    font-size: .86rem;
+    line-height: 1.55;
+    color: var(--ink-3, #7a7368);
+}
+
+.fecx .pi-empty {
+    padding: 18px 20px;
+    background: var(--paper, #fdfbf6);
+    border: 1px dashed var(--rule-2, rgba(0, 0, 0, .14));
+    border-radius: var(--radius-sm, 8px);
+    margin-bottom: 18px;
+}
+
+.fecx .pi-empty h3 {
+    margin: 0 0 6px;
+    font-size: 1rem;
+    color: var(--ink, #1c1a17);
+}
+
+.fecx .pi-empty p {
+    margin: 0;
+    font-size: .92rem;
+    color: var(--ink-2, #4a443c);
+}
+
+.fecx .pi-subhead {
+    margin: 18px 0 10px;
+    font-family: var(--font-sans, sans-serif);
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--ink-3, #7a7368);
+}
+
+.fecx .pi-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.fecx .pi-tile {
+    display: block;
+    padding: 12px 14px;
+    background: var(--paper, #fdfbf6);
+    border: 1px solid var(--rule, rgba(0, 0, 0, .08));
+    border-radius: var(--radius-sm, 8px);
+    text-decoration: none;
+    color: var(--ink, #1c1a17);
+}
+
+.fecx .pi-tile:hover {
+    border-color: var(--accent-ink, #074842);
+}
+
+.fecx .pi-tile-name {
+    display: block;
+    font-weight: 700;
+    font-size: .92rem;
+}
+
+.fecx .pi-tile-num {
+    display: block;
+    margin-top: 4px;
+    font-family: var(--font-mono, monospace);
+    font-size: .95rem;
+    color: var(--accent-ink, #074842);
+}
+
+.fecx .pi-tile-sub {
+    display: block;
+    margin-top: 2px;
+    font-size: .76rem;
+    color: var(--ink-3, #7a7368);
+}
+
+.fecx .pi-receipts {
+    list-style: none;
+    margin: 0 0 12px;
+    padding: 0;
+}
+
+.fecx .pi-receipts li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    align-items: baseline;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--rule, rgba(0, 0, 0, .08));
+    font-size: .92rem;
+}
+
+.fecx .pi-receipts li:last-child {
+    border-bottom: 0;
+}
+
+.fecx .pi-receipts time,
+.fecx .pi-grade {
+    font-size: .8rem;
+    color: var(--ink-3, #7a7368);
+}
+
+.fecx .pi-cta-line {
+    margin-top: 10px;
+    font-size: .95rem;
+}
+
+.fecx .pi-edition-note p {
+    margin: 0 0 18px;
+    padding: 12px 16px;
+    background: var(--accent-soft, #e3f1ee);
+    border-left: 3px solid var(--accent-ink, #074842);
+    border-radius: var(--radius-sm, 8px);
+    font-size: .95rem;
+}
+
+.fecx .pi-changes {
+    margin: 0 0 28px;
+    padding: 18px 20px;
+    background: var(--paper, #fdfbf6);
+    border: 1px solid var(--rule, rgba(0, 0, 0, .08));
+    border-radius: var(--radius-sm, 8px);
+}
+
+.fecx .pi-changes h2 {
+    margin: 0 0 10px;
+    font-size: 1.15rem;
+}
+
+.fecx .pi-changes ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.fecx .pi-changes li {
+    margin: 6px 0;
+    font-size: .95rem;
+}
+
+.fecx .pi-editions ul {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+}
+
+/* 2.7.64: label and meta stacked, not side by side. The sidebar column is
+   narrow and the meta ("373 live · 96 verified · permalink") was pushing the
+   label into a four-line wrap. */
+.fecx .pi-editions li {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 8px 0;
+    border-top: 1px solid var(--rule, rgba(0, 0, 0, .08));
+    font-size: .92rem;
+}
+
+.fecx .pi-editions li > a,
+.fecx .pi-editions li > span {
+    line-height: 1.35;
+}
+
+.fecx .pi-editions li.is-current span {
+    font-weight: 700;
+}
+
+.fecx .pi-editions small {
+    color: var(--ink-3, #7a7368);
+    white-space: normal;
+    font-size: .8rem;
+    line-height: 1.4;
+}
+
+.fecx .pi-editions small a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.fecx .pi-editions p {
+    margin: 8px 0 0;
+    font-size: .9rem;
+    color: var(--ink-2, #4a443c);
+}
+
+.fecx .pi-faq-item + .pi-faq-item {
+    margin-top: 16px;
+}
+
+.fecx .pi-faq-item h3 {
+    margin: 0 0 6px;
+    font-size: 1.02rem;
+}
+
+.fecx .pi-faq-item p {
+    margin: 0;
+}
+
+.fecx .pi-about p {
+    margin: 8px 0 0;
+    font-size: .9rem;
+    line-height: 1.55;
+    color: var(--ink-2, #4a443c);
+}
+
+@media (max-width: 720px) {
+    .fecx .pi-table {
+        font-size: .86rem;
+        min-width: 520px;
+    }
+
+    .fecx .pi-table th,
+    .fecx .pi-table td {
+        padding: 9px 10px;
+    }
+
+    .fecx .pi-table .pi-casino {
+        min-width: 140px;
+    }
+
+    /* Request date is secondary on a phone: hide the column, keep the row short. */
+    .fecx .pi-table .pi-col-date {
+        display: none;
+    }
+
+    .fecx .pi-cta-long {
+        display: none;
+    }
+
+    .fecx .pi-cta-short {
+        display: inline;
+    }
+
+    .fecx .pi-scroll-hint {
+        display: block;
+    }
+
+    .fecx .pi-stats {
+        margin-top: 16px;
+    }
+}
+
+
+/* ----------------------------------------------------------------------------
+ * 15. LICENCE WATCH (V2.7.61) — draft banner and the logged-events list.
+ * Tables reuse .pi-table; the editions card reuses .pi-editions.
+ * -------------------------------------------------------------------------- */
+
+.fecx .lw-draft {
+    display: inline-block;
+    margin-top: 14px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(201, 120, 20, .14);
+    color: var(--warn, #9a5b00);
+    font-family: var(--font-sans, sans-serif);
+    font-size: .8rem;
+    font-weight: 700;
+}
+
+.fecx .lw-events {
+    list-style: none;
+    margin: 0 0 12px;
+    padding: 0;
+}
+
+.fecx .lw-events li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    align-items: baseline;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--rule, rgba(0, 0, 0, .08));
+    font-size: .92rem;
+}
+
+.fecx .lw-events li:last-child {
+    border-bottom: 0;
+}
+
+.fecx .lw-events time {
+    font-family: var(--font-mono, monospace);
+    font-size: .8rem;
+    color: var(--ink-3, #7a7368);
+    white-space: nowrap;
+}
+
+.fecx .lw-ev-type {
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--accent-soft, #e3f1ee);
+    color: var(--accent-ink, #074842);
+    font-family: var(--font-sans, sans-serif);
+    font-size: .74rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.fecx .lw-ev-title {
+    font-weight: 700;
+}
+
+.fecx .lw-ev-who {
+    color: var(--ink-2, #4a443c);
+}
+
+.fecx .lw-events li p {
+    flex-basis: 100%;
+    margin: 2px 0 0;
+    font-size: .88rem;
+    color: var(--ink-2, #4a443c);
+}
+
+
+/* ----------------------------------------------------------------------------
+ * 16. WELCOME PACKAGE INDEX (V2.7.74) — /bonuses/welcome-packages
+ * The FXRate index: one table of priced packages the reader re-sorts and
+ * filters client side, one table of packages awaiting terms. Reuses the
+ * .pi-* table primitives of section 14; the .wp-* rules below only add the
+ * controls bar, the first-leg marker and the muted "not stated" state.
+ * -------------------------------------------------------------------------- */
+
+.fecx .wp-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px 16px;
+    margin: 0 0 14px;
+    padding: 12px 14px;
+    border: 1px solid var(--rule, rgba(0, 0, 0, .08));
+    border-radius: var(--radius-sm, 8px);
+    background: var(--bg-2, #f1ede4);
+}
+
+.fecx .wp-ctl {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.fecx .wp-ctl > span {
+    font-family: var(--font-mono, monospace);
+    font-size: .68rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--ink-3, #7a7368);
+}
+
+.fecx .wp-ctl select,
+.fecx .wp-ctl input[type="search"] {
+    font: inherit;
+    font-size: .92rem;
+    color: var(--ink, #1c1a17);
+    background: var(--paper, #fdfbf6);
+    border: 1px solid var(--rule, rgba(0, 0, 0, .12));
+    border-radius: var(--radius-sm, 8px);
+    padding: 7px 10px;
+    min-height: 36px;
+}
+
+.fecx .wp-ctl select:focus,
+.fecx .wp-ctl input[type="search"]:focus {
+    outline: 2px solid var(--accent-soft, #e3f1ee);
+    border-color: var(--accent, #0b6b62);
+}
+
+.fecx .wp-ctl--search input[type="search"] {
+    width: 180px;
+}
+
+.fecx .wp-count {
+    margin-left: auto;
+    align-self: center;
+    font-family: var(--font-mono, monospace);
+    font-size: .78rem;
+    color: var(--ink-3, #7a7368);
+    white-space: nowrap;
+}
+
+.fecx .wp-table {
+    font-size: .88rem;
+}
+
+.fecx .wp-table th,
+.fecx .wp-table td {
+    padding: 10px 9px;
+}
+
+.fecx .wp-table .pi-casino {
+    min-width: 150px;
+}
+
+.fecx .wp-table .wp-adv {
+    min-width: 140px;
+    color: var(--ink-2, #4a443c);
+}
+
+.fecx .wp-first--beats {
+    color: var(--accent-ink, #074842);
+    font-weight: 700;
+}
+
+.fecx .wp-mark {
+    font-size: .8em;
+}
+
+.fecx .wp-na {
+    color: var(--ink-3, #7a7368);
+    font-weight: 400;
+}
+
+.fecx .wp-flag {
+    color: var(--warn, #9a5b00);
+    font-weight: 600;
+}
+
+.fecx .wp-spinsleg { font-size: .85em; color: var(--ink-3); cursor: help; }
+.fecx .wp-capped { font-size: .8em; color: var(--warn, #9a6b00); cursor: help; }
+.fecx .wp-alt { color: var(--ink-3); font-style: italic; cursor: help; }
+.fecx .wp-table .wp-cas { display: flex; align-items: flex-start; gap: 10px; }
+.fecx .wp-table .wp-cas .casino-chip { margin-top: 1px; }
+.fecx .wp-table .wp-cas-txt { min-width: 0; }
+.fecx .wp-geo {
+    color: var(--danger, #9a2828);
+    font-weight: 600;
+}
+
+.fecx .wp-ctl--check {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    align-self: center;
+    padding-top: 14px;
+}
+
+.fecx .wp-ctl--check input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+}
+
+.fecx .wp-ctl--check .wp-check-label {
+    font-family: var(--font-sans, sans-serif);
+    font-size: .88rem;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--ink-2, #4a443c);
+}
+
+.fecx .wp-none {
+    margin: 0 0 12px;
+    padding: 12px 14px;
+    border: 1px dashed var(--rule, rgba(0, 0, 0, .12));
+    border-radius: var(--radius-sm, 8px);
+    font-size: .92rem;
+    color: var(--ink-2, #4a443c);
+}
+
+.fecx .wp-table--unpriced td {
+    color: var(--ink-2, #4a443c);
+}
+
+@media (max-width: 640px) {
+    .fecx .wp-controls {
+        gap: 8px 12px;
+    }
+    .fecx .wp-ctl--search {
+        flex: 1 1 100%;
+    }
+    .fecx .wp-ctl--search input[type="search"] {
+        width: 100%;
+    }
+    .fecx .wp-count {
+        margin-left: 0;
+        flex-basis: 100%;
+    }
+}
+
+/* pager (2.7.76): the site .fec-pg nav drawn client side under each table */
+.fecx .wp-pager {
+    padding: 10px 0 4px;
+}
+
+.fecx .wp-pager .pagination {
+    justify-content: flex-start;
+}
+
+.fecx .wp-pager li a {
+    cursor: pointer;
+}

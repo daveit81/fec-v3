@@ -1,0 +1,35 @@
+{
+  "_comment": "Seeds per ported section: the legacy lib functions its views and the template call. scripts/lib-slice.php follows their calls and writes the closure into app/Fec/Legacy/site/components/com_bonuses/helpers/.",
+  "slices": {
+    "authors": [
+      "fec_initials_from_name",
+      "fec_avatar_hue_from_type",
+      "fec_bonus_full_title",
+      "fec_casino_chip",
+      "fec_build_breadcrumb_items_from_path",
+      "fec_render_breadcrumb_html",
+      "fec_render_breadcrumb_jsonld",
+      "fec_blog_route",
+      "fec_blog_kind_label",
+      "fec_blog_image_path",
+      "fec_blog_image_src",
+      "fec_amount_primary",
+      "fec_vm_wager_label",
+      "fec_fxrate_package",
+      "fec_fxrate_leg",
+      "fec_fxrate_casino_excluded",
+      "fec_fxrate_money",
+      "fec_fxrate_pct",
+      "fec_detect_country",
+      "fec_country_name",
+      "fec_decide_state",
+      "fec_should_noindex_casino"
+    ],
+    "template": [
+      "fec_render_email_capture_block",
+      "fec_render_email_capture_popup",
+      "fec_telegram_url",
+      "fec_discord_url"
+    ]
+  }
+}

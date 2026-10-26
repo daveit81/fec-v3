@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+    <!-- Menu Manager renders <message> inside an unescaped title="..." attribute:
+         never use double quotes or angle brackets in it. -->
+    <layout title="Editorial page (com_authors)">
+        <message><![CDATA[Renders an editorial, trust or data page from com_authors: Responsible Gambling, Affiliate Disclosure, Privacy Policy, FEC Payout Index. Set the Page slug field below to a live topic slug, for example fast-payouts. Only topics with status live render.]]></message>
+    </layout>
+
+    <!-- Request fields exposed in Menu Manager -->
+    <fields name="request">
+        <fieldset name="request" addfieldpath="/components/com_authors/models/fields">
+            <field
+                name="slug"
+                type="text"
+                default="responsible-gambling"
+                label="Page slug"
+                description="Slug of the editorial page to render. Must match a live entry in the page topic registry. Examples: responsible-gambling, privacy-policy, fast-payouts."
+                required="true"
+            />
+        </fieldset>
+    </fields>
+</metadata>

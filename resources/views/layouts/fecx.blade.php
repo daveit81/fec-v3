@@ -5,6 +5,8 @@
 
     Sections:  title, meta_description, robots, canonical, body_class, content
     Stacks:    head (extra <link>/<meta>), scripts (end of body)
+    Legacy document slots (ported Joomla components, in the order Joomla's head
+    renderer used): head_meta, head_links, head_styles, head_scripts, head_tail
 --}}
 @php
     $geo = \App\Fec\Geo::fromRequest(request());
@@ -47,6 +49,7 @@
 @endif
 
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+@yield('head_meta')
 @hasSection('meta_description')
   <meta name="description" content="@yield('meta_description')" />
 @endif
@@ -56,16 +59,25 @@
 
   <title>@yield('title', 'FreeExtraChips')</title>
   <link href="{{ $assets }}/favicon.ico" rel="shortcut icon" type="image/vnd.microsoft.icon" />
+@yield('head_links')
+@yield('head_styles')
   <link rel="stylesheet" href="{{ $assets }}/css/fecv2.css" type="text/css" />
   <link rel="stylesheet" href="{{ $assets }}/css/fec-edition.css" type="text/css" />
 @stack('head')
+@yield('head_scripts')
   <script src="{{ $assets }}/js/fecv2.js" type="text/javascript" defer="defer"></script>
   <script src="{{ $assets }}/js/scrollspy.js?v=1" type="text/javascript" defer="defer"></script>
+  <script type="text/javascript">
+function do_nothing() { return; }
+  </script>
+@yield('head_tail')
 
   <link rel="icon" type="image/png" sizes="32x32" href="{{ $assets }}/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="{{ $assets }}/favicon-16x16.png">
   <link rel="apple-touch-icon" sizes="180x180" href="{{ $assets }}/apple-touch-icon.png">
   <link rel="manifest" href="{{ $assets }}/site.webmanifest">
+
+<meta name="google-site-verification" content="AsFjo2DAOMAtcRiSNQMHr3IHZd0Z0-AKPe29ACju3tE" />
 </head>
 <body class="fecv2 fecx @yield('body_class')">
 

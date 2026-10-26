@@ -1,0 +1,581 @@
+/* ============================================================================
+ * methodology.css — methodology pages (me-*)
+ * ----------------------------------------------------------------------------
+ * Add-on to fec-edition.css. Defines only the methodology-specific patterns
+ * that aren't already in au-*. Everything is scoped under .fecx so loading
+ * this file outside an editorial page is a no-op.
+ *
+ * Methodology pages reuse:
+ *   .au-hero          — hero section wrapper
+ *   .au-stats-strip   — 4-column stats strip (live numbers)
+ *   .au-main          — 2-col content + sidebar grid
+ *   .au-side-card     — sidebar block (TOC, meta, authors)
+ *   .au-side-cta      — dark "Spot something wrong?" block
+ *   .tag .tag-ok/-info/-warn/-bad/-mute — status pills in the status table
+ *   .eyebrow .wrap .btn .btn-primary .btn-ghost — shared utilities
+ *
+ * Adds:
+ *   .me-page          — root wrapper (also carries .fecx for scoping safety)
+ *   .me-hero-card     — no-avatar variant of au-hero-card
+ *   .me-title .me-tagline .me-byline — hero typography
+ *   .me-content       — article column wrapper
+ *   .me-verdict       — TL;DR pull-quote box
+ *   .me-callout       — inline emphasis paragraph
+ *   .me-status-table  — Verified/Active/Mixed/Expired/Closed reference table
+ *   .me-numbered .me-bullets — list typography
+ *   .me-faq           — native details/summary FAQ
+ *   .me-toc           — sidebar table of contents
+ *   .me-author-row    — sidebar author byline rows
+ * ============================================================================ */
+
+/* ---- hero (no-avatar variant) ----------------------------------------- */
+.fecx .me-hero-card {
+  padding: 12px 0 4px;
+}
+
+.fecx .me-hero-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.fecx .me-title {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: clamp(28px, 3.4vw, 38px);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 6px 0 0;
+}
+
+.fecx .me-tagline {
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--ink-3);
+  max-width: 64ch;
+  margin: 0;
+}
+
+.fecx .me-byline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 4px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+  margin-top: 6px;
+}
+
+.fecx .me-byline a {
+  color: var(--ink-2);
+  border-bottom: 1px dotted var(--ink-4);
+}
+
+.fecx .me-byline a:hover {
+  color: var(--ink);
+  border-bottom-color: var(--ink-3);
+}
+
+.fecx .me-byline b {
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
+.fecx .me-byline .div {
+  color: var(--ink-4);
+  margin: 0 2px;
+}
+
+/* ---- article column --------------------------------------------------- */
+.fecx .me-content {
+  min-width: 0;
+}
+
+.fecx .me-content h2 {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 40px 0 14px;
+  scroll-margin-top: 80px;
+}
+
+.fecx .me-content h2:first-of-type {
+  margin-top: 28px;
+}
+
+.fecx .me-content p {
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--ink-2);
+  margin: 0 0 14px;
+  max-width: 72ch;
+}
+
+.fecx .me-content p b,
+.fecx .me-content p strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.fecx .me-content a {
+  color: var(--accent-ink);
+  border-bottom: 1px solid var(--accent-soft);
+}
+
+.fecx .me-content a:hover {
+  border-bottom-color: var(--accent);
+}
+
+/* ---- quick verdict box ----------------------------------------------- */
+.fecx .me-verdict {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 18px 22px;
+  margin: 12px 0 8px;
+}
+
+.fecx .me-verdict-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.fecx .me-verdict p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink);
+  max-width: none;
+}
+
+.fecx .me-verdict p b {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* ---- inline callout (lighter than verdict) --------------------------- */
+.fecx .me-callout {
+  background: var(--bg-2);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-size: 14px !important;
+  line-height: 1.55 !important;
+  color: var(--ink-2);
+  margin: 18px 0 22px !important;
+  max-width: none !important;
+}
+
+/* ---- status table ----------------------------------------------------- */
+.fecx .me-status-table {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin: 20px 0 14px;
+}
+
+.fecx .me-status-row {
+  display: grid;
+  grid-template-columns: 160px 220px 1fr 92px;
+  gap: 18px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--rule-2);
+  font-size: 13px;
+  line-height: 1.5;
+  align-items: start;
+  color: var(--ink-2);
+}
+
+.fecx .me-status-row:first-child {
+  border-top: 0;
+}
+
+.fecx .me-status-row--head {
+  background: var(--bg-2);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+
+.fecx .me-status-name .tag {
+  /* Aligns the tag baseline with the criteria text in the same row */
+  margin-top: 1px;
+}
+
+.fecx .me-status-count {
+  font-family: var(--mono);
+  font-size: 14px;
+  text-align: right;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.fecx .me-muted {
+  color: var(--ink-4);
+  font-weight: 400;
+}
+
+/* ---- lists ------------------------------------------------------------ */
+.fecx .me-numbered,
+.fecx .me-bullets {
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--ink-2);
+  padding-left: 22px;
+  margin: 4px 0 16px;
+  max-width: 72ch;
+}
+
+.fecx .me-numbered li,
+.fecx .me-bullets li {
+  margin-bottom: 8px;
+}
+
+.fecx .me-bullets--lg li {
+  margin-bottom: 12px;
+}
+
+.fecx .me-numbered b,
+.fecx .me-bullets b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* ---- FAQ details/summary --------------------------------------------- */
+.fecx .me-faq {
+  margin: 14px 0 4px;
+}
+
+.fecx .me-faq details {
+  border-top: 1px solid var(--rule-2);
+  padding: 16px 0;
+}
+
+.fecx .me-faq details:last-child {
+  border-bottom: 1px solid var(--rule-2);
+}
+
+.fecx .me-faq summary {
+  cursor: pointer;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--ink);
+  list-style: none;
+  position: relative;
+  padding-right: 30px;
+}
+
+.fecx .me-faq summary::-webkit-details-marker {
+  display: none;
+}
+
+.fecx .me-faq summary::after {
+  content: '+';
+  position: absolute;
+  right: 4px;
+  top: -2px;
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--ink-3);
+  line-height: 1;
+  transition: transform 0.15s ease;
+}
+
+.fecx .me-faq details[open] summary::after {
+  content: '−';
+}
+
+.fecx .me-faq details p {
+  margin: 12px 0 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  max-width: 72ch;
+}
+
+/* ---- sidebar TOC ------------------------------------------------------ */
+.fecx .me-toc {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.fecx .me-toc a {
+  font-size: 13px;
+  color: var(--ink-3);
+  padding: 5px 0;
+  border-bottom: 1px dashed transparent;
+}
+
+.fecx .me-toc a:hover {
+  color: var(--ink);
+  border-bottom-color: var(--rule);
+}
+
+/* ---- sidebar author rows --------------------------------------------- */
+.fecx .me-author-row {
+  padding: 10px 0;
+  border-top: 1px solid var(--rule-2);
+  font-size: 13.5px;
+}
+
+.fecx .me-author-row:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.fecx .me-author-row a {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.fecx .me-author-row a:hover {
+  color: var(--accent-ink);
+}
+
+.fecx .me-author-row .me-author-role {
+  display: block;
+  font-size: 12px;
+  color: var(--ink-3);
+  margin-top: 2px;
+  font-family: var(--mono);
+  letter-spacing: 0.02em;
+}
+
+/* ---- responsive ------------------------------------------------------- */
+@media (max-width: 1000px) {
+  .fecx .me-status-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: 16px 18px;
+  }
+
+  .fecx .me-status-row--head {
+    display: none;
+  }
+
+  .fecx .me-status-name {
+    margin-bottom: 2px;
+  }
+
+  .fecx .me-status-count {
+    text-align: left;
+  }
+
+  .fecx .me-status-count::before {
+    content: 'Count: ';
+    color: var(--ink-3);
+    font-size: 11px;
+    font-weight: 400;
+  }
+}
+
+@media (max-width: 720px) {
+  .fecx .me-content h2 {
+    font-size: 21px;
+    margin-top: 32px;
+  }
+
+  .fecx .me-verdict {
+    padding: 16px 18px;
+  }
+
+  .fecx .me-faq summary {
+    font-size: 15px;
+  }
+}
+
+/* ============================================================================
+ * Methodology Hub additions — me-hub-* family
+ * Used on /how-we-verify (view=methodologyhub). Same .fecx scoping.
+ * ============================================================================ */
+
+.fecx .me-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+  margin: 20px 0 28px;
+}
+
+@media (max-width: 720px) {
+  .fecx .me-hub-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
+.fecx .me-hub-card {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--ink);
+  transition: border-color 0.12s ease, transform 0.12s ease;
+  text-decoration: none;
+}
+
+.fecx a.me-hub-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.fecx .me-hub-card--disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.fecx .me-hub-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fecx .me-hub-card-head h3 {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 0;
+  flex: 1;
+}
+
+.fecx .me-hub-card-head .tag {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.fecx .me-hub-card-desc {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-3);
+  margin: 0;
+  flex: 1;
+}
+
+/* v2.7.8 — version + last-updated meta on hub cards */
+.fecx .me-hub-card-meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--ink-3);
+  margin: 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+}
+.fecx .me-hub-card-meta .meta-version {
+  font-weight: 600;
+  color: var(--ink);
+}
+.fecx .me-hub-card-meta .meta-sep {
+  opacity: 0.5;
+}
+
+.fecx .me-hub-card-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+.fecx a.me-hub-card:hover .me-hub-card-cta {
+  color: var(--accent);
+}
+
+/* ---- V2.7.12: generic formula table (FXShield) ------------------------- */
+/* The me-status-table grid is FXCheck-specific (fixed 4 columns). FXShield
+ * publishes eight straightforward data tables (tiers, caps, event weights,
+ * transfer rates, confidence factors) — a plain semantic <table> styled with
+ * editorial tokens covers all of them. Scoped under .fecx like everything
+ * else in this file. */
+.fecx .me-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0 26px;
+  font-size: 0.95em;
+}
+
+.fecx .me-table th,
+.fecx .me-table td {
+  padding: 9px 12px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--rule);
+}
+
+.fecx .me-table thead th {
+  font-size: 0.78em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-3);
+  border-bottom: 2px solid var(--rule-2);
+}
+
+.fecx .me-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .fecx .me-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ---- V2.7.52: gutters for <section class="au-main wrap"> ---------------- */
+/* fec-edition.css declares .fecx .au-main { padding: 32px 0 48px } after
+ * .fecx .wrap { padding: 0 28px } at equal specificity, so the side padding
+ * of the main column collapses to zero: aligned 28px inside the hero, flush
+ * against the viewport edge on phones. Three-class selector out-ranks it and
+ * restores the .wrap geometry (28px, 18px under 760px). Scoped to the
+ * methodology pages that load this file. */
+.fecx.me-page .au-main.wrap {
+  padding-left: 28px;
+  padding-right: 28px;
+}
+
+@media (max-width: 760px) {
+  .fecx.me-page .au-main.wrap {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}
