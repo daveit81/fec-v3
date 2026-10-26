@@ -109,18 +109,22 @@ class UrlHtaccess extends Command
         ksort($exact);
 
         $quote = fn (string $p) => preg_quote($p, '#');
-        $cond = $this->option('test') ? "RewriteCond %{QUERY_STRING} (^|&)v3test=1(&|$)\n" : '';
+        // Requests carrying task= (snapshot crons, desk saves) stay on Joomla until those tasks are ported.
+        $cond = "RewriteCond %{QUERY_STRING} !(^|&)task=\n";
+        if ($this->option('test')) {
+            $cond .= "RewriteCond %{QUERY_STRING} (^|&)v3test=1(&|$)\n";
+        }
 
         $lines = [];
         $lines[] = '# FEC v3 switch - '.$option.' served by the v3 app ('.count($mine).' public URLs; generated '.date('Y-m-d').' by fec:urls:htaccess)';
-        $lines[] = '# '.($this->option('test') ? 'TEST: only with v3test=1 in the query string; drop the RewriteCond lines to switch for real' : 'Remove this block to roll back');
+        $lines[] = '# '.($this->option('test') ? 'TEST: only with v3test=1 in the query string; drop the v3test RewriteCond lines to switch for real' : 'Remove this block to roll back').'; task= requests (crons, desks) stay on Joomla';
         $lines[] = '<IfModule mod_rewrite.c>';
         $lines[] = 'RewriteEngine On';
         if ($prefixes !== []) {
-            $lines[] = rtrim($cond).($cond !== '' ? "\n" : '').'RewriteRule ^('.implode('|', array_map($quote, array_keys($prefixes))).')(/.*)?$ /v3/index.php [L]';
+            $lines[] = rtrim($cond)."\n".'RewriteRule ^('.implode('|', array_map($quote, array_keys($prefixes))).')(/.*)?$ /v3/index.php [L]';
         }
         if ($exact !== []) {
-            $lines[] = rtrim($cond).($cond !== '' ? "\n" : '').'RewriteRule ^('.implode('|', array_map($quote, array_keys($exact))).')/?$ /v3/index.php [L]';
+            $lines[] = rtrim($cond)."\n".'RewriteRule ^('.implode('|', array_map($quote, array_keys($exact))).')/?$ /v3/index.php [L]';
         }
         $lines[] = '</IfModule>';
 

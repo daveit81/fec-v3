@@ -38,6 +38,13 @@ final class ComponentRunner implements PageHandler
             abort(404);
         }
 
+        // A task (snapshot crons, desk saves) on a public view: not ours yet. The
+        // legacy .htaccess keeps task= requests on Joomla; this is the second lock.
+        $task = trim((string) $request->query('task', ''));
+        if ($task !== '' && ! $this->needsWrites($url)) {
+            abort(404, 'Task not available on this view');
+        }
+
         Runtime::boot($option);
         Factory::useRwConnection($this->needsWrites($url));
         Uri::reset();
