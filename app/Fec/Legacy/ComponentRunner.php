@@ -73,6 +73,10 @@ final class ComponentRunner implements PageHandler
             return $this->raw($body, $request);
         } catch (Throwable $e) {
             $this->discard($level);
+            // Joomla turned an exception carrying an HTTP code (new Exception('Author not found', 404)) into that error page.
+            if ($e->getCode() >= 400 && $e->getCode() < 600) {
+                abort((int) $e->getCode(), $e->getMessage());
+            }
             throw $e;
         }
 

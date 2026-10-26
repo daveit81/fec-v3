@@ -186,9 +186,11 @@ class Menu
     }
 
     /**
-     * Pick the active item the way Joomla did after routing: the Itemid of
-     * the resolved query when present, otherwise the first item whose link
-     * carries the same option/view/identifiers.
+     * Pick the active item the way the live site did after sh404SEF routing:
+     * the Itemid stored in the URL's Joomla query when there is one, else
+     * the default (home) item, exactly as Joomla falls back. No matching by
+     * link: /responsible-gambling is stored without an Itemid and the live
+     * menu shows no active entry there, while /authors carries Itemid 1079.
      *
      * @param  array<string, string>  $query
      */
@@ -197,22 +199,8 @@ class Menu
         if (isset($query['Itemid']) && is_numeric($query['Itemid']) && $this->getItem((int) $query['Itemid'])) {
             return $this->setActive((int) $query['Itemid']);
         }
-        $want = UrlRegistry::significant($query);
-        $best = null;
-        foreach ($this->all() as $item) {
-            if ($item->type !== 'component' || empty($item->query['option']) || $item->query['option'] !== ($want['option'] ?? '')) {
-                continue;
-            }
-            $have = UrlRegistry::significant($item->query);
-            if ($have == $want) {
-                return $this->setActive($item->id);
-            }
-            // Same option and view: a weaker match, kept if nothing exact turns up.
-            if ($best === null && ($have['view'] ?? null) === ($want['view'] ?? null) && ! isset($want['slug'], $want['id'])) {
-                $best = $item;
-            }
-        }
+        $home = $this->getDefault();
 
-        return $best !== null ? $this->setActive($best->id) : null;
+        return $home !== null ? $this->setActive($home->id) : null;
     }
 }

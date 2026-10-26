@@ -401,6 +401,12 @@ function fec_fxrate_package(array $legs, array $opts = array()) {
 	return $pkg;
 }
 
+// --- fec_fxrate_sort_legs  (source lines 516-519; slices: authors)
+function fec_fxrate_sort_legs($a, $b) {
+	if ($a['position'] === $b['position']) return $a['bid'] - $b['bid'];
+	return $a['position'] - $b['position'];
+}
+
 // --- fec_fxrate_money  (source lines 530-548; slices: authors)
 /**
  * "$1,500" / "€2,467" / "BTC 0.005". Deposits round UP (you cannot deposit

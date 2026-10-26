@@ -15,8 +15,10 @@
  * require_once those paths exactly as they did under Joomla; what they get
  * is the part of the lib they use, nothing else.
  *
- * Static analysis only: dynamic calls (call_user_func, $fn()) are not
- * followed. A function reported missing at run time is added to the seeds.
+ * Static analysis: direct calls and function names passed as string
+ * literals ('fec_x' to preg_replace_callback, array_map, call_user_func)
+ * are followed; a variable function ($fn()) is not. A function reported
+ * missing at run time is added to the seeds.
  */
 
 declare(strict_types=1);
@@ -108,6 +110,13 @@ foreach ($sources as $file) {
                 $bn = count($body);
                 for ($b = 0; $b < $bn; $b++) {
                     $bt = $body[$b];
+                    // a function name passed as a string (preg_replace_callback, array_map,
+                    // call_user_func, is_callable...) is a call too
+                    if (is_array($bt) && $bt[0] === T_CONSTANT_ENCAPSED_STRING && preg_match('/^[\'"](fec_[a-z0-9_]+)[\'"]$/i', $bt[1], $sm)) {
+                        $calls[$sm[1]] = true;
+
+                        continue;
+                    }
                     if (! is_array($bt) || $bt[0] !== T_STRING) {
                         continue;
                     }

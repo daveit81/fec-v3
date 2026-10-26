@@ -475,6 +475,11 @@ function fec_bonus_full_title($set, $countrycode, $currencyMap, $bonustypeMap) {
     return isset($map[$type]) ? $map[$type] : 220;
   }
 
+// --- fec_breadcrumb_capitalize_after_digit  (source lines 6492-6494; slices: authors)
+  function fec_breadcrumb_capitalize_after_digit($m) {
+    return $m[1] . strtoupper($m[2]);
+  }
+
 // --- fec_breadcrumb_label_from_slug  (source lines 6498-6546; slices: authors)
   function fec_breadcrumb_label_from_slug($slug) {
     $s = trim((string)$slug);
