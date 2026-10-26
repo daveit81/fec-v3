@@ -127,9 +127,10 @@ class UrlHtaccess extends Command
             $lines[] = rtrim($cond)."\n".'RewriteRule ^('.implode('|', array_map($quote, array_keys($exact))).')/?$ /v3/index.php [L]';
         }
         $lines[] = '</IfModule>';
+        $lines[] = '';
 
+        // A trailing newline: the block is prepended to the live .htaccess with cat.
         $this->line(implode("\n", $lines));
-        $this->line('');
         $this->comment(sprintf('%d prefix rule(s): %s', count($prefixes), implode(', ', array_keys($prefixes))));
         $this->comment(sprintf('%d exact path(s): %s', count($exact), implode(', ', array_keys($exact))));
 
