@@ -104,12 +104,61 @@ final class UrlRegistry
         return new ResolvedUrl('page', $path, $query, '/'.$path, null, (int) $row->id, 0, $newurl);
     }
 
-    /** Public path (leading slash) for a Joomla query, when the registry knows it. */
-    public function pathFor(string $newurl): ?string
+    /**
+     * Public path (leading slash) for a Joomla query, when the registry knows it.
+     * Exact newurl match first; then the same query modulo parameter order,
+     * "lang" and "Itemid" (jos_redirection targets are written by hand and
+     * rarely spell the query the way sh404SEF stored it). Null when the
+     * component has no SEF URL at all (com_kunena: the forum is gone).
+     */
+    public function pathFor(string $newurl, bool $tolerant = true): ?string
     {
         $old = $this->db()->table('sh404sef_urls')->where('newurl', $newurl)->where('rank', 0)->value('oldurl');
+        if ($old !== null) {
+            return '/'.ltrim((string) $old, '/');
+        }
 
-        return $old === null ? null : '/'.ltrim((string) $old, '/');
+        return $tolerant ? $this->pathForTolerant($newurl) : null;
+    }
+
+    private function pathForTolerant(string $newurl): ?string
+    {
+        $want = self::significant(self::parseQuery($newurl));
+        if (! isset($want['option']) || $want['option'] === '') {
+            return null;
+        }
+
+        $q = $this->db()->table('sh404sef_urls')
+            ->where('rank', 0)
+            ->where('newurl', 'like', '%option='.$want['option'].'%');
+        foreach (['id', 'bid', 'cid', 'catid', 'view'] as $key) {
+            if (isset($want[$key]) && $want[$key] !== '') {
+                $q->where('newurl', 'like', '%'.$key.'='.$want[$key].'%');
+            }
+        }
+
+        foreach ($q->orderBy('id')->limit(500)->get(['oldurl', 'newurl']) as $row) {
+            if (self::significant(self::parseQuery((string) $row->newurl)) === $want) {
+                return '/'.ltrim((string) $row->oldurl, '/');
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The query variables that identify a page: everything but "lang" and
+     * "Itemid", sorted by key, so two spellings of one URL compare equal.
+     *
+     * @param  array<string, string>  $query
+     * @return array<string, string>
+     */
+    public static function significant(array $query): array
+    {
+        unset($query['lang'], $query['Itemid']);
+        ksort($query);
+
+        return $query;
     }
 
     /** @return array<string, string> option/view/id/... from "index.php?option=...". */

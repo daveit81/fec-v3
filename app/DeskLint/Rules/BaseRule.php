@@ -47,6 +47,14 @@ abstract class BaseRule implements Rule
         return "TRIM(COALESCE($column, '')) <> ''";
     }
 
+    /** Set by a rule in run() when it has a backlog figure to show; null for plain rules. */
+    protected ?string $summary = null;
+
+    public function summary(): ?string
+    {
+        return $this->summary;
+    }
+
     protected function finding(string $key, string $subject, string $detail = '', ?string $url = null): Finding
     {
         return new Finding($this->id(), $key, $subject, $detail, $url);

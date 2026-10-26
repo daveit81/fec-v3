@@ -52,7 +52,8 @@ class DeskLint extends Command
             return self::INVALID;
         }
 
-        $now = Carbon::now();
+        // Desk-local clock: the recap weekday and every timestamp in the report are Europe/Rome, not UTC.
+        $now = Carbon::now((string) config('fec.timezone', 'Europe/Rome'));
         $full = (bool) $this->option('full') || $now->dayOfWeekIso === (int) config('fec.desk_lint.recap_weekday');
         $result = $runner->run($rules, ! $this->option('dry-run'));
         $report = new Report($rules, $result, $full, $now);
@@ -112,7 +113,7 @@ class DeskLint extends Command
         if ($to !== []) {
             try {
                 Mail::raw($report->text(), function ($message) use ($to) {
-                    $message->to($to)->subject('[FEC] Desk Lint '.Carbon::now()->format('d/m'));
+                    $message->to($to)->subject('[FEC] Desk Lint '.Carbon::now((string) config('fec.timezone', 'Europe/Rome'))->format('d/m'));
                 });
                 $this->info('Mail: sent to '.implode(', ', $to).' via '.config('mail.default').'.');
             } catch (Throwable $e) {

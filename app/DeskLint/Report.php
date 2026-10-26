@@ -21,6 +21,9 @@ final class Report
     ) {
     }
 
+    /** Resolved findings listed in full before the "... e altre N" line (a rule recalibration can resolve thousands at once). */
+    private const RESOLVED_SHOWN = 30;
+
     public function isEmpty(): bool
     {
         return $this->result['new']->isEmpty()
@@ -41,10 +44,14 @@ final class Report
         foreach ($this->rules as $rule) {
             $new = $this->result['new']->where('rule', $rule->id());
             $known = $this->full ? $this->result['known']->where('rule', $rule->id()) : collect();
-            if ($new->isEmpty() && $known->isEmpty() && ! isset($this->result['errors'][$rule->id()])) {
+            $summary = $this->full ? $rule->summary() : null;
+            if ($new->isEmpty() && $known->isEmpty() && $summary === null && ! isset($this->result['errors'][$rule->id()])) {
                 continue;
             }
             $lines[] = strtoupper($rule->title());
+            if ($summary !== null) {
+                $lines[] = '  '.$summary;
+            }
             if (isset($this->result['errors'][$rule->id()])) {
                 $lines[] = '  ERRORE: '.$this->result['errors'][$rule->id()];
             }
@@ -52,20 +59,29 @@ final class Report
                 $lines[] = '  [NUOVO] '.$this->line($f);
             }
             foreach ($known as $f) {
-                $lines[] = '  [aperto da '.$f->first_seen_at->format('d/m').'] '.$this->line($f);
+                $lines[] = '  [aperto da '.$this->day($f->first_seen_at).'] '.$this->line($f);
             }
             $lines[] = '';
         }
 
         if ($this->result['resolved']->isNotEmpty()) {
             $lines[] = 'RISOLTE DALL\'ULTIMO GIRO';
-            foreach ($this->result['resolved'] as $f) {
+            foreach ($this->result['resolved']->take(self::RESOLVED_SHOWN) as $f) {
                 $lines[] = '  [ok] '.$f->rule.' - '.$f->subject;
+            }
+            if ($this->result['resolved']->count() > self::RESOLVED_SHOWN) {
+                $lines[] = sprintf('  ... e altre %d', $this->result['resolved']->count() - self::RESOLVED_SHOWN);
             }
             $lines[] = '';
         }
 
         return implode("\n", $lines);
+    }
+
+    /** A stored UTC timestamp shown as a desk-local day. */
+    private function day(Carbon $at): string
+    {
+        return $at->copy()->timezone($this->at->getTimezone())->format('d/m');
     }
 
     /** Telegram HTML, split in chunks under the 4096-character limit. */
@@ -81,10 +97,13 @@ final class Report
         foreach ($this->rules as $rule) {
             $new = $this->result['new']->where('rule', $rule->id());
             $known = $this->full ? $this->result['known']->where('rule', $rule->id()) : collect();
-            if ($new->isEmpty() && $known->isEmpty() && ! isset($this->result['errors'][$rule->id()])) {
+            if ($new->isEmpty() && $known->isEmpty() && ! isset($this->result['errors'][$rule->id()]) && ! ($this->full && $rule->summary() !== null)) {
                 continue;
             }
             $b = '<b>'.$esc($rule->title()).'</b>';
+            if ($this->full && $rule->summary() !== null) {
+                $b .= "\n".'<i>'.$esc($rule->summary()).'</i>';
+            }
             if (isset($this->result['errors'][$rule->id()])) {
                 $b .= "\n".'errore: '.$esc($this->result['errors'][$rule->id()]);
             }

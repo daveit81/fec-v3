@@ -11,10 +11,9 @@ use App\Fec\Url\Patterns\BonusDetails;
  *   2. run-time patterns    URL families sh404SEF never stored (bonus details)
  *   3. jos_sh404sef_urls    canonical page, alias of a page, recorded 404
  *
- * Aliases (rank > 0) are answered with a 301 to the canonical spelling when
- * fec.router.alias_redirect is true (default); set it to false to serve them
- * as pages, exactly as a Joomla without "redirect duplicates" would. Verify
- * the legacy behaviour on an alias before switching a section that has them.
+ * Aliases (rank > 0) are served as pages, as the live Joomla does (checked
+ * 25 Oct 2026: 200 with a self-referencing canonical); fec.router.alias_redirect
+ * = true answers 301 to the rank-0 spelling instead, a phase 6 option.
  */
 final class Router
 {

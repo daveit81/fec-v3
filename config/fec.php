@@ -16,6 +16,10 @@ return [
     // Public hostname of the live site: used for canonical URLs and the brand link.
     'site_url' => env('FEC_SITE_URL', 'https://www.freeextrachips.com'),
 
+    // The desk's clock: report timestamps, recap weekday, "today" in editorial
+    // rules. Storage stays UTC (app.timezone), as the legacy tables are.
+    'timezone' => env('FEC_TIMEZONE', 'Europe/Rome'),
+
     // Where /css, /js and /images are served from during the convivenza. On
     // v3.freeextrachips.com the static assets still live in the legacy docroot,
     // so they are loaded from the live hostname; once v3 serves the main
@@ -78,15 +82,19 @@ return [
     ],
 
     'router' => [
-        // sh404SEF duplicate URLs (rank > 0): answer 301 to the canonical spelling
-        // (true) or serve them as pages (false), as a Joomla without "redirect
-        // duplicates" does. Check the legacy answer on an alias before relying on it.
-        'alias_redirect' => filter_var(env('FEC_ROUTER_ALIAS_REDIRECT', true), FILTER_VALIDATE_BOOL),
+        // sh404SEF duplicate URLs (rank > 0). Checked on the live site on 25 Oct
+        // 2026: Joomla serves them as pages (200) with a self-referencing
+        // canonical, so parity means false. true answers 301 to the rank-0
+        // spelling instead: a phase 6 option, never during the convivenza.
+        'alias_redirect' => filter_var(env('FEC_ROUTER_ALIAS_REDIRECT', false), FILTER_VALIDATE_BOOL),
     ],
 
     'desk_lint' => [
-        // Days without a modification after which a live bonus is "stale".
+        // Days without a modification after which a live bonus is "stale", and
+        // how many of the oldest ones the review queue shows each day (the
+        // backlog is most of the catalogue: 2.145 of 2.529 on 26 Oct 2026).
         'stale_days' => (int) env('FEC_DESK_LINT_STALE_DAYS', 180),
+        'stale_queue' => (int) env('FEC_DESK_LINT_STALE_QUEUE', 10),
 
         // active_on_closed_casino: which casino flags count. The site hides the
         // bonuses of closed and suspended casinos at render time, so by default

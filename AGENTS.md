@@ -44,6 +44,9 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
 - JReviews checkbox flags (`jr_closed`, `jr_suspended`, `jr_blacklisted`) are set when non-empty
   (`*yes*`, `*susp*`, `*bl*`), never compared to "yes".
 - Memory table `desk_lint_findings` (framework DB); `--dry-run` leaves it untouched.
+- `stale_active` is a review queue (the `FEC_DESK_LINT_STALE_QUEUE` oldest live bonuses) with the
+  backlog size in `summary()`; a rule that reports a head of a backlog does the same, never the whole list.
+- Report clock is `fec.timezone` (Europe/Rome); storage stays UTC.
 
 ## Router (phase 1 kernel)
 
@@ -53,5 +56,8 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
 - A ported view = one `PageHandler` class registered in `Dispatcher::HANDLERS` under `option.view`.
   Unregistered views answer 404 (with the decision shown on the dev hostname only).
 - Probes: `php artisan fec:urls:resolve <path>...` (`--json`) and `GET /__registry?path=` on `v3.`.
-- Aliases (rank > 0) 301 to the canonical path (`FEC_ROUTER_ALIAS_REDIRECT`); verify legacy first.
+- Aliases (rank > 0) are served as pages with a self-referencing canonical, as Joomla does
+  (`FEC_ROUTER_ALIAS_REDIRECT=false` is parity; true is a phase 6 option).
+- Redirect targets (`index.php?...`) resolve to a SEF path exactly, then tolerantly (parameter
+  order, `lang`, `Itemid` ignored); `fec:urls:stats --redirects` audits the 3.8k rules.
 - Stateless endpoints (no cookies) go in `routes/stateless.php`, never in the `web` group.

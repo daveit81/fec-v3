@@ -17,4 +17,11 @@ interface Rule
 
     /** @return list<Finding> */
     public function run(): array;
+
+    /**
+     * One line of context printed under the title after run(), or null.
+     * Queue-style rules use it for the size of the whole backlog when the
+     * findings are only its head ("2.145 bonus attivi non toccati...").
+     */
+    public function summary(): ?string;
 }
