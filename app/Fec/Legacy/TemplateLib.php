@@ -19,7 +19,9 @@ final class TemplateLib
     public static function load(): bool
     {
         if (! self::$loaded) {
-            Runtime::aliases();
+            // The lib opens with "defined('_JEXEC') or die('Restricted access')": on a page no
+            // component rendered (the 404 page) _JEXEC must exist before the include.
+            Runtime::environment();
             $file = Runtime::sitePath().'/components/com_bonuses/helpers/fec_common_lib.php';
             if (is_file($file)) {
                 require_once $file;

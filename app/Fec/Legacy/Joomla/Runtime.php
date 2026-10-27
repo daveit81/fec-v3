@@ -101,22 +101,8 @@ final class Runtime
      */
     public static function boot(string $component): void
     {
-        self::aliases();
-
+        self::environment();
         $site = self::sitePath();
-        if (! self::$booted) {
-            self::constant('_JEXEC', 1);
-            self::constant('DS', DIRECTORY_SEPARATOR);
-            self::constant('JPATH_ROOT', self::docroot());
-            self::constant('JPATH_SITE', $site);
-            self::constant('JPATH_BASE', $site);
-            self::constant('JPATH_ADMINISTRATOR', $site.'/administrator');
-            self::constant('JPATH_THEMES', $site.'/templates');
-            self::constant('JPATH_CACHE', storage_path('framework/cache/legacy'));
-            // jimport() and the other global helpers our legacy code calls.
-            require_once __DIR__.'/functions.php';
-            self::$booted = true;
-        }
 
         // Component paths change per dispatched component; the constants are
         // defined once per process (PHP-FPM/LiteSpeed serve one request per
@@ -130,6 +116,33 @@ final class Runtime
         Route::reset();
         Uri::reset();
         Controller::reset();
+    }
+
+    /**
+     * The global names, the constants (_JEXEC, DS, JPATH_*) and the global helpers a
+     * legacy file expects when it is included, without touching any per-request state.
+     * TemplateLib needs exactly this: the lib starts with "defined('_JEXEC') or
+     * die(...)", and the 404 page renders the shell's newsletter blocks with no
+     * component run before it (a die() there sent a 200 and half a page).
+     */
+    public static function environment(): void
+    {
+        self::aliases();
+        if (self::$booted) {
+            return;
+        }
+        $site = self::sitePath();
+        self::constant('_JEXEC', 1);
+        self::constant('DS', DIRECTORY_SEPARATOR);
+        self::constant('JPATH_ROOT', self::docroot());
+        self::constant('JPATH_SITE', $site);
+        self::constant('JPATH_BASE', $site);
+        self::constant('JPATH_ADMINISTRATOR', $site.'/administrator');
+        self::constant('JPATH_THEMES', $site.'/templates');
+        self::constant('JPATH_CACHE', storage_path('framework/cache/legacy'));
+        // jimport() and the other global helpers our legacy code calls.
+        require_once __DIR__.'/functions.php';
+        self::$booted = true;
     }
 
     private static function constant(string $name, mixed $value): void
