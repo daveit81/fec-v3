@@ -42,6 +42,9 @@ edited by hand; add a seed and regenerate.
   defines unguarded (`fec_get_bonus_author`, `fec_render_bonus_author_card`): loading both is fatal.
   Nor `views/authors/`: its file declares `BonusesViewTc` (a copy-paste), so `view=authors` was
   already broken on Joomla ("class BonusesViewAuthors not found") and no URL points to it.
+  `helpers/pagination.php` (Zebra_Pagination) `get_pages()`: `get_page()` calls it before the
+  record counts are set, dividing `'' / ''`; PHP 5.6 silently gave 0, PHP 8 throws a TypeError on
+  string operands, so the operands are cast and a zero divisor returns 0, as before.
 
 ## Known legacy behaviour reproduced on purpose (parity)
 

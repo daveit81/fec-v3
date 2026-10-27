@@ -334,7 +334,11 @@ class Zebra_Pagination
     {
 
         // return the total number of pages based on the total number of records and number of records to be shown per page
-        return @ceil($this->_properties['records'] / $this->_properties['records_per_page']);
+        // PORT: get_page() calls this before records()/records_per_page() are set ('' / ''): PHP 5.6
+        // gave 0 (division by zero, silenced), PHP 8 throws on string operands. Same result, explicitly.
+        $records = (int) $this->_properties['records'];
+        $perPage = (int) $this->_properties['records_per_page'];
+        return $perPage > 0 ? ceil($records / $perPage) : 0;
 
     }
 
