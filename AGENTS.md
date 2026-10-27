@@ -55,6 +55,12 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   `fec.legacy.editions_config`, the task's JSON and HTTP status as output and exit code). Their
   schedule in `routes/console.php` is gated by `FEC_LEGACY_SCHEDULE_SNAPSHOTS`: on only once the
   crontab lines that call them on Joomla are removed, never both.
+- Phase 3 (com_bonuses): the component is copied verbatim too (`PORT-NOTES.md` lists what is left
+  out), its lib closure is the "bonuses" slice (197 functions), its nine public views are in
+  `Dispatcher::HANDLERS`, `com_bonuses.ads` is a writing view (click log). Its URLs are built by the
+  sh404SEF plugin `legacy/components/com_bonuses/sef_ext/com_bonuses.php`, not by a router: `JRoute`
+  needs its port for URLs the registry does not have. `fec:legacy:check` includes only files that
+  declare classes or functions; template-style helpers are parsed, not run.
 - `JPATH_SITE` is the virtual docroot (code); `JPATH_ROOT` is the real `public_html`
   (`fec.legacy.docroot`): the desks' uploads (`images/rtp`, `images/blog`) land where the live site serves them.
 

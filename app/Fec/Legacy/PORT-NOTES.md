@@ -30,6 +30,15 @@ edited by hand; add a seed and regenerate.
   `JPATH_ROOT . CARD_DIR` instead of `JPATH_SITE` (same path on Joomla, where the two are one
   directory; here `JPATH_SITE` is the code and `JPATH_ROOT` the real `public_html`).
 
+- `components/com_bonuses/`: verbatim copy of the site component (phase 3) without the static
+  assets (`css/`, `js/`, `data/`: served from the live docroot), the standalone scripts (`ajax/`,
+  `chron/`, `scripts/`, `ajax_review_submit.php`: they keep running on Joomla by direct path until
+  phase 5), `admin/` and `sef_ext/` (the sh404SEF URL plugin, ported as a class of the layer
+  instead). `helpers/fec_common_lib.php`, `fec_fxrate.php`, `fec_blog.php` are the generated
+  slices; `bonustypesarray.php` and `currenciesarray.php` the hand-edited copies above. One edit:
+  `renders/filtersheaders.php` had two `default:` clauses in the `switch($filter)`; PHP 5 ran the
+  last one, PHP 7+ refuses two, so the first (empty) one is removed: same behaviour.
+
 ## Known legacy behaviour reproduced on purpose (parity)
 
 - Only the `authors` and `author` views load the lib themselves; the other views call `fec_*`

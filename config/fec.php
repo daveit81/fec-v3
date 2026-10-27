@@ -117,8 +117,9 @@ return [
         // Component options (JComponentHelper::getParams): none set on the live site.
         'params' => [],
 
-        // "option.view" keys that write to the catalogue (desk views): served with the fec_rw connection.
-        'writing_views' => [],
+        // Public "option.view" keys that write (the tracked redirect of com_bonuses logs the click,
+        // as goto.php does): served with the fec_rw connection without a login.
+        'writing_views' => ['com_bonuses.ads'],
 
         // sh404SEF's custom 404 page: the jos_content article shown, in the shell, for unknown
         // paths (id 273, "__404__") under the fixed page title "404".
@@ -127,7 +128,11 @@ return [
 
         // Desk (non-public) views: need a logged-in member of the redazione, run on the
         // writing connection, skipped by fec:parity --option.
-        'desk_views' => ['com_authors.dashboard', 'com_authors.blogdesk', 'com_authors.deskadd', 'com_authors.fxshieldadmin', 'com_authors.methodologyadmin', 'com_authors.verification'],
+        'desk_views' => [
+            'com_authors.dashboard', 'com_authors.blogdesk', 'com_authors.deskadd', 'com_authors.fxshieldadmin', 'com_authors.methodologyadmin', 'com_authors.verification',
+            // com_bonuses (phase 3): the bonus desk, gated to the dashboard user on the live site too
+            'com_bonuses.home', 'com_bonuses.add', 'com_bonuses.edit', 'com_bonuses.manage', 'com_bonuses.clicks',
+        ],
 
         // SEF paths of the desks (registry URLs): explicit routes in the web group, CSRF handled by the legacy token.
         'desk_paths' => ['methodology-admin', 'fxshield-admin', 'fxshield-verify'],

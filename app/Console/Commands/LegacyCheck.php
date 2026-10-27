@@ -46,24 +46,53 @@ class LegacyCheck extends Command
             glob($base.'/views/*/view.*.php') ?: [],
         );
 
+        // every PHP file of the component must at least parse under this PHP
+        $parseFailed = 0;
+        foreach (array_merge($files, glob($base.'/views/*/tmpl/*.php') ?: [], glob($base.'/renders/*.php') ?: [], glob($base.'/modules/*.php') ?: [], [$base.'/'.substr($component, 4).'.php']) as $file) {
+            if (! is_file($file)) {
+                continue;
+            }
+            $out = [];
+            $code = 0;
+            exec(escapeshellarg(PHP_BINARY).' -l '.escapeshellarg($file).' 2>&1', $out, $code);
+            if ($code !== 0) {
+                $parseFailed++;
+                $this->line('  <error>PARSE</error> '.substr($file, strlen(Runtime::sitePath()) + 1).' - '.trim(implode(' ', $out)));
+            }
+        }
+
         $failed = 0;
         foreach ($files as $file) {
             $rel = substr($file, strlen(Runtime::sitePath()) + 1);
+            // A helper that declares classes or functions is included (PHP checks the
+            // declarations against the layer); template code (arrays, echoes, code that
+            // expects a view's variables) is only parsed, it cannot run outside a request.
+            if (! preg_match('/\b(abstract\s+|final\s+)?(class|interface|trait)\s+\w|\bfunction\s+&?\w+\s*\(/', (string) php_strip_whitespace($file))) {
+                $this->line('  <comment>lint</comment> '.$rel.' (template code: parsed only)');
+
+                continue;
+            }
             try {
+                ob_start();
                 require_once $file;
+                ob_end_clean();
                 $this->line('  <info>ok</info>   '.$rel);
             } catch (Throwable $e) {
+                while (ob_get_level() > 0) {
+                    ob_end_clean();
+                }
                 $failed++;
                 $this->line('  <error>FAIL</error> '.$rel.' - '.$e->getMessage());
             }
         }
 
         $classes = array_values(array_filter(get_declared_classes(), fn ($c) => preg_match('/^'.ucfirst(substr($component, 4)).'(Controller|View|Model)/', $c)));
+        $failed += $parseFailed;
         $this->line(sprintf('%d files, %d legacy classes declared%s.', count($files), count($classes), $failed ? ", $failed FAILED" : ''));
 
         // Joomla globals the code reaches for at run time (not at include time): every
         // J* constant and J* class named in the component must exist in the layer.
-        $missing = $this->missingGlobals(array_merge($files, glob($base.'/views/*/tmpl/*.php') ?: []));
+        $missing = $this->missingGlobals(array_merge($files, glob($base.'/views/*/tmpl/*.php') ?: [], glob($base.'/renders/*.php') ?: [], glob($base.'/modules/*.php') ?: []));
         foreach ($missing as $name => $where) {
             $failed++;
             $this->line('  <error>FAIL</error> '.$name.' is not provided by the compatibility layer ('.$where.')');
@@ -83,7 +112,7 @@ class LegacyCheck extends Command
             $code = (string) php_strip_whitespace($file); // comments out
             $rel = substr($file, strlen(Runtime::sitePath()) + 1);
             // global constants: JREQUEST_ALLOWRAW, JPATH_SITE, ... (not class constants, not PHP's JSON_*)
-            preg_match_all('/(?<![:\\w$])(J[A-Z]+_[A-Z_]+)\b/', $code, $m);
+            preg_match_all('/(?<![:\\w$\x27"])(J[A-Z]+_[A-Z_]+)\b/', $code, $m); // not a quoted language key
             foreach (array_unique($m[1]) as $const) {
                 if (str_starts_with($const, 'JSON_') || str_starts_with($const, 'JPEG_')) {
                     continue;

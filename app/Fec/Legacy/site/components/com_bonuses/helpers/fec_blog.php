@@ -23,7 +23,24 @@ if (!defined('FEC_BLOG_PROVIDER_LINKS')) define('FEC_BLOG_PROVIDER_LINKS', false
 if (!defined('FEC_BLOG_REAPPLY_META'))   define('FEC_BLOG_REAPPLY_META', true);    // needs plg_system_fecclustermeta >= 1.1
 if (!defined('FEC_BLOG_SLOTS_PATH'))     define('FEC_BLOG_SLOTS_PATH', '/slots');   // com_authors slot pages, /slots/{slug}
 
-// --- fec_blog_kind_label  (source lines 104-112; slices: authors)
+// --- fec_blog_esc  (source lines 85-85; slices: bonuses)
+  function fec_blog_esc($s) { return htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8'); }
+
+// --- fec_blog_add_assets  (source lines 90-100; slices: bonuses)
+  /** Attach the blog stylesheet once (fec-edition.css is loaded by the template). */
+  function fec_blog_add_assets() {
+    static $done = false;
+    if ($done) return;
+    $done = true;
+    if (!class_exists('JFactory')) return;
+    $doc = JFactory::getDocument();
+    if (is_object($doc) && method_exists($doc, 'addStyleSheet')) {
+      $base = class_exists('JURI') ? JURI::base(true) : '';
+      $doc->addStyleSheet($base . FEC_BLOG_CSS . '?v=' . FEC_BLOG_VERSION);
+    }
+  }
+
+// --- fec_blog_kind_label  (source lines 104-112; slices: authors, bonuses)
   function fec_blog_kind_label($kind) {
     switch ((string) $kind) {
       case 'slot':    return 'Slot release';
@@ -34,7 +51,41 @@ if (!defined('FEC_BLOG_SLOTS_PATH'))     define('FEC_BLOG_SLOTS_PATH', '/slots')
     }
   }
 
-// --- fec_blog_image_path  (source lines 162-169; slices: authors)
+// --- fec_blog_date_long  (source lines 117-122; slices: bonuses)
+  /** "6 October 2026" from a SQL datetime; '' for null dates. */
+  function fec_blog_date_long($sql) {
+    $s = (string) $sql;
+    if ($s === '' || $s === '0000-00-00 00:00:00' || $s === '0000-00-00') return '';
+    $ts = strtotime($s);
+    return $ts === false ? '' : date('j F Y', $ts);
+  }
+
+// --- fec_blog_text  (source lines 135-144; slices: bonuses)
+  /** Plain text from HTML: no images/headings, entities decoded, spaces collapsed. */
+  function fec_blog_text($html) {
+    $s = preg_replace('#<(script|style)[^>]*>.*?</\1>#si', ' ', (string) $html);
+    $s = preg_replace('#<img[^>]*>#i', ' ', $s);
+    $s = preg_replace('#<h[1-6][^>]*>.*?</h[1-6]>#si', ' ', $s);
+    $s = strip_tags($s);
+    $s = html_entity_decode($s, ENT_QUOTES, 'UTF-8');
+    $s = str_replace("\xc2\xa0", ' ', $s);
+    $s = preg_replace('/\s+/u', ' ', $s);
+    return trim((string) $s);
+  }
+
+// --- fec_blog_excerpt  (source lines 148-157; slices: bonuses)
+  function fec_blog_excerpt($html, $max = 150) {
+    $s = fec_blog_text($html);
+    if ($s === '') return '';
+    $len = function_exists('mb_strlen') ? mb_strlen($s, 'UTF-8') : strlen($s);
+    if ($len <= $max) return $s;
+    $cut = function_exists('mb_substr') ? mb_substr($s, 0, $max, 'UTF-8') : substr($s, 0, $max);
+    $sp  = strrpos($cut, ' ');
+    if ($sp !== false && $sp > 50) $cut = substr($cut, 0, $sp);
+    return rtrim($cut, " .,;:-") . "\xe2\x80\xa6";
+  }
+
+// --- fec_blog_image_path  (source lines 162-169; slices: authors, bonuses)
   /** image_intro (site-relative path or absolute URL) from jos_content.images JSON. */
   function fec_blog_image_path($imagesJson) {
     $j = json_decode((string) $imagesJson, true);
@@ -45,7 +96,7 @@ if (!defined('FEC_BLOG_SLOTS_PATH'))     define('FEC_BLOG_SLOTS_PATH', '/slots')
     return trim($p);
   }
 
-// --- fec_blog_image_src  (source lines 178-192; slices: authors)
+// --- fec_blog_image_src  (source lines 178-192; slices: authors, bonuses)
   /**
    * Resized src for an image path. Internal paths go through the Cloudflare
    * resizer (same pattern as the homepage cards); absolute external URLs are
@@ -67,7 +118,7 @@ if (!defined('FEC_BLOG_SLOTS_PATH'))     define('FEC_BLOG_SLOTS_PATH', '/slots')
     return '/cdn-cgi/image/' . $opts . '/' . $path;
   }
 
-// --- fec_blog_route  (source lines 241-261; slices: authors)
+// --- fec_blog_route  (source lines 241-261; slices: authors, bonuses)
   /** SEF URL of a blog article; falls back to the final path when routing is unavailable. */
   function fec_blog_route($id, $alias, $catid = 0) {
     $id = (int) $id; $alias = (string) $alias;
@@ -89,5 +140,133 @@ if (!defined('FEC_BLOG_SLOTS_PATH'))     define('FEC_BLOG_SLOTS_PATH', '/slots')
       }
     }
     return FEC_BLOG_PATH . '/' . $alias;
+  }
+
+// --- fec_blog_fetch_posts  (source lines 393-423; slices: bonuses)
+  /**
+   * Published blog posts, newest first, joined with the side table.
+   * $opts: limit, offset, exclude (id), provider_slug, kind, ids (array)
+   */
+  function fec_blog_fetch_posts($db, $opts = array()) {
+    $defaults = array('limit' => 12, 'offset' => 0, 'exclude' => 0, 'provider_slug' => '', 'kind' => '', 'ids' => array(),
+                      'slot_gid' => 0, 'order' => 'date');
+    $opts = array_merge($defaults, is_array($opts) ? $opts : array());
+    $nowUtc = gmdate('Y-m-d H:i:s');
+    $cols = array('c.id', 'c.title', 'c.alias', 'c.introtext', 'c.created', 'c.modified', 'c.publish_up',
+                  'c.images', 'c.hits', 'c.created_by_alias', 'c.author_id', 'c.catid',
+                  'm.kind', 'm.provider_slug', 'm.provider_name', 'm.release_date');
+    // slot_gid / slot_rel exist from com_authors 2.7.72 on: select them only when asked for
+    if ((int) $opts['slot_gid'] > 0 || $opts['order'] === 'rel') { $cols[] = 'm.slot_gid'; $cols[] = 'm.slot_rel'; }
+    $q = $db->getQuery(true)
+      ->select($cols)
+      ->from($db->quoteName('#__content', 'c'))
+      ->join('LEFT', $db->quoteName('#__fec_blog_meta', 'm') . ' ON m.content_id = c.id')
+      ->where('c.catid = ' . (int) FEC_BLOG_CATID)
+      ->where('c.state = 1')
+      ->where('(c.publish_up = ' . $db->quote('0000-00-00 00:00:00') . ' OR c.publish_up <= ' . $db->quote($nowUtc) . ')')
+      ->where('(c.publish_down = ' . $db->quote('0000-00-00 00:00:00') . ' OR c.publish_down >= ' . $db->quote($nowUtc) . ')')
+      ->order($opts['order'] === 'rel' ? "(m.slot_rel = 'game') DESC, c.created DESC, c.id DESC" : 'c.created DESC, c.id DESC');
+    if ((int) $opts['exclude'] > 0) $q->where('c.id <> ' . (int) $opts['exclude']);
+    if ((int) $opts['slot_gid'] > 0) $q->where('m.slot_gid = ' . (int) $opts['slot_gid']);
+    if ((string) $opts['provider_slug'] !== '') $q->where('m.provider_slug = ' . $db->quote((string) $opts['provider_slug']));
+    if ((string) $opts['kind'] !== '') $q->where('m.kind = ' . $db->quote((string) $opts['kind']));
+    if (!empty($opts['ids']) && is_array($opts['ids'])) {
+      $ids = array(); foreach ($opts['ids'] as $i) { $i = (int) $i; if ($i > 0) $ids[] = $i; }
+      if ($ids) $q->where('c.id IN (' . implode(',', $ids) . ')');
+    }
+    $db->setQuery($q, max(0, (int) $opts['offset']), max(1, (int) $opts['limit']));
+    $rows = $db->loadAssocList();
+    return is_array($rows) ? $rows : array();
+  }
+
+// --- fec_blog_render_cards  (source lines 483-520; slices: bonuses)
+  /**
+   * .blog-row / .blog-card markup identical to the homepage section, with an
+   * optional lead card. $rows from fec_blog_fetch_posts().
+   * $opts: lead (bool), img_w, img_h, excerpt_len, grid_class
+   */
+  function fec_blog_render_cards($rows, $opts = array()) {
+    $defaults = array('lead' => false, 'img_w' => 400, 'img_h' => 240, 'excerpt_len' => 140, 'grid_class' => 'blog-row', 'show_rel' => false);
+    $opts = array_merge($defaults, is_array($opts) ? $opts : array());
+    if (empty($rows)) return '';
+    $esc = 'fec_blog_esc';
+    $h = '<div class="' . $esc($opts['grid_class']) . '">';
+    foreach ($rows as $i => $r) {
+      $id = (int) $r['id'];
+      $title = (string) $r['title'];
+      $url = fec_blog_route($id, $r['alias'], isset($r['catid']) ? (int) $r['catid'] : 0);
+      $kindLabel = fec_blog_kind_label(isset($r['kind']) ? $r['kind'] : 'news');
+      $label = (!empty($r['provider_name'])) ? (string) $r['provider_name'] : $kindLabel;
+      $date = fec_blog_date_long($r['created']);
+      $img = fec_blog_image_path(isset($r['images']) ? $r['images'] : '');
+      $isLead = ($opts['lead'] && $i === 0);
+      if ($img !== '') {
+        $src = fec_blog_image_src($img, $isLead ? 800 : (int) $opts['img_w'], $isLead ? 480 : (int) $opts['img_h']);
+        $imgFrag = '<img src="' . $esc($src) . '" alt="' . $esc($title) . '" loading="lazy" width="' . ($isLead ? 800 : (int) $opts['img_w']) . '" height="' . ($isLead ? 480 : (int) $opts['img_h']) . '">';
+      } else {
+        $imgFrag = '<div class="stripes" aria-hidden="true"></div>';
+      }
+      $excerpt = fec_blog_excerpt(isset($r['introtext']) ? $r['introtext'] : '', (int) $opts['excerpt_len']);
+      $h .= '<a class="blog-card' . ($isLead ? ' lead' : '') . '" href="' . $esc($url) . '">';
+      $h .=   '<div class="blog-thumb" data-label="' . $esc($label) . '">' . $imgFrag . '</div>';
+      $h .=   '<div class="blog-body">';
+      $relFrag = '';
+      if ($opts['show_rel'] && isset($r['slot_rel']) && $r['slot_rel'] !== null && $r['slot_rel'] !== '') {
+        $relFrag = ' &middot; <span class="fec-blog-rel' . ($r['slot_rel'] === 'game' ? ' is-game' : '') . '">' . ($r['slot_rel'] === 'game' ? 'About this game' : 'Same family') . '</span>';
+      }
+      if ($date !== '' || $relFrag !== '') $h .= '<div class="blog-meta">' . $esc($date) . ($kindLabel !== $label ? ' &middot; ' . $esc($kindLabel) : '') . $relFrag . '</div>';
+      $h .=     '<h3 class="blog-title">' . $esc($title) . '</h3>';
+      if ($excerpt !== '') $h .= '<p class="blog-excerpt">' . $esc($excerpt) . '</p>';
+      $h .=   '</div>';
+      $h .= '</a>';
+    }
+    $h .= '</div>';
+    return $h;
+  }
+
+// --- fec_blog_render_posts_for_game  (source lines 533-567; slices: bonuses)
+  /**
+   * "From the blog" section for a game (1.0.11): the published posts linked
+   * to jos_games.gid through jos_fec_blog_meta.slot_gid, the ones about the
+   * game first, then its family, as blog cards. Used by the bonus details
+   * page (gid = the bonus game). Returns '' when there is nothing to show,
+   * so the caller can decide whether to add a jump chip.
+   * $opts: limit (3), game_name ('' = read from jos_games), id ('from-the-blog'),
+   *        all_url ('' = blog index)
+   */
+  function fec_blog_render_posts_for_game($db, $gid, $opts = array()) {
+    $gid = (int) $gid;
+    if ($gid <= 0) return '';
+    $defaults = array('limit' => 3, 'game_name' => '', 'id' => 'from-the-blog', 'all_url' => '');
+    $opts = array_merge($defaults, is_array($opts) ? $opts : array());
+    try {
+      $rows = fec_blog_fetch_posts($db, array('limit' => max(1, (int) $opts['limit']), 'slot_gid' => $gid, 'order' => 'rel'));
+    } catch (Exception $e) { $rows = array(); }
+    if (!$rows) return '';
+    $name = trim((string) $opts['game_name']);
+    if ($name === '') {
+      try {
+        $q = $db->getQuery(true)->select('game_name')->from($db->quoteName('#__games'))->where('gid = ' . $gid);
+        $db->setQuery($q, 0, 1);
+        $name = trim((string) $db->loadResult());
+      } catch (Exception $e) { $name = ''; }
+    }
+    $nGame = 0;
+    foreach ($rows as $r) if (isset($r['slot_rel']) && $r['slot_rel'] === 'game') $nGame++;
+    fec_blog_add_assets();
+    $esc = 'fec_blog_esc';
+    $allUrl = (string) $opts['all_url'];
+    if ($allUrl === '') $allUrl = FEC_BLOG_PATH . '/';   // the final path, no router needed outside com_content
+    $title = ($name !== '') ? ($nGame > 0 ? $esc($name) . ' on the blog' : 'The ' . $esc($name) . ' family on the blog') : 'From the blog';
+    $sub = '';
+    if ($name !== '' && $nGame === 0) $sub = 'Sequels, variants and jackpot stories built on ' . $esc($name) . '; the original has no post of its own yet.';
+    $h  = '<div class="fecx fec-blog fec-blog-forgame" id="' . $esc($opts['id']) . '">';
+    $h .= '<section class="section fec-blog-related" aria-label="From the blog"><div class="wrap">';
+    $h .=   '<div class="sec-head"><div class="left"><span class="eyebrow">From the blog</span>'
+         .  '<h2 class="sec-title">' . $title . '</h2>' . ($sub !== '' ? '<p class="fec-blog-forgame-sub">' . $sub . '</p>' : '') . '</div>'
+         .  '<a class="sec-link" href="' . $esc($allUrl) . '">All posts <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></a></div>';
+    $h .=   fec_blog_render_cards($rows, array('grid_class' => 'fec-blog-grid', 'show_rel' => true));
+    $h .= '</div></section></div>';
+    return $h;
   }
 

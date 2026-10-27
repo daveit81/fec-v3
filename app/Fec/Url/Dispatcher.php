@@ -25,7 +25,17 @@ final class Dispatcher
         'com_authors.slots' => \App\Fec\Legacy\ComponentRunner::class,
         'com_authors.slot' => \App\Fec\Legacy\ComponentRunner::class,
         'com_authors.fxreport' => \App\Fec\Legacy\ComponentRunner::class,
-        // phase 3: com_bonuses.*  phase 4: com_content.*, com_atlas.*
+        // phase 3: com_bonuses public views (the desk views run through LegacyDeskController)
+        'com_bonuses.details' => \App\Fec\Legacy\ComponentRunner::class,
+        'com_bonuses.show' => \App\Fec\Legacy\ComponentRunner::class,
+        'com_bonuses.casino' => \App\Fec\Legacy\ComponentRunner::class,
+        'com_bonuses.search' => \App\Fec\Legacy\ComponentRunner::class,
+        'com_bonuses.tc' => \App\Fec\Legacy\ComponentRunner::class,
+        'com_bonuses.ads' => \App\Fec\Legacy\ComponentRunner::class,
+        'com_bonuses.wcalc' => \App\Fec\Legacy\ComponentRunner::class,
+        'com_bonuses.cmp' => \App\Fec\Legacy\ComponentRunner::class,
+        'com_bonuses.authors' => \App\Fec\Legacy\ComponentRunner::class,
+        // phase 4: com_content.*, com_atlas.*
     ];
 
     /** @return class-string<PageHandler>|null */

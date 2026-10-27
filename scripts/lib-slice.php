@@ -8,8 +8,8 @@
  *   php scripts/lib-slice.php --report --manifest=/tmp/trial.json   measure a trial manifest
  *
  * Reads the functions named as seeds in lib-slices.json, follows every call
- * they make into the legacy helper files (legacy/components/com_bonuses/
- * helpers/*.php and com_authors/helpers/authors.php), and writes the
+ * they make into the lib files (legacy/components/com_bonuses/helpers/
+ * fec_common_lib.php, fec_fxrate.php, fec_blog.php), and writes the
  * transitive closure, function by function and VERBATIM, into
  * app/Fec/Legacy/site/components/com_bonuses/helpers/<same file name>.php,
  * plus the file-scope constants of each source file. The ported views
@@ -42,8 +42,10 @@ if (! is_array($manifest) || ! isset($manifest['slices'])) {
     exit(1);
 }
 
-$sources = glob($legacyHelpers.'/*.php') ?: [];
-$sources[] = $root.'/legacy/components/com_authors/helpers/authors.php';
+// The lib proper: plain functions shared by every section. The other helper files of
+// com_bonuses (bonus.php, detailsconstructor.php, fec_fxrate_render.php, the arrays...) are
+// component code, copied verbatim with the component, never sliced.
+$sources = array_map(fn ($f) => $legacyHelpers.'/'.$f, ['fec_common_lib.php', 'fec_fxrate.php', 'fec_blog.php']);
 
 /** @var array<string, array{file: string, start: int, end: int, docStart: ?int, calls: array<string, true>, japi: array<string, int>}> $defs */
 $defs = [];

@@ -16,7 +16,7 @@ if (!defined('FEC_GATE_CAP_RANK'))        define('FEC_GATE_CAP_RANK', 50);
 if (!defined('FEC_GATE_CAP_CONFIDENCES')) define('FEC_GATE_CAP_CONFIDENCES', 'ABC');
 define('FEC_TG_BOT_USERNAME', 'fecbonusbot'); // no @; '' disables the CTA
 
-// --- fec_country_display_name  (source lines 36-72; slices: authors)
+// --- fec_country_display_name  (source lines 36-72; slices: authors, bonuses)
   function fec_country_display_name($name) {
     $name = trim((string)$name);
     if ($name === '') return '';
@@ -55,7 +55,44 @@ define('FEC_TG_BOT_USERNAME', 'fecbonusbot'); // no @; '' disables the CTA
     return implode(' ', $out);
   }
 
-// --- fec_starlist_contains_cc  (source lines 123-128; slices: authors)
+// --- fec_fxcheck_classify  (source lines 80-99; slices: bonuses)
+  function fec_fxcheck_classify($yes, $no) {
+    $yes = (int)$yes;
+    $no  = (int)$no;
+    $t   = $yes + $no;
+
+    // Sotto 3 reports: dato troppo scarso per pronunciarsi
+    if ($t < 3) return array('key' => 'lowdata', 'text' => 'Low data');
+
+    $yesRatio = ($t > 0) ? ($yes / $t) : 0;
+    $noRatio  = 1 - $yesRatio;
+
+    // Verified: almeno 5 reports e almeno 80% positivi
+    if ($t >= 5 && $yesRatio >= 0.80) return array('key' => 'verified', 'text' => 'Verified');
+
+    // Issues: maggioranza negativa (50%+)
+    if ($noRatio >= 0.50) return array('key' => 'issues',   'text' => 'Issues');
+
+    // Mixed: tutto il resto (3-4 reports al 100%, oppure 5+ reports tra 50-79%)
+    return array('key' => 'mixed', 'text' => 'Mixed');
+  }
+
+// --- fec_fxcheck_line  (source lines 103-115; slices: bonuses)
+  function fec_fxcheck_line($badgeKey, $yes = 0, $no = 0) {
+    $no = (int)$no;
+    
+    switch ($badgeKey) {
+      case 'issues':  return 'Multiple negative player reports';
+      case 'mixed':
+        // Special case: positive but not enough volume for verified
+        if ($no === 0) return 'Promising but limited reports';
+        return 'Conflicting player reports';
+      case 'lowdata': return 'Not enough player feedback yet';
+      default:        return '';
+    }
+  }
+
+// --- fec_starlist_contains_cc  (source lines 123-128; slices: authors, bonuses)
   function fec_starlist_contains_cc($value, $countrycode) {
     $value = (string)$value;
     $cc    = (string)$countrycode;
@@ -63,7 +100,7 @@ define('FEC_TG_BOT_USERNAME', 'fecbonusbot'); // no @; '' disables the CTA
     return (strpos($value, '*'.$cc.'*') !== false);
   }
 
-// --- fec_detect_country  (source lines 132-157; slices: authors)
+// --- fec_detect_country  (source lines 132-157; slices: authors, bonuses)
   function fec_detect_country($default = 'US') {
     $default = strtoupper(trim((string)$default));
     if ($default === '' || !preg_match('/^[A-Z]{2}$/', $default)) $default = 'US';
@@ -91,7 +128,7 @@ define('FEC_TG_BOT_USERNAME', 'fecbonusbot'); // no @; '' disables the CTA
     return array('cc_up' => $default, 'src' => 'default');
   }
 
-// --- fec_geo_config  (source lines 193-217; slices: authors)
+// --- fec_geo_config  (source lines 193-217; slices: authors, bonuses)
   function fec_geo_config($cc) {
     $map = array(
       'au' => array(
@@ -118,7 +155,36 @@ define('FEC_TG_BOT_USERNAME', 'fecbonusbot'); // no @; '' disables the CTA
     return isset($map[$cc]) ? $map[$cc] : null;
   }
 
-// --- fec_country_name  (source lines 252-258; slices: authors)
+// --- fec_geo_market_context  (source lines 221-226; slices: bonuses)
+  function fec_geo_market_context() {
+    $app = JFactory::getApplication();
+    $geo = strtolower(trim((string)$app->input->get('geo', '', 'CMD')));
+    if ($geo === '' || !preg_match('/^[a-z]{2}$/', $geo)) return null;
+    return fec_geo_config($geo); // null for anything outside the whitelist
+  }
+
+// --- fec_geo_apply_head  (source lines 230-248; slices: bonuses)
+  function fec_geo_apply_head($ctx) {
+    if (!is_array($ctx) || empty($ctx['url'])) return;
+    $doc = JFactory::getDocument();
+
+    // Drop any canonical already registered (sh404SEF / earlier helpers)
+    // so exactly one canonical - the geo URL - reaches the head.
+    if (isset($doc->_links) && is_array($doc->_links)) {
+      foreach ($doc->_links as $href => $attrs) {
+        $rel = '';
+        if (is_array($attrs)) {
+          if (isset($attrs['relation'])) $rel = (string)$attrs['relation'];
+          elseif (isset($attrs['relType'])) $rel = (string)$attrs['relType'];
+        }
+        if (strtolower($rel) === 'canonical') unset($doc->_links[$href]);
+      }
+    }
+
+    $doc->addHeadLink($ctx['url'], 'canonical');
+  }
+
+// --- fec_country_name  (source lines 252-258; slices: authors, bonuses)
   function fec_country_name($countryCodeUp, $countriesArray, $fallback = 'your country') {
     $cc = strtoupper(trim((string)$countryCodeUp));
     if ($cc !== '' && is_array($countriesArray) && isset($countriesArray[$cc])) {
@@ -127,7 +193,51 @@ define('FEC_TG_BOT_USERNAME', 'fecbonusbot'); // no @; '' disables the CTA
     return (string)$fallback;
   }
 
-// --- fec_decide_state  (source lines 316-358; slices: authors)
+// --- fec_expiry_label  (source lines 266-291; slices: bonuses)
+  function fec_expiry_label($end) {
+    if (empty($end) || $end === '0000-00-00 00:00:00') return '';
+
+    try {
+      $now  = new DateTime('now', new DateTimeZone('UTC'));
+      $ends = new DateTime($end,  new DateTimeZone('UTC'));
+
+      if ($ends <= $now) return '';
+
+      $diff  = $now->diff($ends);
+      $hours = ($diff->days * 24) + (int)$diff->h;
+
+      if ($hours <= 1)  return 'Expires in 1h';
+      if ($hours <= 6)  return 'Expires in 6h';
+      if ($hours <= 24) return 'Expires in 24h';
+
+      if ($hours <= 72) {
+        $days = (int)ceil($hours / 24);
+        if ($days < 1) $days = 1;
+        if ($days > 3) $days = 3;
+        return 'Expires in '.$days.' days';
+      }
+    } catch (Exception $e) {}
+
+    return '';
+  }
+
+// --- fec_render_expiry_pill  (source lines 295-308; slices: bonuses)
+  function fec_render_expiry_pill($label, $end) {
+    if ($label === '') return '';
+
+    $tip = '';
+    if (!empty($end) && $end !== '0000-00-00 00:00:00') {
+      try {
+        $d = new DateTime($end);
+        $tip = 'Ends: '.$d->format('Y-m-d H:i');
+      } catch (Exception $e) {}
+    }
+
+    $attrTitle = $tip ? ' title="'.htmlspecialchars($tip, ENT_QUOTES, 'UTF-8').'"' : '';
+    return '<span class="tag tag-expires"'.$attrTitle.'>'.htmlspecialchars($label, ENT_QUOTES, 'UTF-8').'</span>';
+  }
+
+// --- fec_decide_state  (source lines 316-358; slices: authors, bonuses)
   function fec_decide_state($set, $countrycode) {
     $countrycode = strtolower((string)$countrycode);
 
@@ -172,7 +282,24 @@ define('FEC_TG_BOT_USERNAME', 'fecbonusbot'); // no @; '' disables the CTA
     return array('state' => 'ACTIVE', 'reason' => 'ACTIVE');
   }
 
-// --- fec_should_noindex_casino  (source lines 419-440; slices: authors)
+// --- fec_should_noindex_bonus  (source lines 386-400; slices: bonuses)
+  function fec_should_noindex_bonus($set, $countrycode = 'us') {
+    if (!is_array($set)) return false;
+
+    $status = isset($set['status']) ? strtolower((string)$set['status']) : '';
+    if ($status !== '' && $status !== 'active') return true;
+
+    $jr_closed = isset($set['jr_closed']) ? (string)$set['jr_closed'] : '';
+    if (!empty($jr_closed)) return true;
+
+    $decision = fec_decide_state($set, $countrycode);
+    $state = isset($decision['state']) ? $decision['state'] : '';
+
+    $noindex_states = array('SKIP', 'UNAVAILABLE', 'EXPIRED');
+    return in_array($state, $noindex_states, true);
+  }
+
+// --- fec_should_noindex_casino  (source lines 419-440; slices: authors, bonuses)
   function fec_should_noindex_casino($jr_data) {
     if (!is_array($jr_data)) return false;
 
@@ -196,7 +323,523 @@ define('FEC_TG_BOT_USERNAME', 'fecbonusbot'); // no @; '' disables the CTA
     return false;
   }
 
-// --- fec_vm_wager_label  (source lines 1029-1066; slices: authors)
+// --- fec_apply_noindex  (source lines 451-462; slices: bonuses)
+  function fec_apply_noindex($should_noindex) {
+    if (!$should_noindex) return false;
+
+    $doc = JFactory::getDocument();
+    if ($doc) {
+      $doc->setMetaData('robots', 'noindex,follow');
+    }
+    if (class_exists('JResponse')) {
+      JResponse::setHeader('X-Robots-Tag', 'noindex, follow', true);
+    }
+    return true;
+  }
+
+// --- fec_apply_noindex_if_needed  (source lines 469-471; slices: bonuses)
+  function fec_apply_noindex_if_needed($set, $countrycode = 'us') {
+    return fec_apply_noindex(fec_should_noindex_bonus($set, $countrycode));
+  }
+
+// --- fec_apply_casino_noindex_if_needed  (source lines 478-480; slices: bonuses)
+  function fec_apply_casino_noindex_if_needed($jr_data) {
+    return fec_apply_noindex(fec_should_noindex_casino($jr_data));
+  }
+
+// --- fec_render_cta  (source lines 488-509; slices: bonuses)
+  function fec_render_cta($state, $label, $href, $extraClass = '') {
+    $extraClass = trim((string)$extraClass);
+
+    if ($state !== 'ACTIVE') {
+      return '<span class="fec-btn fec-btn--primary is-disabled '.$extraClass.'" aria-disabled="true">'
+        . htmlspecialchars($label, ENT_QUOTES, 'UTF-8')
+        . '</span>';
+    }
+
+    $href = (string)$href;
+    if ($href === '') {
+      return '<span class="fec-btn fec-btn--primary is-disabled '.$extraClass.'" aria-disabled="true">'
+        . htmlspecialchars($label, ENT_QUOTES, 'UTF-8')
+        . '</span>';
+    }
+
+    return '<a class="fec-btn fec-btn--primary '.$extraClass.'" href="'
+      . htmlspecialchars($href, ENT_QUOTES, 'UTF-8')
+      . '" target="_blank" rel="nofollow sponsored noopener">'
+      . htmlspecialchars($label, ENT_QUOTES, 'UTF-8')
+      . '</a>';
+  }
+
+// --- fec_render_fxcheck_fact  (source lines 524-538; slices: bonuses)
+  function fec_render_fxcheck_fact($yes, $no) {
+    $yes = (int)$yes;
+    $no  = (int)$no;
+    $t   = $yes + $no;
+
+    $tip = ($t > 0)
+      ? ($yes.' Yes / '.$no.' No ('.$t.' reports)')
+      : 'No reports yet';
+
+    return
+      '<div class="fec-card__fact fec-card__fact--fec" title="'.htmlspecialchars($tip, ENT_QUOTES, 'UTF-8').'">'.
+        '<strong><span class="fec-fb-yes">'.$yes.'</span>/<span class="fec-fb-no">'.$no.'</span></strong>'.
+        '<span>FXCheck™</span>'.
+      '</div>';
+  }
+
+// --- fec_where  (source lines 546-549; slices: bonuses)
+  function fec_where(&$query, &$w, $cond) {
+    $w[] = $cond;
+    $query->where($cond);
+  }
+
+// --- fec_card_freshness_label  (source lines 566-605; slices: bonuses)
+  /**
+   * Freshness line of a card. lib v82 (2026-10-20): takes the modified date
+   * too. When the listing was edited more than a day after it was added and
+   * the edit is recent (under 30 days), the line reads "Updated 2 days ago"
+   * - Best match sorts by last touch, so this is why the card is where it
+   * is. Otherwise the listing date as before ("Added 3 days ago", "Listed
+   * Mar 5"). Callers that pass only $sqlDate keep the old behaviour.
+   */
+  function fec_card_freshness_label($sqlDate, $modifiedDate = '') {
+    if (empty($sqlDate) || $sqlDate === '0000-00-00 00:00:00') return '';
+
+    $ts = strtotime((string)$sqlDate);
+    if (!$ts) return '';
+
+    $diff = time() - $ts;
+    if ($diff < 0) return ''; // future date — skip
+
+    if (!empty($modifiedDate) && $modifiedDate !== '0000-00-00 00:00:00') {
+      $mts = strtotime((string)$modifiedDate);
+      if ($mts && $mts - $ts > 86400) {
+        $mdiff = time() - $mts;
+        if ($mdiff >= 0 && $mdiff < 30 * 86400) {
+          $mdays = $mdiff / 86400;
+          if ($mdiff < 86400) return 'Updated today';
+          if ($mdays < 2)     return 'Updated yesterday';
+          if ($mdays < 14)    return 'Updated ' . (int)floor($mdays) . ' days ago';
+          $mweeks = (int)round($mdays / 7);
+          if ($mweeks < 2) $mweeks = 2;
+          return 'Updated ' . $mweeks . ' weeks ago';
+        }
+      }
+    }
+
+    $hours = $diff / 3600;
+    $days  = $diff / 86400;
+
+    if ($hours < 24) return 'Added today';
+    if ($days < 2)   return 'Added yesterday';
+    if ($days < 14)  return 'Added ' . (int)floor($days) . ' days ago';
+
+    if ($days < 30) {
+      $weeks = (int)round($days / 7);
+      if ($weeks < 2) $weeks = 2;
+      return 'Added ' . $weeks . ' weeks ago';
+    }
+
+    return 'Listed ' . date('M j', $ts);
+  }
+
+// --- fec_card_freshness_parts  (source lines 621-638; slices: bonuses)
+  /**
+   * lib v101 (2026-10-21): the freshness of a card as data, for a label that
+   * stays true inside a cached page. Same thresholds as the label above,
+   * but the server text is ABSOLUTE ("Added Oct 21") - a relative "today"
+   * baked into a copy Cloudflare serves for days is a lie by tomorrow. The
+   * browser rewrites it to "Added today / 3 days ago" from data-ts on the
+   * reader's own clock (fec_render_hub_cards_assets). The year prints when
+   * it is not the current one ("Listed Jan 9, 2026" read in 2027).
+   *
+   * Returns array('kind' => 'added'|'updated'|'listed', 'ts' => int,
+   * 'text' => string) or null.
+   */
+  function fec_card_freshness_parts($sqlDate, $modifiedDate = '') {
+    if (empty($sqlDate) || $sqlDate === '0000-00-00 00:00:00') return null;
+    $ts = strtotime((string)$sqlDate);
+    if (!$ts) return null;
+    $now = time();
+    if ($now - $ts < 0) return null;
+    $fmt = function ($t) { return date('M j', $t) . (date('Y', $t) !== date('Y') ? ', ' . date('Y', $t) : ''); };
+    if (!empty($modifiedDate) && $modifiedDate !== '0000-00-00 00:00:00') {
+      $mts = strtotime((string)$modifiedDate);
+      if ($mts && $mts - $ts > 86400 && $now - $mts >= 0 && $now - $mts < 30 * 86400) {
+        return array('kind' => 'updated', 'ts' => (int)$mts, 'text' => 'Updated ' . $fmt($mts));
+      }
+    }
+    if ($now - $ts < 30 * 86400) {
+      return array('kind' => 'added', 'ts' => (int)$ts, 'text' => 'Added ' . $fmt($ts));
+    }
+    return array('kind' => 'listed', 'ts' => (int)$ts, 'text' => 'Listed ' . $fmt($ts));
+  }
+
+// --- fec_card_freshness_span  (source lines 643-648; slices: bonuses)
+  /** The parts as an inline span the page script can rewrite; $sep = led by a middot. */
+  function fec_card_freshness_span($parts, $sep = false) {
+    if (!is_array($parts) || empty($parts['text'])) return '';
+    return '<span class="fec-fresh" data-fec-fresh="' . htmlspecialchars((string)$parts['kind'], ENT_QUOTES, 'UTF-8') . '"'
+         . ' data-ts="' . (int)$parts['ts'] . '"' . ($sep ? ' data-fec-sep="1"' : '') . '>'
+         . ($sep ? '&middot; ' : '') . htmlspecialchars((string)$parts['text'], ENT_QUOTES, 'UTF-8') . '</span>';
+  }
+
+// --- fec_render_hub_cards_assets  (source lines 658-699; slices: bonuses)
+  /**
+   * lib v101: one inline script per page for the hub cards - (a) relative
+   * freshness on the reader's clock, (b) the "+N more offers at this casino"
+   * toggle (bootstrap groups a page's cards by casino; the extras sit right
+   * after the first card, display:none, data-fec-more-of=cid).
+   */
+  function fec_render_hub_cards_assets() {
+    // lib v103: self-guarded, so the Updated pill can call it too on a page
+    // without cards; the long ladder (weeks / months / years) mirrors
+    // fec_relative_days_label for elements marked data-fec-ladder="long".
+    // lib v104: data-fec-bare="1" prints the relative part alone ("3 days
+    // ago") for labels that already sit under their own "Updated" caption.
+    // lib v105 (2026-10-22): the script goes into the document <head>
+    // (JDocument::addScriptDeclaration) instead of riding inside whatever
+    // string called first. The Updated pill is built in the bootstrap BEFORE
+    // the cards, so from v103 the once-flag was spent on a pill string that
+    // some pages never print - and the cards had no script: "+1 more offer"
+    // did nothing and "Added Oct 22" never became "Added today". In the head
+    // it runs on every page that rendered a card or a pill; the inline form
+    // remains for callers outside Joomla.
+    static $done = false;
+    if ($done) return '';
+    $done = true;
+    $js  = '(function(){';
+    $js .= 'function fresh(){var els=document.querySelectorAll("[data-fec-fresh][data-ts]");var now=Date.now()/1000;';
+    $js .=   'for(var i=0;i<els.length;i++){var el=els[i],ts=parseInt(el.getAttribute("data-ts"),10),k=el.getAttribute("data-fec-fresh"),lg=el.getAttribute("data-fec-ladder")==="long";';
+    $js .=     'if(!ts||k==="listed")continue;var d=now-ts;if(d<0)continue;var days=d/86400,t="";';
+    $js .=     'if(d<86400)t="today";else if(days<2)t="yesterday";else if(days<14)t=Math.floor(days)+" days ago";';
+    $js .=     'else if(!lg&&days<30){var w=Math.round(days/7);if(w<2)w=2;t=w+" weeks ago";}';
+    $js .=     'else if(lg&&days<60){var w2=Math.floor(days/7);t=w2+(w2===1?" week ago":" weeks ago");}';
+    $js .=     'else if(lg&&days<365){var m=Math.floor(days/30);t=m+(m===1?" month ago":" months ago");}';
+    $js .=     'else if(lg){var y=Math.floor(days/365);t=y+(y===1?" year ago":" years ago");}else continue;';
+    $js .=     'el.textContent=(el.getAttribute("data-fec-sep")?"\u00b7 ":"")+(el.getAttribute("data-fec-bare")?"":(k==="updated"?"Updated ":"Added "))+t;}}';
+    $js .= 'function more(e){var b=e.target;while(b&&b!==document&&!(b.classList&&b.classList.contains("hub-bonus-more")))b=b.parentNode;';
+    $js .=   'if(!b||b===document)return;var cid=b.getAttribute("data-fec-more");var open=b.getAttribute("aria-expanded")==="true";';
+    $js .=   'var els=document.querySelectorAll("[data-fec-more-of=\""+cid+"\"]");for(var i=0;i<els.length;i++){els[i].style.display=open?"none":"";}';
+    $js .=   'b.setAttribute("aria-expanded",open?"false":"true");b.textContent=open?b.getAttribute("data-label-more"):b.getAttribute("data-label-less");}';
+    $js .= 'document.addEventListener("click",more);';
+    $js .= 'if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",fresh);}else{fresh();}';
+    $js .= '})();';
+    if (class_exists('JFactory')) {
+      try {
+        $doc = JFactory::getDocument();
+        if ($doc && method_exists($doc, 'addScriptDeclaration')) { $doc->addScriptDeclaration($js); return ''; }
+      } catch (Exception $e) {}
+    }
+    return '<script>' . $js . '</script>';
+  }
+
+// --- fec_page_last_updated_ts  (source lines 708-739; slices: bonuses)
+  function fec_page_last_updated_ts($db, $w, $feedbackTable = '#__bonus_feedback') {
+    // lib v83 (2026-10-20): the last touch of a listing in scope - added or
+    // modified, whichever is later - not the last insertion alone. The hub
+    // meta panel said "Last updated Oct 18" while terms had been revised
+    // that morning. GREATEST over COALESCE: a NULL modified never wins.
+    $zero = $db->quote('1000-01-01 00:00:00');
+    $q1 = $db->getQuery(true)
+      ->select('MAX(GREATEST(COALESCE('.$db->quoteName('a.added').', '.$zero.'), COALESCE('.$db->quoteName('a.modified').', '.$zero.')))')
+      ->from($db->quoteName('#__bonuses','a'))
+      ->join('INNER', $db->quoteName('#__jreviews_content','b').' ON a.cid = b.contentid');
+
+    foreach ((array)$w as $cond) $q1->where($cond);
+
+    $db->setQuery($q1);
+    $maxAdded = (string)$db->loadResult();
+
+    $q2 = $db->getQuery(true)
+      ->select('MAX('.$db->quoteName('bf.created_at').')')
+      ->from($db->quoteName($feedbackTable,'bf'))
+      ->join('INNER', $db->quoteName('#__bonuses','a').' ON a.bid = bf.bid')
+      ->join('INNER', $db->quoteName('#__jreviews_content','b').' ON a.cid = b.contentid');
+
+    foreach ((array)$w as $cond) $q2->where($cond);
+
+    $db->setQuery($q2);
+    $maxFb = (string)$db->loadResult();
+
+    $t1 = ($maxAdded && $maxAdded !== '0000-00-00 00:00:00' && substr($maxAdded, 0, 4) !== '1000') ? strtotime($maxAdded) : 0;
+    $t2 = ($maxFb   && $maxFb   !== '0000-00-00 00:00:00') ? strtotime($maxFb)   : 0;
+
+    return max($t1, $t2);
+  }
+
+// --- fec_relative_days_label  (source lines 759-774; slices: bonuses)
+  /**
+   * Convert a positive integer days-elapsed into a human-readable relative
+   * label using a today/yesterday/days/weeks/months/years ladder. Returns
+   * plain text WITHOUT an "Updated" / "Added" prefix -- the caller prepends
+   * whatever verb it needs.
+   *
+   * Ladder boundaries:
+   *   0          -> "today"
+   *   1          -> "yesterday"
+   *   2 - 13     -> "N days ago"
+   *   14 - 59    -> "N weeks ago"   (up to ~8 weeks)
+   *   60 - 364   -> "N months ago"  (~30-day approximation)
+   *   365+       -> "N years ago"
+   *
+   * Callers pass abs($days); negative inputs are clamped to 0.
+   */
+  function fec_relative_days_label($days) {
+    $days = (int)$days;
+    if ($days <= 0) return 'today';
+    if ($days === 1) return 'yesterday';
+    if ($days < 14)  return $days . ' days ago';
+    if ($days < 60) {
+      $w = (int)floor($days / 7);
+      return $w . ' week' . ($w === 1 ? '' : 's') . ' ago';
+    }
+    if ($days < 365) {
+      $m = (int)floor($days / 30);
+      return $m . ' month' . ($m === 1 ? '' : 's') . ' ago';
+    }
+    $y = (int)floor($days / 365);
+    return $y . ' year' . ($y === 1 ? '' : 's') . ' ago';
+  }
+
+// --- fec_updated_human  (source lines 778-808; slices: bonuses)
+  function fec_updated_human($ts, $tz = 'UTC', $dateFmt = 'M j, Y') {
+    $ts = (int)$ts;
+    if ($ts <= 0) return array('label' => '', 'title' => '', 'date_text' => '');
+
+    try {
+      $zone = new DateTimeZone($tz);
+
+      $now = new DateTime('now', $zone);
+      $dt  = new DateTime('@'.$ts);
+      $dt->setTimezone($zone);
+
+      $dateText = $dt->format($dateFmt);
+
+      $nowDay = new DateTime($now->format('Y-m-d'), $zone);
+      $dtDay  = new DateTime($dt->format('Y-m-d'),  $zone);
+
+      $diffDays = (int)$dtDay->diff($nowDay)->days;
+
+      $label = 'Updated ' . fec_relative_days_label($diffDays);
+
+      $title = 'Last change: '.$dt->format('Y-m-d H:i').' '.$tz;
+
+      return array('label'=>$label,'title'=>$title,'date_text'=>$dateText);
+    } catch (Exception $e) {
+      return array(
+        'label' => 'Updated '.date($dateFmt, $ts),
+        'title' => '',
+        'date_text' => date($dateFmt, $ts)
+      );
+    }
+  }
+
+// --- fec_render_updated_pill  (source lines 812-826; slices: bonuses)
+  function fec_render_updated_pill($ts) {
+    if (!(int)$ts) return '';
+    $u = fec_updated_human($ts, 'UTC');
+    if ($u['label'] === '') return '';
+
+    // lib v103: the server prints the date ("Updated Oct 18, 2026"), the
+    // browser turns it into "Updated 3 days ago" on the reader's clock
+    // (fec_render_hub_cards_assets). A relative label baked into a cached
+    // page was wrong by the next day.
+    $attrTitle = $u['title'] ? ' title="'.htmlspecialchars($u['title'], ENT_QUOTES, 'UTF-8').'"' : '';
+    $assets = function_exists('fec_render_hub_cards_assets') ? fec_render_hub_cards_assets() : '';
+    return $assets.'<span class="fec-pill fec-pill--updated" data-fec-fresh="updated" data-ts="'.(int)$ts.'" data-fec-ladder="long"'.$attrTitle.'>'
+      . 'Updated '.htmlspecialchars($u['date_text'], ENT_QUOTES, 'UTF-8')
+      . '</span>';
+  }
+
+// --- fec_format_updated  (source lines 830-852; slices: bonuses)
+  function fec_format_updated($iso) {
+    if (!$iso) return array('iso' => '', 'date' => '', 'relative' => '');
+
+    try {
+      $dt  = new DateTime($iso, new DateTimeZone('UTC'));
+      $now = new DateTime('now', new DateTimeZone('UTC'));
+
+      $days = (int)$now->diff($dt)->format('%r%a');
+
+      // %r adds "-" when $dt is in the past, so $days is typically negative.
+      // The ladder takes an absolute days-elapsed value; abs() handles past
+      // dates (the only sane case here) and clamps any stray future ts to 0.
+      $relative = 'Updated ' . fec_relative_days_label(abs($days));
+
+      return array(
+        'iso'      => $dt->format('c'),
+        'date'     => $dt->format('M j, Y'),
+        'relative' => $relative
+      );
+    } catch (Exception $e) {
+      return array('iso' => '', 'date' => '', 'relative' => '');
+    }
+  }
+
+// --- fec_reports_esc  (source lines 860-860; slices: bonuses)
+  function fec_reports_esc($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
+
+// --- fec_reports_time_ago  (source lines 864-880; slices: bonuses)
+  function fec_reports_time_ago($sqlDate) {
+    if (!$sqlDate) return '';
+    $ts = strtotime((string)$sqlDate);
+    if (!$ts) return '';
+    $diff = time() - $ts;
+    if ($diff < 60) return 'just now';
+    $mins = (int)floor($diff / 60);
+    if ($mins < 60) return $mins . ' min ago';
+    $hrs = (int)floor($mins / 60);
+    if ($hrs < 24) return $hrs . ' hour' . ($hrs === 1 ? '' : 's') . ' ago';
+    $days = (int)floor($hrs / 24);
+    if ($days < 30) return $days . ' day' . ($days === 1 ? '' : 's') . ' ago';
+    $months = (int)floor($days / 30);
+    if ($months < 12) return $months . ' month' . ($months === 1 ? '' : 's') . ' ago';
+    $years = (int)floor($months / 12);
+    return $years . ' year' . ($years === 1 ? '' : 's') . ' ago';
+  }
+
+// --- fec_reports_render_item  (source lines 884-930; slices: bonuses)
+  function fec_reports_render_item($r) {
+    $user = !empty($r['username']) ? (string)$r['username'] : 'Anonymous';
+
+    $voteVal   = isset($r['vote']) ? (int)$r['vote'] : 0;
+    $voteClass = ($voteVal === 1) ? 'yes' : 'no';
+    $voteLabel = ($voteVal === 1) ? 'claimed' : 'reported issue';
+
+    $timeAgo = '';
+    if (!empty($r['created_at'])) $timeAgo = fec_reports_time_ago($r['created_at']);
+
+    $comment = '';
+    if (array_key_exists('comment', $r) && $r['comment'] !== null) {
+      $comment = trim((string)$r['comment']);
+    }
+    $mod = isset($r['moderation_status']) ? (string)$r['moderation_status'] : '';
+
+    $commentHtml = '';
+    if ($comment !== '' && $mod === 'approved') {
+      $commentHtml = '<div class="note">'.nl2br(fec_reports_esc($comment)).'</div>';
+    }
+
+    $ccHtml = '';
+    if (!empty($r['country_code'])) {
+      $tmp = strtoupper(trim((string)$r['country_code']));
+      if (preg_match('/^[A-Z]{2}$/', $tmp) && $tmp !== 'XX') {
+        $cc_lc = strtolower($tmp);
+        $flagUrl = '/images/flags/' . $cc_lc . '.svg';
+        $ccHtml = '<span class="flag" '.
+          'style="background-image:url(' . fec_reports_esc($flagUrl) . ')" '.
+          'aria-label="' . fec_reports_esc($tmp) . '"></span>';
+      }
+    }
+
+    $id = isset($r['id']) ? (int)$r['id'] : 0;
+
+    return
+      '<li class="bd-report bd-report--' . $voteClass . '" data-id="' . $id . '" data-vote="' . $voteClass . '">' .
+        '<div class="bd-reports-row1">' .
+          $ccHtml .
+          '<span class="user">' . fec_reports_esc($user) . '</span>' .
+          '<span class="sep">&middot;</span>' .
+          '<span class="action">' . fec_reports_esc($voteLabel) . '</span>' .
+          ($timeAgo ? '<span class="sep">&middot;</span><span class="time">' . fec_reports_esc($timeAgo) . '</span>' : '') .
+        '</div>' .
+        $commentHtml .
+      '</li>';
+  }
+
+// --- fec_render_reports_html  (source lines 934-1021; slices: bonuses)
+  function fec_render_reports_html($bid, $initialLimit = 5, $id = 'fec-reports') {
+    $bid = (int)$bid;
+    $initialLimit = (int)$initialLimit;
+    $id = trim((string)$id);
+
+    if ($bid <= 0) return '';
+    if ($id === '') $id = 'fec-reports';
+
+    if ($initialLimit <= 0) $initialLimit = 5;
+    if ($initialLimit > 20) $initialLimit = 20;
+
+    $db = JFactory::getDbo();
+
+    $whereVisible =
+      '(' .
+        $db->quoteName('comment') . ' IS NULL ' .
+        'OR TRIM(' . $db->quoteName('comment') . ') = "" ' .
+        'OR ' . $db->quoteName('moderation_status') . ' = ' . $db->quote('approved') .
+      ')';
+
+    $query = $db->getQuery(true)
+      ->select(array(
+        $db->quoteName('id'),
+        $db->quoteName('username'),
+        $db->quoteName('vote'),
+        $db->quoteName('comment'),
+        $db->quoteName('created_at'),
+        $db->quoteName('moderation_status'),
+        $db->quoteName('country_code')
+      ))
+      ->from($db->quoteName('#__bonus_feedback'))
+      ->where($db->quoteName('bid') . ' = ' . $bid)
+      ->where($whereVisible)
+      ->order($db->quoteName('created_at') . ' DESC, ' . $db->quoteName('id') . ' DESC');
+
+    $db->setQuery($query, 0, $initialLimit);
+    $rows = (array)$db->loadAssocList();
+
+    $qCount = $db->getQuery(true)
+      ->select('COUNT(*)')
+      ->from($db->quoteName('#__bonus_feedback'))
+      ->where($db->quoteName('bid') . ' = ' . $bid)
+      ->where($whereVisible);
+
+    $db->setQuery($qCount);
+    $total = (int)$db->loadResult();
+
+    $shown = is_array($rows) ? count($rows) : 0;
+    $remaining = max(0, $total - $shown);
+    $hasMore = ($remaining > 0);
+
+    $idAttr = htmlspecialchars($id, ENT_QUOTES, 'UTF-8');
+
+    $html  = '<div class="wrap">';
+    $html .= '<section class="bd-reports" id="' . $idAttr . '" aria-label="User reports">';
+    $html .=   '<div class="bd-reports-head">';
+    $html .=     '<h3>Reports</h3>';
+    $html .=     '<div class="sub">Latest community outcomes for this bonus.</div>';
+    $html .=   '</div>';
+
+    $html .=   '<ul class="bd-reports-list" data-bid="' . (int)$bid . '" data-offset="' . (int)$shown . '">';
+
+    if (!empty($rows)) {
+      foreach ($rows as $r) $html .= fec_reports_render_item($r);
+    } else {
+      $html .= '<li class="bd-reports-empty">No reports yet.</li>';
+    }
+
+    $html .=   '</ul>';
+
+    $html .=   '<div class="bd-reports-foot">';
+    $html .=     '<div class="meta">Showing ' . (int)$shown . ' of ' . (int)$total . '</div>';
+    $html .=     '<div class="bd-reports-status" aria-live="polite"></div>';
+
+    if ($hasMore) {
+      $nextN = min($initialLimit, $remaining);
+      $label = 'Show ' . (int)$nextN . ' more';
+      $html .= '<button type="button" class="btn btn-ghost bd-reports-more" data-bid="' . (int)$bid . '" data-limit="' . (int)$initialLimit . '">' .
+                 fec_reports_esc($label) .
+               '</button>';
+    }
+
+    $html .=   '</div>';
+    $html .= '</section>';
+    $html .= '</div>';
+
+    return $html;
+  }
+
+// --- fec_vm_wager_label  (source lines 1029-1066; slices: authors, bonuses)
   function fec_vm_wager_label($set, $type = '', $wr_meth = '') {
     $wrRaw = '';
     foreach (array('wr','wager','jr_wager','jr_wr') as $k) {
@@ -236,7 +879,7 @@ define('FEC_TG_BOT_USERNAME', 'fecbonusbot'); // no @; '' disables the CTA
     return $nTxt . 'x(' . $m . ')';
   }
 
-// --- fec_rb_window_label  (source lines 1077-1089; slices: authors)
+// --- fec_rb_window_label  (source lines 1077-1089; slices: authors, bonuses)
   /**
    * lib v78 (2026-10-20): the boost window of a rakeback bonus (type rb),
    * stored in the free-play timer columns fp_time + fp_time_den (m / h / d).
@@ -258,7 +901,56 @@ define('FEC_TG_BOT_USERNAME', 'fecbonusbot'); // no @; '' disables the CTA
     return $nTxt . ' ' . $unit . (($n == 1.0) ? '' : 's');
   }
 
-// --- fec_vm_curr_symbol  (source lines 1148-1154; slices: authors)
+// --- fec_vm_wr_number  (source lines 1093-1110; slices: bonuses)
+  function fec_vm_wr_number($set) {
+    $raw = '';
+    foreach (array('wr','wager','jr_wager','jr_wr') as $k) {
+      if (isset($set[$k]) && trim((string)$set[$k]) !== '') {
+        $raw = trim((string)$set[$k]);
+        break;
+      }
+    }
+    if ($raw === '') return null;
+
+    if (preg_match('/([0-9]+(?:\.[0-9]+)?)/', $raw, $m)) {
+      $n = (float)$m[1];
+      // 0 = wager-free: valore numerico legittimo, NON null/not-stated.
+      // Il watchout "Wagering requirement unclear" non deve scattare qui.
+      return ($n >= 0) ? $n : null;
+    }
+    return null;
+  }
+
+// --- fec_vm_cashout_label  (source lines 1124-1140; slices: bonuses)
+  /**
+   * Kind-aware max cashout label.
+   *   abs        -> money with currency symbol (as historically rendered)
+   *   x_dep      -> "Nx deposit"
+   *   x_bonus    -> "Nx bonus"
+   *   unclassified ('' / missing column) -> bare number, no currency claim:
+   *                the unit is unverified, so no symbol is asserted.
+   * Returns '' when max_cashout is empty or non numeric. Zero is handled
+   * by the call sites (No cap / verify terms) and never reaches here.
+   */
+  function fec_vm_cashout_label($set, $sym) {
+    $raw = isset($set['max_cashout']) ? trim((string)$set['max_cashout']) : '';
+    if ($raw === '' || !is_numeric($raw)) return '';
+    $n = (float)$raw;
+    if ($n <= 0) return '';
+    $nTxt = (abs($n - round($n)) < 0.00001)
+      ? (string)round($n)
+      : rtrim(rtrim(number_format($n, 2, '.', ''), '0'), '.');
+    $kind = isset($set['max_cashout_kind']) ? trim((string)$set['max_cashout_kind']) : '';
+    if ($kind === 'x_dep')   return $nTxt . 'x deposit';
+    if ($kind === 'x_bonus') return $nTxt . 'x bonus';
+    if ($kind === 'abs') {
+      $m = function_exists('fec_vm_money') ? fec_vm_money($raw, $sym) : '';
+      return ($m !== '') ? $m : $nTxt;
+    }
+    return $nTxt;
+  }
+
+// --- fec_vm_curr_symbol  (source lines 1148-1154; slices: authors, bonuses)
   function fec_vm_curr_symbol($currencyCode, $currencyMap) {
     $code = (string)$currencyCode;
     if ($code !== '' && is_array($currencyMap) && isset($currencyMap[$code])) {
@@ -267,12 +959,57 @@ define('FEC_TG_BOT_USERNAME', 'fecbonusbot'); // no @; '' disables the CTA
     return '$';
   }
 
-// --- fec_curr_symbol  (source lines 1208-1210; slices: authors)
+// --- fec_vm_money  (source lines 1158-1200; slices: bonuses)
+  function fec_vm_money($raw, $sym) {
+    $raw = trim((string)$raw);
+    if ($raw === '') return '';
+
+    // Normalizza separatori:
+    // - se ci sono sia ',' che '.', l'ultimo è il decimale
+    // - l'altro è migliaia
+    $hasComma = strpos($raw, ',') !== false;
+    $hasDot   = strpos($raw, '.') !== false;
+
+    if ($hasComma && $hasDot) {
+      if (strrpos($raw, ',') > strrpos($raw, '.')) {
+        // EU style: 1.234,56
+        $raw = str_replace('.', '', $raw);
+        $raw = str_replace(',', '.', $raw);
+      } else {
+        // US style: 1,234.56
+        $raw = str_replace(',', '', $raw);
+      }
+    } elseif ($hasComma) {
+      // Only comma → decimal
+      $raw = str_replace(',', '.', $raw);
+    }
+
+    // Rimuove tutto tranne numeri e punto
+    $raw = preg_replace('/[^0-9.]/', '', $raw);
+    if ($raw === '') return '';
+
+    $n = (float)$raw;
+
+    // Valori negativi non validi
+    if ($n < 0) return '';
+
+    // Zero esplicito
+    if ($n == 0.0) return $sym . '0';
+
+    // Formattazione pulita
+    if (abs($n - round($n)) < 0.00001) {
+      return $sym . (string)round($n);
+    }
+
+    return $sym . rtrim(rtrim(number_format($n, 2, '.', ''), '0'), '.');
+  }
+
+// --- fec_curr_symbol  (source lines 1208-1210; slices: authors, bonuses)
   function fec_curr_symbol($currencyCode, $currencyMap) {
     return fec_vm_curr_symbol($currencyCode, $currencyMap);
   }
 
-// --- fec_amount_primary  (source lines 1214-1226; slices: authors)
+// --- fec_amount_primary  (source lines 1214-1226; slices: authors, bonuses)
   function fec_amount_primary($set, $currencyMap) {
     $type = isset($set['type']) ? (string)$set['type'] : '';
     $bonus = isset($set['bonus']) ? (string)$set['bonus'] : '';
@@ -287,7 +1024,7 @@ define('FEC_TG_BOT_USERNAME', 'fecbonusbot'); // no @; '' disables the CTA
     return $sym . trim($bonus);
   }
 
-// --- fec_amount_upto  (source lines 1230-1239; slices: authors)
+// --- fec_amount_upto  (source lines 1230-1239; slices: authors, bonuses)
   function fec_amount_upto($set, $currencyMap) {
     $type = isset($set['type']) ? (string)$set['type'] : '';
     if (in_array($type, array('nd','fs','fp','fc'), true)) return '';
@@ -299,7 +1036,7 @@ define('FEC_TG_BOT_USERNAME', 'fecbonusbot'); // no @; '' disables the CTA
     return 'up to ' . $sym . htmlspecialchars($max, ENT_QUOTES, 'UTF-8');
   }
 
-// --- fec_typetxt  (source lines 1243-1268; slices: authors)
+// --- fec_typetxt  (source lines 1243-1268; slices: authors, bonuses)
   function fec_typetxt($set, $countrycode, $bonustypeMap) {
     $type = isset($set['type']) ? (string)$set['type'] : '';
     $game = isset($set['game']) ? (string)$set['game'] : '';
@@ -327,7 +1064,7 @@ define('FEC_TG_BOT_USERNAME', 'fecbonusbot'); // no @; '' disables the CTA
     return isset($bonustypeMap[$type]) ? (string)$bonustypeMap[$type] : $type;
   }
 
-// --- fec_typetxt_card  (source lines 1280-1303; slices: authors)
+// --- fec_typetxt_card  (source lines 1280-1303; slices: authors, bonuses)
   function fec_typetxt_card($set, $countrycode, $bonustypeMap) {
     $type = isset($set['type']) ? (string)$set['type'] : '';
     $cc   = strtolower((string)$countrycode);
@@ -353,7 +1090,7 @@ define('FEC_TG_BOT_USERNAME', 'fecbonusbot'); // no @; '' disables the CTA
     return isset($bonustypeMap[$type]) ? (string)$bonustypeMap[$type] : $type;
   }
 
-// --- fec_related_compact  (source lines 1307-1323; slices: authors)
+// --- fec_related_compact  (source lines 1307-1323; slices: authors, bonuses)
   function fec_related_compact($relSet, $countrycode, $currencyMap, $bonustypeMap) {
     if (empty($relSet) || !is_array($relSet)) return '';
     $type  = isset($relSet['type']) ? (string)$relSet['type'] : '';
@@ -372,7 +1109,26 @@ define('FEC_TG_BOT_USERNAME', 'fecbonusbot'); // no @; '' disables the CTA
     return trim(implode(' ', $parts));
   }
 
-// --- fec_card_typeline  (source lines 1352-1357; slices: authors)
+// --- fec_related_compact_detail  (source lines 1332-1348; slices: bonuses)
+  function fec_related_compact_detail($relSet, $countrycode, $currencyMap, $bonustypeMap) {
+    if (empty($relSet) || !is_array($relSet)) return '';
+    $type  = isset($relSet['type']) ? (string)$relSet['type'] : '';
+    $bonus = isset($relSet['bonus']) ? trim((string)$relSet['bonus']) : '';
+    if ($type === '' || $bonus === '') return '';
+
+    $primary = fec_amount_primary($relSet, $currencyMap);
+    $upto    = fec_amount_upto($relSet, $currencyMap);
+    $typeTxt = fec_typetxt($relSet, $countrycode, $bonustypeMap);
+
+    $parts = array();
+    if ($primary !== '') $parts[] = $primary;
+    if ($upto !== '')    $parts[] = $upto;
+    if ($typeTxt !== '') $parts[] = $typeTxt;
+
+    return trim(implode(' ', $parts));
+  }
+
+// --- fec_card_typeline  (source lines 1352-1357; slices: authors, bonuses)
   function fec_card_typeline($set, $relSet, $countrycode, $currencyMap, $bonustypeMap) {
     $base = fec_typetxt_card($set, $countrycode, $bonustypeMap);
     $rel  = fec_related_compact($relSet, $countrycode, $currencyMap, $bonustypeMap);
@@ -380,7 +1136,7 @@ define('FEC_TG_BOT_USERNAME', 'fecbonusbot'); // no @; '' disables the CTA
     return $base;
   }
 
-// --- fec_bonus_full_title  (source lines 1360-1395; slices: authors)
+// --- fec_bonus_full_title  (source lines 1360-1395; slices: authors, bonuses)
 function fec_bonus_full_title($set, $countrycode, $currencyMap, $bonustypeMap) {
     $type = isset($set['type']) ? (string)$set['type'] : '';
 
@@ -416,6 +1172,3246 @@ function fec_bonus_full_title($set, $countrycode, $currencyMap, $bonustypeMap) {
     }
 
     return trim($primary . ' ' . $typeTxt);
+  }
+
+// --- fec_render_fx_badge_html  (source lines 1403-1416; slices: bonuses)
+  function fec_render_fx_badge_html($yes, $no) {
+    $yes = (int)$yes; $no = (int)$no;
+    $fx  = fec_fxcheck_classify($yes, $no);
+    $t = $yes + $no;
+    $tip = ($t > 0) ? ($yes.' Yes / '.$no.' No ('.$t.' reports)') : 'No reports yet';
+    $tooltip = htmlspecialchars($tip, ENT_QUOTES, 'UTF-8');
+
+    $tagMap = array('verified'=>'tag-ok', 'mixed'=>'tag-warn', 'lowdata'=>'tag-mute', 'issues'=>'tag-bad');
+    $tagClass = isset($tagMap[$fx['key']]) ? $tagMap[$fx['key']] : 'tag-mute';
+
+    return '<span class="tag '.$tagClass.'" title="'.$tooltip.'">'
+      . htmlspecialchars($fx['text'], ENT_QUOTES, 'UTF-8')
+      . '</span>';
+  }
+
+// --- fec_state_to_status  (source lines 1420-1428; slices: bonuses)
+  function fec_state_to_status($state, $countryname) {
+    switch ($state) {
+      case 'EXPIRED':    return array('status' => 'Expired', 'statusclass' => 'exp');
+      case 'GEO_BLOCK':  return array('status' => 'Not available in '.$countryname, 'statusclass' => 'geo');
+      case 'UNAVAILABLE':return array('status' => 'Unavailable', 'statusclass' => 'na');
+      case 'SKIP':       return array('status' => 'Not available', 'statusclass' => 'na'); // blacklisted casino
+      default:           return array('status' => 'Active', 'statusclass' => 'act');
+    }
+  }
+
+// --- fec_vm_build_keyfacts  (source lines 1438-1531; slices: bonuses)
+  function fec_vm_build_keyfacts(&$vm, $set, $ctx, $currencyMap) {
+    $facts = array();
+
+    // ---- local helper: preserve "0" while treating null/'' as empty ----
+    if (!function_exists('fec_vm__num_str_or_empty')) {
+      function fec_vm__num_str_or_empty($v) {
+        if ($v === null) return '';
+        $s = trim((string)$v);
+        return ($s === '' ? '' : $s); // "0" stays "0"
+      }
+    }
+
+    $type = isset($vm['type']) ? strtolower((string)$vm['type']) : strtolower((string)(isset($set['type']) ? $set['type'] : ''));
+    $wr_meth = isset($vm['wr_meth']) ? (string)$vm['wr_meth'] : (string)(isset($set['wr_meth']) ? $set['wr_meth'] : '');
+
+    $sym = fec_vm_curr_symbol(isset($set['currency']) ? $set['currency'] : '', $currencyMap);
+
+    $code = isset($set['code']) ? trim((string)$set['code']) : '';
+    $facts[] = array('k' => 'Code', 'v' => ($code === '' ? 'Not required' : $code));
+
+    $wagerLabel = fec_vm_wager_label($set, $type, $wr_meth);
+    // Fallback '0' rimosso: mostrava un claim wager-free su termini non
+    // verificati. Il caso 0 reale ora arriva come label "No wagering".
+    $facts[] = array('k' => 'Wager', 'v' => ($wagerLabel !== '' ? $wagerLabel : 'Not stated'));
+
+    // lib v78: rakeback (rb) - the boost window is a term of its own, read from
+    // the free-play timer columns; nothing printed when the operator states none
+    if ($type === 'rb' && function_exists('fec_rb_window_label')) {
+      $rbWin = fec_rb_window_label($set, 'plain');
+      if ($rbWin !== '') $facts[] = array('k' => 'Boost window', 'v' => $rbWin);
+    }
+
+    $cashable = isset($set['cashable']) ? strtolower(trim((string)$set['cashable'])) : '';
+    if ($cashable === 'yes' || $cashable === 'no') {
+      $facts[] = array('k' => 'Cashable', 'v' => ucfirst($cashable), 'cls' => $cashable);
+    } else {
+      $facts[] = array('k' => 'Cashable', 'v' => 'Not stated');
+    }
+
+    // ---- Min deposit (fix: keep 0, treat as Not required) ----
+    $minRaw = '';
+    if (array_key_exists('min_deposit', $set)) {
+      $minRaw = fec_vm__num_str_or_empty($set['min_deposit']);
+    } elseif (array_key_exists('min_dep', $set)) {
+      $minRaw = fec_vm__num_str_or_empty($set['min_dep']);
+    }
+
+    $isNoDepositType = in_array($type, array('nd','fp','fc'), true);
+    $isFsNoDeposit   = ($type === 'fs' && $minRaw === '');
+
+    if ($minRaw === '0') {
+      // editorially safest interpretation for 0-min deposit
+      $facts[] = array('k' => 'Min deposit', 'v' => 'Not required');
+    } elseif ($minRaw === '') {
+      $facts[] = array('k' => 'Min deposit', 'v' => (($isNoDepositType || $isFsNoDeposit) ? 'Not required' : 'Not stated'));
+    } else {
+      $minMoney = fec_vm_money($minRaw, $sym);
+      $facts[] = array('k' => 'Min deposit', 'v' => ($minMoney !== '' ? $minMoney : 'Not stated'));
+    }
+
+    // Hero game-meta label (long form, omitted if data unclear)
+    if ($minRaw === '0' || ($minRaw === '' && ($isNoDepositType || $isFsNoDeposit))) {
+      $vm['depositLabel'] = 'No deposit required';
+    } elseif ($minRaw !== '' && (float)$minRaw > 0) {
+      $minMoneyL = fec_vm_money($minRaw, $sym);
+      $vm['depositLabel'] = ($minMoneyL !== '') ? ('Min deposit ' . $minMoneyL) : '';
+    } else {
+      $vm['depositLabel'] = '';
+    }
+
+    // ---- Max cashout (fix: keep 0, flag verify) ----
+    $mxRaw = '';
+    if (array_key_exists('max_cashout', $set)) {
+      $mxRaw = fec_vm__num_str_or_empty($set['max_cashout']);
+    }
+
+    if ($mxRaw === '') {
+      $facts[] = array('k' => 'Max cashout', 'v' => 'Not stated');
+    } elseif ($mxRaw === '0') {
+      // lib v85 (2026-10-21): 0 is "No cap" everywhere else - the cards, the
+      // "nocap" filter, the inline row - and now here too. "0 (verify terms)"
+      // sent the reader to check a cap the desk had recorded as absent.
+      $facts[] = array('k' => 'Max cashout', 'v' => 'No cap');
+    } else {
+      // kind-aware: abs = denaro, multipli = "Nx deposit/bonus",
+      // non classificato = numero nudo senza claim di valuta.
+      $mxLabel = function_exists('fec_vm_cashout_label')
+        ? fec_vm_cashout_label($set, $sym)
+        : fec_vm_money($mxRaw, $sym);
+      $facts[] = array('k' => 'Max cashout', 'v' => ($mxLabel !== '' ? $mxLabel : 'Not stated'));
+    }
+
+    $vm['facts'] = $facts;
+  }
+
+// --- fec_vm_wagering_estimate  (source lines 1549-1580; slices: bonuses)
+  /**
+   * lib v85 (2026-10-21): what a wagering requirement comes to in money, for
+   * the watch-out line. The old line did WR x the bonus field, and for a
+   * match the bonus field is the percentage: "40x(b+d) means roughly
+   * $12000" on a 300% match was 40 x 300, a number that meant nothing (the
+   * page's own table said $16,000 on a $100 deposit). Returns array(text,
+   * money) or null when no honest figure exists.
+   *   money types (nd, fc, fp): WR x amount                 -> "$800 of wagering"
+   *   spins (fs):               no money figure            -> null (the caller says "on spin winnings")
+   *   percentage types:         on a reference deposit, the stated minimum
+   *                             or $100, with the match capped at max_bonus
+   *                             and the base the label states (b or b+d)
+   *                             -> "on a $25 deposit, $4,000 of wagering"
+   */
+  function fec_vm_wagering_estimate($set, $type, $wrNum, $wrLabel, $sym) {
+    $type  = strtolower(trim((string)$type));
+    $wrNum = (float)$wrNum;
+    if ($wrNum <= 0) return null;
+    $num = function ($v) { return (float)preg_replace('/[^0-9.]/', '', (string)$v); };
+    $money = function ($n) use ($sym) {
+      $n = (int)round($n);
+      return function_exists('fec_vm_money') ? fec_vm_money((string)$n, $sym) : ($sym . number_format($n, 0));
+    };
+    $bonusNum = isset($set['bonus']) ? $num($set['bonus']) : 0;
+    if ($type === 'fs') return null;
+    if (in_array($type, array('nd', 'fc', 'fp'), true)) {
+      if ($bonusNum <= 0) return null;
+      $est = $wrNum * $bonusNum;
+      return array('text' => $money($est) . ' of wagering', 'money' => $est);
+    }
+    // percentage types: su, 2d, 3d, hr, db, cb, rb, sl ...
+    if ($bonusNum <= 0) return null;
+    $minDep = 0;
+    foreach (array('min_dep', 'min_deposit') as $k) {
+      if (isset($set[$k]) && trim((string)$set[$k]) !== '') { $minDep = $num($set[$k]); break; }
+    }
+    $dep = ($minDep > 0) ? $minDep : 100;
+    $bonusAmt = $dep * $bonusNum / 100;
+    $maxB = isset($set['max_bonus']) ? $num($set['max_bonus']) : 0;
+    if ($maxB > 0 && $bonusAmt > $maxB) $bonusAmt = $maxB;
+    if ($bonusAmt <= 0) return null;
+    $onDeposit = (strpos((string)$wrLabel, 'b+d') !== false) || (strpos((string)$wrLabel, 'd') !== false && strpos((string)$wrLabel, '(b)') === false && $type !== 'rb');
+    $base = $onDeposit ? ($dep + $bonusAmt) : $bonusAmt;
+    $est  = $wrNum * $base;
+    return array('text' => 'on a ' . $money($dep) . ' deposit, ' . $money($est) . ' of wagering', 'money' => $est);
+  }
+
+// --- fec_vm_build_watchouts  (source lines 1584-1784; slices: bonuses)
+  function fec_vm_build_watchouts(&$vm, $set, $ctx, $currencyMap = array()) {
+    $w = array();
+
+    // Currency symbol per arricchire i body con importi formattati
+    $sym = function_exists('fec_vm_curr_symbol')
+      ? fec_vm_curr_symbol(isset($set['currency']) ? $set['currency'] : '', $currencyMap)
+      : '';
+
+    // WR computation
+    $type    = isset($vm['type'])    ? strtolower((string)$vm['type'])  : '';
+    $wr_meth = isset($vm['wr_meth']) ? (string)$vm['wr_meth']           : '';
+    $wrNum   = fec_vm_wr_number($set);
+    $wrLabel = function_exists('fec_vm_wager_label')
+      ? fec_vm_wager_label($set, $type, $wr_meth)
+      : '';
+
+    // 1) Geo restrictions
+    $state = isset($vm['state']) ? (string)$vm['state'] : '';
+    if ($state === 'GEO_BLOCK') {
+      $w[] = array(
+        'sev'   => 'high',
+        'title' => 'Country restrictions apply.',
+        'body'  => 'This bonus is not available in your detected location.',
+      );
+    }
+
+    // 2) Wagering requirement
+    if ($wrNum === null) {
+      $w[] = array(
+        'sev'   => 'med',
+        'title' => 'Wagering requirement unclear.',
+        'body'  => 'The wagering terms are not clearly stated; verify the full T&Cs before claiming.',
+      );
+    } elseif ($wrNum >= 40) {
+      $wrTxt = ($wrLabel !== '' ? $wrLabel : ($wrNum . 'x'));
+      // lib v85: the figure comes from fec_vm_wagering_estimate (deposit-based
+      // for percentage types, none for spins), no longer WR x the percentage.
+      $estimate = fec_vm_wagering_estimate($set, $type, $wrNum, $wrLabel, $sym);
+      if ($estimate !== null) {
+        $body = $wrTxt . ': ' . $estimate['text'] . ' before withdrawal.';
+      } elseif ($type === 'fs') {
+        $body = $wrTxt . ' on the spin winnings before you can withdraw them.';
+      } else {
+        $body = $wrTxt . ' wagering required before you can withdraw winnings.';
+      }
+      $w[] = array(
+        'sev'   => 'high',
+        'title' => 'High wagering requirement.',
+        'body'  => $body,
+      );
+    } elseif ($wrNum >= 25) {
+      $wrTxt = ($wrLabel !== '' ? $wrLabel : ($wrNum . 'x'));
+      $estimate = fec_vm_wagering_estimate($set, $type, $wrNum, $wrLabel, $sym);
+      if ($estimate !== null) {
+        $body = $wrTxt . ': ' . $estimate['text'] . ' to clear.';
+      } elseif ($type === 'fs') {
+        $body = $wrTxt . ' on the spin winnings to clear.';
+      } else {
+        $body = $wrTxt . ' wagering will take time to clear.';
+      }
+      $w[] = array(
+        'sev'   => 'med',
+        'title' => 'Moderate wagering requirement.',
+        'body'  => $body,
+      );
+    }
+    // wrNum === 0: niente watchout (positivo)
+
+    // 2b) Rakeback (rb) - lib v89 (2026-10-21): what the rate applies to.
+    //     "30% Rakeback" reads as 30% of what you wager; with most operators
+    //     it is 30% of the casino's edge on each wager, which on a 3% slot
+    //     edge is 0.9% of turnover (the Allstars.io page says exactly that
+    //     in its Decision notes, two screens below a hero that says 30%).
+    //     The record has no field for the base yet, so the line states the
+    //     rule and points to the notes, with the page's own rate as example.
+    if ($type === 'rb') {
+      $rbRate = isset($set['bonus']) ? (float)preg_replace('/[^0-9.]/', '', (string)$set['bonus']) : 0;
+      $rbBody = 'A rakeback rate is usually a share of the casino\'s edge on each wager, not of the wager itself';
+      if ($rbRate > 0) {
+        $rbEx = rtrim(rtrim(number_format($rbRate * 0.03, 2, '.', ''), '0'), '.');
+        $rbBody .= ': ' . rtrim(rtrim(number_format($rbRate, 2, '.', ''), '0'), '.') . '% of a 3% slot edge returns ' . $rbEx . '% of what you stake';
+      }
+      $rbBody .= '. The terms set the base; the Decision notes say which one this casino uses.';
+      $w[] = array(
+        'sev'   => 'med',
+        'title' => 'What the rate applies to.',
+        'body'  => $rbBody,
+      );
+    }
+
+    // 3) Bonus code required
+    $code = isset($set['code']) ? trim((string)$set['code']) : '';
+    if ($code !== '') {
+      $w[] = array(
+        'sev'   => 'low',
+        'title' => 'Bonus code required.',
+        'body'  => 'Enter code "' . $code . '" exactly when claiming; missing or mistyping it usually voids eligibility.',
+      );
+    }
+
+    // 4) Short validity window (<= 48h)
+    $end = isset($set['end']) ? (string)$set['end'] : '';
+    if ($end !== '' && $end !== '0000-00-00 00:00:00') {
+      $ts = strtotime($end);
+      if ($ts) {
+        $hours = ($ts - time()) / 3600;
+        if ($hours > 0 && $hours <= 48) {
+          $hrInt = max(1, (int)round($hours));
+          $hrTxt = $hrInt . ' hour' . ($hrInt === 1 ? '' : 's');
+          $w[] = array(
+            'sev'   => 'med',
+            'title' => 'Short validity window.',
+            'body'  => 'Only about ' . $hrTxt . ' left to claim and complete play.',
+          );
+        }
+      }
+    }
+
+    // 5) Tight cashout cap (max < 2 * bonus)
+    $maxRaw = isset($set['max_cashout']) ? trim((string)$set['max_cashout']) : '';
+    $bonRaw = isset($set['bonus']) ? trim((string)$set['bonus']) : '';
+    if ($maxRaw !== '' && $bonRaw !== '') {
+      $maxN = (float)preg_replace('/[^0-9.]/', '', $maxRaw);
+      $bonN = (float)preg_replace('/[^0-9.]/', '', $bonRaw);
+      if ($maxN > 0 && $bonN > 0 && $maxN < ($bonN * 2)) {
+        $maxFmt = function_exists('fec_vm_money')
+          ? fec_vm_money((string)$maxN, $sym)
+          : ($sym . number_format($maxN, 0));
+        $w[] = array(
+          'sev'   => 'med',
+          'title' => 'Tight cashout cap.',
+          'body'  => $maxFmt . ' max regardless of how well you play.',
+        );
+      }
+    }
+
+    // 6) Cashable = no
+    //    lib v85 (2026-10-21): two different things by type. On a no-deposit
+    //    offer (nd, fs, fc, fp) it means a deposit is needed before a
+    //    withdrawal - the old text. On a deposit bonus it means the bonus is
+    //    sticky: the bonus amount is deducted when you withdraw, only the
+    //    winnings above it are paid. The old text printed "You must deposit
+    //    $25 before requesting your winnings" on a 300% match, reading the
+    //    qualifying minimum as a withdrawal condition.
+    $cashable = isset($set['cashable']) ? strtolower(trim((string)$set['cashable'])) : '';
+    if ($cashable === 'no' && !in_array($type, array('nd', 'fs', 'fc', 'fp'), true)) {
+      $w[] = array(
+        'sev'   => 'med',
+        'title' => 'Sticky bonus.',
+        'body'  => 'The bonus amount is not cashable: it is deducted when you withdraw, and only winnings above it are paid out.',
+      );
+    } elseif ($cashable === 'no') {
+      $minRaw = '';
+      if (array_key_exists('min_deposit', $set)) {
+        $minRaw = trim((string)$set['min_deposit']);
+      } elseif (array_key_exists('min_dep', $set)) {
+        $minRaw = trim((string)$set['min_dep']);
+      }
+      $minN = (float)preg_replace('/[^0-9.]/', '', $minRaw);
+      $minTxt = '';
+      if ($minN > 0) {
+        $minTxt = function_exists('fec_vm_money')
+          ? fec_vm_money((string)$minN, $sym)
+          : ($sym . number_format($minN, 0));
+      }
+      $w[] = array(
+        'sev'   => 'low',
+        'title' => 'Deposit required to withdraw.',
+        'body'  => 'You must deposit ' . ($minTxt !== '' ? $minTxt . ' (or equivalent) ' : 'a qualifying amount ') . 'before requesting your winnings.',
+      );
+    }
+
+    // 7) FXCheck recent failures
+    $yes = isset($set['fec_yes']) ? (int)$set['fec_yes'] : (isset($vm['yes']) ? (int)$vm['yes'] : 0);
+    $no  = isset($set['fec_no'])  ? (int)$set['fec_no']  : (isset($vm['no'])  ? (int)$vm['no']  : 0);
+    if (($yes + $no) >= 5 && $no >= 2) {
+      $total = $yes + $no;
+      $w[] = array(
+        'sev'   => 'high',
+        'title' => 'Recent failed claims reported.',
+        'body'  => $no . ' of ' . $total . ' players reported they could not complete this bonus.',
+      );
+    }
+
+    // Sort by severity: high -> med -> low (stable, preserves insertion order within same sev)
+    $sevOrder = array('high' => 0, 'med' => 1, 'low' => 2);
+    $tmp = array();
+    foreach ($w as $idx => $it) {
+      $s = (is_array($it) && isset($it['sev'])) ? $it['sev'] : 'low';
+      $p = isset($sevOrder[$s]) ? $sevOrder[$s] : 99;
+      $tmp[] = array($p, $idx, $it);
+    }
+    usort($tmp, function($a, $b){
+      if ($a[0] !== $b[0]) return $a[0] - $b[0];
+      return $a[1] - $b[1];
+    });
+    $w = array();
+    foreach ($tmp as $t) $w[] = $t[2];
+
+    $vm['watchouts'] = $w;
+  }
+
+// --- fec_log_bonus_click  (source lines 1812-1893; slices: bonuses)
+  /**
+   * Record one affiliate click into #__bonus_clicks. Non-blocking.
+   *
+   * @param  mixed $db    Joomla DBO; if unusable, JFactory::getDbo() is used
+   * @param  int   $cid   casino/brand id (0 when unknown, e.g. goto.php path)
+   * @param  int   $bid   bonus id        (0 when unknown, e.g. goto.php path)
+   * @param  array $opts  optional: slug, src_page, referer, subid
+   * @return int          new row id, or 0 on skip/failure
+   */
+  function fec_log_bonus_click($db, $cid, $bid, $opts = array()) {
+    try {
+      if (!is_object($db) || !method_exists($db, 'getQuery')) {
+        if (!class_exists('JFactory')) return 0;
+        $db = JFactory::getDbo();
+      }
+
+      $cid = (int) $cid;
+      $bid = (int) $bid;
+
+      $defaults = array('slug' => '', 'src_page' => '', 'referer' => '', 'subid' => '');
+      $opts = array_merge($defaults, is_array($opts) ? $opts : array());
+
+      // brand key: numeric cid/bid (view=ads) OR slug (goto.php). Need at least one.
+      $slug = (string) $opts['slug'];
+      if (strlen($slug) > 64) $slug = substr($slug, 0, 64);
+      if ($cid <= 0 && $bid <= 0 && $slug === '') return 0;
+
+      // src_page: PATH only, no query string, capped at 255
+      $srcRaw = (string) $opts['src_page'];
+      if ($srcRaw === '' && !empty($_SERVER['HTTP_REFERER'])) {
+        $srcRaw = (string) $_SERVER['HTTP_REFERER'];
+      }
+      $srcPath = parse_url($srcRaw, PHP_URL_PATH);
+      $srcPage = is_string($srcPath) ? $srcPath : '';
+      if (strlen($srcPage) > 255) $srcPage = substr($srcPage, 0, 255);
+
+      // referer: host+path, capped at 255
+      $refRaw = (string) $opts['referer'];
+      if ($refRaw === '' && !empty($_SERVER['HTTP_REFERER'])) {
+        $refRaw = (string) $_SERVER['HTTP_REFERER'];
+      }
+      $rp = @parse_url($refRaw);
+      $refClean = '';
+      if (is_array($rp)) {
+        $refClean = (isset($rp['host']) ? $rp['host'] : '')
+                  . (isset($rp['path']) ? $rp['path'] : '');
+      }
+      if (strlen($refClean) > 255) $refClean = substr($refClean, 0, 255);
+
+      // country via shared detector (CF-IPCountry), no raw IP
+      $country = '';
+      if (function_exists('fec_detect_country')) {
+        $d  = fec_detect_country('');
+        $cc = isset($d['cc_up']) ? (string) $d['cc_up'] : '';
+        if (preg_match('/^[A-Z]{2}$/', $cc)) $country = $cc;
+      }
+
+      // coarse device + bot sniff (refine later off the stored flag)
+      $ua    = isset($_SERVER['HTTP_USER_AGENT']) ? (string) $_SERVER['HTTP_USER_AGENT'] : '';
+      $isBot = preg_match('~bot|crawl|spider|slurp|bing|prerender|headless|monitor|preview~i', $ua) ? 1 : 0;
+      $device = 'd';
+      if (preg_match('~Mobile|iPhone|iPod~i', $ua))                 $device = 'm';
+      elseif (preg_match('~iPad|Tablet|Android(?!.*Mobile)~i', $ua)) $device = 't';
+      if ($isBot) $device = 'b';
+
+      // subid: stored, capped at 64 (passed to affiliate only when gate flag on)
+      $subid = (string) $opts['subid'];
+      if (strlen($subid) > 64) $subid = substr($subid, 0, 64);
+
+      $now = class_exists('JFactory') ? JFactory::getDate()->toSql() : gmdate('Y-m-d H:i:s');
+
+      $q = $db->getQuery(true)
+        ->insert($db->qn('#__bonus_clicks'))
+        ->columns(array(
+          $db->qn('cid'), $db->qn('bid'), $db->qn('slug'), $db->qn('subid'),
+          $db->qn('src_page'), $db->qn('referer'), $db->qn('country'),
+          $db->qn('device'), $db->qn('is_bot'), $db->qn('created_at'),
+        ))
+        ->values(
+          (int) $cid . ',' . (int) $bid . ',' . $db->q($slug) . ',' . $db->q($subid) . ','
+          . $db->q($srcPage) . ',' . $db->q($refClean) . ',' . $db->q($country) . ','
+          . $db->q($device) . ',' . (int) $isBot . ',' . $db->q($now)
+        );
+
+      $db->setQuery($q);
+      $db->execute();
+      return (int) $db->insertid();
+    } catch (Exception $e) {
+      return 0; // logging must never break the click
+    }
+  }
+
+// --- fec_subid_page_registry  (source lines 1923-1937; slices: bonuses)
+  /**
+   * Landing-page path prefix => token. Longest matching prefix wins;
+   * matching is per path segment (a prefix matches itself or itself + "/...").
+   * Tokens: lowercase [a-z0-9-], keep short — full subid must stay <= 24.
+   * Section roots (e.g. /bonuses) act as subtree catch-alls for unmapped
+   * children — give significant children their own token as the weekly
+   * health check surfaces them, so section tokens converge to their page.
+   * NOTE: tokens identify the FEC landing PAGE. Traffic source (newsletter,
+   * social) is a different dimension and stays on UTM/GA — the referer of a
+   * goto/ads click is the FEC page, which is exactly what we tokenize here.
+   */
+  function fec_subid_page_registry() {
+    return array(
+      '/bonuses/free-spins/deposit-required' => 'fs-dep',
+      '/bonuses/free-spins/no-deposit'       => 'fs-nd',
+      '/bonuses/free-spins'                  => 'fs-hub',
+      '/bonuses/1st-deposit-match'           => 'fdm',
+      '/bonuses/no-deposit-casinos'          => 'nd-cas',  // live-traffic discovery, Aug 5 smoke test
+      '/bonuses/high-roller-bonuses'         => 'hr',      // health check, Aug 11
+      '/bonuses/crypto'                      => 'crypto',  // health check, Aug 11
+      '/bonuses'                             => 'bon-hub',
+      // VERIFY + extend with the real SEF prefixes before enabling programs:
+      // '/casino-reviews'                   => 'rev',   // <- check actual review path prefix
+      // '/casinos/fast-payouts'             => 'fp-hub' // when the hub ships
+    );
+  }
+
+// --- fec_subid_from_src  (source lines 1949-1986; slices: bonuses)
+  /**
+   * Build the subid token from the referring FEC page (usually HTTP_REFERER).
+   * Reserved tokens: fec-dir (no/unparsable referer), fec-ext (external
+   * referer host), fec-home (site root), fec-oth (our page, not in registry).
+   *
+   * @param  string $src  referer URL or bare path
+   * @return string       "fec-{token}", [a-z0-9-], <= 24 chars, never empty
+   */
+  function fec_subid_from_src($src) {
+    $src = trim((string) $src);
+    if ($src === '') return 'fec-dir';
+
+    $p = @parse_url($src);
+    if (!is_array($p)) return 'fec-dir';
+
+    $host = isset($p['host']) ? strtolower((string) $p['host']) : '';
+    if ($host !== '' && strpos($host, 'freeextrachips') === false) return 'fec-ext';
+
+    $path = isset($p['path']) ? (string) $p['path'] : '';
+    $path = preg_replace('/\.html?$/i', '', $path);
+    $path = '/' . trim($path, '/');
+    if ($path === '/') return 'fec-home';
+
+    $tok = 'oth';
+    $bestLen = 0;
+    foreach (fec_subid_page_registry() as $prefix => $t) {
+      $prefix = '/' . trim((string) $prefix, '/');
+      if ($path === $prefix || strpos($path, $prefix . '/') === 0) {
+        if (strlen($prefix) > $bestLen) { $bestLen = strlen($prefix); $tok = (string) $t; }
+      }
+    }
+
+    // Bonus detail pages: /bonuses/{brand}/{offer} fall through to the
+    // /bonuses section catch-all but are their own landing class (highest
+    // purchase intent on the site). Deep paths under the catch-all => 'bd'.
+    // Explicitly mapped deeper prefixes (fs-dep, fs-nd, ...) win first via
+    // longest-prefix, so this only reclassifies the unmapped deep tail.
+    if ($tok === 'bon-hub' && substr_count($path, '/') >= 3) {
+      $tok = 'bd';
+    }
+
+    $subid = 'fec-' . $tok;
+    $subid = preg_replace('/[^a-z0-9\-]/', '', strtolower($subid));
+    if (strlen($subid) > 24) $subid = substr($subid, 0, 24);
+    return ($subid === '' ? 'fec-oth' : $subid);
+  }
+
+// --- fec_subid_program_map  (source lines 2007-2011; slices: bonuses)
+  /**
+   * Affiliate-target HOST substring (lowercase) => forwarding config.
+   * SHIPS EMPTY BY DESIGN: every entry is added by hand only after the
+   * gate procedure confirms the subid shows up verbatim in that program
+   * report (SUBID_ACTIVATION_PLAN.md, section 4). Param names below are
+   * industry conventions, NOT verified facts — VERIFY per program.
+   *
+   * Styles:
+   *   'query'       append "param=subid" as a query parameter
+   *   'stag_suffix' append "_subid" to the EXISTING value of param
+   *                 (Softswiss-style stag=TRACKER -> stag=TRACKER_subid);
+   *                 does nothing if the param is absent (never invents one)
+   *
+   * Example entries (KEEP COMMENTED until verified):
+   *   'sometracker.example' => array('style' => 'query',       'param' => 'sub1', 'enabled' => 1),
+   *   'other.example'       => array('style' => 'stag_suffix', 'param' => 'stag', 'enabled' => 1),
+   */
+  function fec_subid_program_map() {
+    return array(
+      // intentionally empty — see docblock
+    );
+  }
+
+// --- fec_subid_append  (source lines 2025-2064; slices: bonuses)
+  /**
+   * Append the subid to an affiliate URL, ONLY when the target host matches
+   * an enabled entry in fec_subid_program_map(). Otherwise the URL comes
+   * back byte-identical — callers may use that as the "program enabled"
+   * signal. Non-blocking by contract: any failure returns the original URL.
+   *
+   * @param  string $url    final affiliate URL (http/https)
+   * @param  string $subid  token from fec_subid_from_src()
+   * @return string
+   */
+  function fec_subid_append($url, $subid) {
+    try {
+      $url   = (string) $url;
+      $subid = (string) $subid;
+      if ($url === '' || $subid === '') return $url;
+      if (!preg_match('/^[a-z0-9\-]{1,24}$/', $subid)) return $url;
+
+      $host = @parse_url($url, PHP_URL_HOST);
+      if (!is_string($host) || $host === '') return $url;
+      $host = strtolower($host);
+
+      $cfg = null;
+      foreach (fec_subid_program_map() as $needle => $c) {
+        $needle = strtolower(trim((string) $needle));
+        if ($needle !== '' && strpos($host, $needle) !== false) { $cfg = $c; break; }
+      }
+      if (!is_array($cfg) || empty($cfg['enabled'])) return $url;
+
+      $style = isset($cfg['style']) ? (string) $cfg['style'] : 'query';
+      $param = isset($cfg['param']) ? (string) $cfg['param'] : 'sub1';
+      if (!preg_match('/^[A-Za-z0-9_\-]{1,32}$/', $param)) return $url;
+
+      if ($style === 'stag_suffix') {
+        $re = '/([?&]' . preg_quote($param, '/') . '=)([^&#]*)/';
+        if (preg_match($re, $url, $m)) {
+          if (strpos($m[2], '_' . $subid) === false) {
+            $url = preg_replace($re, '${1}${2}_' . $subid, $url, 1);
+          }
+        }
+        return $url; // param absent => unchanged, never invent a tracker value
+      }
+
+      // default style: plain query param, never duplicate an existing one
+      if (preg_match('/[?&]' . preg_quote($param, '/') . '=/', $url)) return $url;
+      $sep = (strpos($url, '?') === false) ? '?' : '&';
+      return $url . $sep . $param . '=' . rawurlencode($subid);
+    } catch (Exception $e) {
+      return $url; // forwarding must never break the click
+    }
+  }
+
+// --- fec_pick_play_url  (source lines 2069-2077; slices: bonuses)
+  function fec_pick_play_url($set) {
+    foreach (array('jr_gourl', 'url', 'play_url') as $k) {
+      if (!empty($set[$k]) && is_string($set[$k])) {
+        $u = trim($set[$k]);
+        if ($u !== '') return $u;
+      }
+    }
+    return '';
+  }
+
+// --- fec_vm_build_urls  (source lines 2081-2123; slices: bonuses)
+  function fec_vm_build_urls(&$vm, $set, $ctx) {
+    $cid = isset($vm['cid']) ? (int)$vm['cid'] : 0;
+    $bid = isset($vm['bid']) ? (int)$vm['bid'] : 0;
+
+    $vm['bonusurl'] = isset($ctx['bonusurl']) ? (string)$ctx['bonusurl'] : '#';
+
+    if ($cid > 0) {
+      $bonusesItemid = function_exists('fec_get_bonuses_menu_itemid')
+        ? fec_get_bonuses_menu_itemid() : 0;
+      $raw = 'index.php?option=com_bonuses&cid='.$cid.'&lang=en&view=casino';
+      if ($bonusesItemid > 0) $raw .= '&Itemid='.$bonusesItemid;
+      $vm['casinobonusurl'] = JRoute::_($raw);
+    } else {
+      $vm['casinobonusurl'] = '';
+    }
+    $vm['casinobonuslabel'] = (!empty($vm['brand']))
+      ? ('More bonuses from ' . $vm['brand'])
+      : 'More bonuses';
+
+    $vm['reviewUrl'] = ($cid > 0)
+      ? JRoute::_('index.php?option=com_content&Itemid=26&catid=8&id='.$cid.'&lang=en&view=article')
+      : '';
+    $vm['reviewLabel'] = 'Review';
+
+    $type = isset($set['type']) ? (string)$set['type'] : '';
+    $vm['detailsUrl'] = JRoute::_('index.php?option=com_bonuses&view=details&type='.$type.'&bid='.$bid.'&cid='.$cid);
+
+    // Related details URL (extra bonus linked via r.related = main.bid)
+    $relBid  = isset($set['rel_bid']) ? (int)$set['rel_bid'] : 0;
+    $relType = isset($set['rel_type']) ? (string)$set['rel_type'] : '';
+    $relCid  = isset($set['rel_cid']) ? (int)$set['rel_cid'] : $cid;
+    $vm['relDetailsUrl'] = ($relBid > 0 && $relType !== '')
+      ? JRoute::_('index.php?option=com_bonuses&view=details&type='.$relType.'&bid='.$relBid.'&cid='.$relCid)
+      : '';
+
+    $raw = fec_pick_play_url($set);
+    $link = isset($set['link']) ? trim((string)$set['link']) : '';
+    if ($link === '' || $link === '0') {
+      $vm['playUrl'] = $raw;
+    } else {
+      $vm['playUrl'] = JRoute::_('index.php?option=com_bonuses&view=ads&cid='.$cid.'&bid='.$bid.'&tmpl=component');
+    }
+  }
+
+// --- fec_vm_build_state  (source lines 2127-2152; slices: bonuses)
+  function fec_vm_build_state(&$vm, $set, $ctx) {
+    $countrycode = isset($vm['countrycode']) ? (string)$vm['countrycode'] : 'us';
+    $countryname = isset($vm['countryname']) ? (string)$vm['countryname'] : 'your country';
+
+    $decision = fec_decide_state($set, $countrycode);
+    $state = $decision['state'];
+
+    $vm['state'] = $state;
+    $vm['state_reason'] = isset($decision['reason']) ? (string) $decision['reason'] : '';
+    $vm['canPlay'] = ($state === 'ACTIVE' && !empty($vm['playUrl']));
+
+    $st = fec_state_to_status($state, $countryname);
+    $vm['status'] = $st['status'];
+    $vm['statusclass'] = $st['statusclass'];
+
+    $vm['expiryPillHtml'] = '';
+    if ($state === 'ACTIVE') {
+      $end = isset($set['end']) ? (string)$set['end'] : '';
+      $expiryLabel = fec_expiry_label($end);
+      if ($expiryLabel) {
+        $vm['status'] = 'Active (ending soon)';
+        $vm['statusclass'] = 'expsoon';
+        $vm['expiryPillHtml'] = fec_render_expiry_pill($expiryLabel, $end);
+      }
+    }
+  }
+
+// --- fec_vm_build_fxcheck  (source lines 2156-2170; slices: bonuses)
+  function fec_vm_build_fxcheck(&$vm, $set, $ctx) {
+    $yes = isset($set['fec_yes']) ? (int)$set['fec_yes'] : 0;
+    $no  = isset($set['fec_no'])  ? (int)$set['fec_no']  : 0;
+
+    $vm['yes'] = $yes;
+    $vm['no']  = $no;
+    $vm['badgeHtml'] = fec_render_fx_badge_html($yes, $no);
+
+    $fresh = isset($ctx['freshLine']) ? trim((string)$ctx['freshLine']) : '';
+    if ($fresh !== '') {
+      $fresh = preg_replace('/^Last successful claim:\s*/i', '', $fresh);
+      $fresh = trim($fresh);
+    }
+    $vm['freshLine'] = $fresh;
+  }
+
+// --- fec_build_vm_from_row  (source lines 2178-2365; slices: bonuses)
+  function fec_build_vm_from_row($set, $ctx = array()) {
+    $vm = array();
+
+    $vm['countrycode'] = isset($ctx['countrycode']) ? (string)$ctx['countrycode'] : 'us';
+    $vm['countryname'] = isset($ctx['countryname']) ? (string)$ctx['countryname'] : 'your country';
+
+    // ctx fallback to globals for compatibility
+    $currencyMap  = (isset($ctx['currency']) && is_array($ctx['currency'])) ? $ctx['currency'] : (isset($GLOBALS['currency']) ? $GLOBALS['currency'] : array());
+    $bonustypeMap = (isset($ctx['bonustype']) && is_array($ctx['bonustype'])) ? $ctx['bonustype'] : (isset($GLOBALS['bonustype']) ? $GLOBALS['bonustype'] : array());
+
+    $vm['cid'] = isset($set['cid']) ? (int)$set['cid'] : 0;
+    $vm['bid'] = isset($set['bid']) ? (int)$set['bid'] : 0;
+
+    $vm['brand'] = isset($set['brand']) ? trim((string)$set['brand']) : '';
+    $vm['label'] = isset($set['label']) ? trim((string)$set['label']) : '';
+    $vm['type']  = isset($set['type'])  ? strtolower(trim((string)$set['type'])) : '';
+
+    $vm['end']     = isset($set['end']) ? (string)$set['end'] : '';
+    $vm['wr']      = isset($set['wr']) ? (string)$set['wr'] : '';
+    $vm['wr_meth'] = isset($set['wr_meth']) ? (string)$set['wr_meth'] : '';
+
+    $vm['code']     = isset($set['code']) ? trim((string)$set['code']) : '';
+    $vm['cashable'] = isset($set['cashable']) ? trim((string)$set['cashable']) : '';
+
+    $vm['min_dep'] = '';
+    if (isset($set['min_deposit']) && trim((string)$set['min_deposit']) !== '') $vm['min_dep'] = trim((string)$set['min_deposit']);
+    elseif (isset($set['min_dep']) && trim((string)$set['min_dep']) !== '')     $vm['min_dep'] = trim((string)$set['min_dep']);
+
+    $vm['max_cashout'] = isset($set['max_cashout']) ? trim((string)$set['max_cashout']) : '';
+    $vm['bonus']       = isset($set['bonus']) ? (string)$set['bonus'] : '';
+    $vm['currency']    = isset($set['currency']) ? (string)$set['currency'] : '';
+    $vm['exclusive']   = (isset($set['exclusive']) && fnmatch('yes', (string)$set['exclusive']));
+
+    $vm['game'] = '';
+    if (!empty($set['game'])) $vm['game'] = (string)$set['game'];
+    elseif (!empty($set['jr_game'])) $vm['game'] = (string)$set['jr_game'];
+
+    $vm['logo'] = (!empty($set['jr_logosmall'])) ? (string)$set['jr_logosmall'] : '';
+
+// ---- FEC FIX: label URL via com_bonuses route (NO slug fallback) ----
+
+// base mapping type -> title (default)
+$BONUS_TYPE_TITLES = array(
+  'nd'     => 'No Deposit Bonus',
+  'fs'     => 'Free Spins',
+  'su'     => '1st Deposit Match',
+  'crypto' => 'Crypto Bonus',
+  'hr'     => 'High Roller Bonus',
+);
+
+
+// read type
+$type = '';
+if (isset($vm['type'])) {
+  $type = strtolower(trim((string)$vm['type']));
+}
+
+// read min deposit
+$minDep = null;
+if (isset($vm['min_dep'])) {
+  $minDep = $vm['min_dep'];
+}
+
+// deposit flag
+$hasDeposit = false;
+if (is_numeric($minDep) && (float)$minDep > 0) {
+  $hasDeposit = true;
+}
+
+
+// defaults
+$label = '';
+if ($type !== '' && isset($BONUS_TYPE_TITLES[$type])) {
+  $label = $BONUS_TYPE_TITLES[$type];
+}
+
+$params = array(
+  'option' => 'com_bonuses',
+  'view'   => 'show',
+  'lang'   => 'en',
+  'type'   => $type,
+);
+
+// ---- SPECIAL CASE: Free Spins ----
+if ($type === 'fs') {
+
+  if (!$hasDeposit) {
+    // Free Spins No Deposit
+    $label = 'Free Spins No Deposit';
+    $params['subtype'] = 'nd';
+  } else {
+    // Free Spins (deposit required)
+    $label = 'Free Spins';
+    // NO subtype here
+  }
+}
+
+// ---- APPLY ----
+if ($type !== '') {
+
+  if ($label !== '') {
+    $vm['label'] = $label;
+  }
+
+  $query = 'index.php?' . http_build_query($params, '', '&');
+
+  if (class_exists('JRoute')) {
+    $vm['labelurl'] = JRoute::_($query);
+  } else {
+    $vm['labelurl'] = $query;
+  }
+
+} else {
+  $vm['labelurl'] = '#';
+}
+
+
+    
+    //print_r($vm);
+
+    $vm['bonusPrimary'] = fec_amount_primary($set, $currencyMap);
+    $vm['bonusUpto']    = fec_amount_upto($set, $currencyMap);
+// Hero typeline: base + related (if rel_* fields exist)
+$relSet = array();
+if (isset($set['rel_type']) || isset($set['rel_bonus']) || isset($set['rel_bid'])) {
+  $relSet = array(
+    'bid'         => isset($set['rel_bid']) ? $set['rel_bid'] : '',
+    'type'        => isset($set['rel_type']) ? $set['rel_type'] : '',
+    'bonus'       => isset($set['rel_bonus']) ? $set['rel_bonus'] : '',
+    'max_bonus'   => isset($set['rel_max_bonus']) ? $set['rel_max_bonus'] : '',
+    'currency'    => isset($set['rel_currency']) ? $set['rel_currency'] : '',
+    'game'        => isset($set['rel_game']) ? $set['rel_game'] : '',
+    'fp_time'     => isset($set['rel_fp_time']) ? $set['rel_fp_time'] : '',
+    'fp_time_den' => isset($set['rel_fp_time_den']) ? $set['rel_fp_time_den'] : ''
+  );
+}
+$vm['heroLabel'] = (!empty($relSet) ? fec_card_typeline($set, $relSet, $vm['countrycode'], $currencyMap, $bonustypeMap)
+                                    : fec_typetxt($set, $vm['countrycode'], $bonustypeMap));
+
+    // Hero split links (main bonus + related bonus)
+    $vm['heroMainText'] = fec_typetxt($set, $vm['countrycode'], $bonustypeMap);
+    $vm['heroMainUrl']  = isset($vm['detailsUrl']) ? (string)$vm['detailsUrl'] : '';
+    $vm['heroRelText']  = (!empty($relSet) ? fec_related_compact($relSet, $vm['countrycode'], $currencyMap, $bonustypeMap) : '');
+    $vm['heroRelUrl']   = isset($vm['relDetailsUrl']) ? (string)$vm['relDetailsUrl'] : '';
+    $vm['typeText']     = fec_typetxt($set, $vm['countrycode'], $bonustypeMap);
+    $vm['bonusTitle']   = fec_bonus_full_title($set, $vm['countrycode'], $currencyMap, $bonustypeMap);
+
+    fec_vm_build_urls($vm, $set, $ctx);
+
+    // Hero type line (match cards; related uses its own details URL)
+    $baseType = fec_typetxt($set, $vm['countrycode'], $bonustypeMap);
+    $vm['heroTypeMainText'] = $baseType;
+    $vm['heroTypeMainUrl']  = isset($vm['labelurl']) ? (string)$vm['labelurl'] : (isset($vm['detailsUrl']) ? (string)$vm['detailsUrl'] : '');
+
+    $relSet = array(
+      'bid'         => isset($set['rel_bid']) ? $set['rel_bid'] : '',
+      'cid'         => isset($set['rel_cid']) ? $set['rel_cid'] : (isset($set['cid']) ? $set['cid'] : 0),
+      'type'        => isset($set['rel_type']) ? $set['rel_type'] : '',
+      'bonus'       => isset($set['rel_bonus']) ? $set['rel_bonus'] : '',
+      'max_bonus'   => isset($set['rel_max_bonus']) ? $set['rel_max_bonus'] : '',
+      'currency'    => isset($set['rel_currency']) ? $set['rel_currency'] : '',
+      'game'        => isset($set['rel_game']) ? $set['rel_game'] : '',
+      'fp_time'     => isset($set['rel_fp_time']) ? $set['rel_fp_time'] : '',
+      'fp_time_den' => isset($set['rel_fp_time_den']) ? $set['rel_fp_time_den'] : ''
+    );
+    $vm['heroTypeRelText'] = fec_related_compact_detail($relSet, $vm['countrycode'], $currencyMap, $bonustypeMap);
+    $vm['heroTypeRelUrl']  = isset($vm['relDetailsUrl']) ? (string)$vm['relDetailsUrl'] : '';
+    // lib v90: an extra row's main offer, for the hero's "Part of" item (the
+    // reverse of the main page's "Plus"). main_* keys come from the details
+    // view when the row has related > 0; absent on a standalone bonus.
+    $vm['heroPartOfText'] = '';
+    $vm['heroPartOfUrl']  = '';
+    if (function_exists('fec_part_of_parts')) {
+      $po = fec_part_of_parts($set, $currencyMap, $bonustypeMap);
+      if ($po !== null) { $vm['heroPartOfText'] = $po['label']; $vm['heroPartOfUrl'] = $po['url']; }
+    }
+    fec_vm_build_state($vm, $set, $ctx);
+    fec_vm_build_fxcheck($vm, $set, $ctx);
+
+    fec_vm_build_keyfacts($vm, $set, $ctx, $currencyMap);
+    fec_vm_build_watchouts($vm, $set, $ctx, $currencyMap);
+
+    $db = JFactory::getDbo();
+    fec_vm_build_specifics($vm, $set, $ctx, $db);
+    fec_vm_build_eligibility_limits($vm, $set, $db);
+
+    return $vm;
+  }
+
+// --- fec_render_keyfacts_card  (source lines 2373-2397; slices: bonuses)
+  function fec_render_keyfacts_card($vm) {
+    $facts = isset($vm['facts']) && is_array($vm['facts']) ? $vm['facts'] : array();
+    $esc = function($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); };
+
+    echo '<section class="bd-stat-card" aria-label="Key facts" id="key-facts">';
+    echo '  <h3>Key facts</h3>';
+    echo '  <div class="kvs">';
+
+    foreach ($facts as $row) {
+      $k = isset($row['k']) ? $esc($row['k']) : '';
+      $v = isset($row['v']) ? $esc($row['v']) : '';
+      if ($k === '' || $v === '') continue;
+
+      $cls = isset($row['cls']) ? trim((string)$row['cls']) : '';
+      $vClass = 'v' . ($cls !== '' ? ' ' . $esc($cls) : '');
+
+      echo '    <div class="kv">';
+      echo '      <div class="k">'.$k.'</div>';
+      echo '      <div class="'.$vClass.'">'.$v.'</div>';
+      echo '    </div>';
+    }
+
+    echo '  </div>';
+    echo '</section>';
+  }
+
+// --- fec_render_watchouts_card  (source lines 2401-2448; slices: bonuses)
+  function fec_render_watchouts_card($vm) {
+    $w = isset($vm['watchouts']) && is_array($vm['watchouts']) ? $vm['watchouts'] : array();
+    $esc = function($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); };
+    $allowedSev = array('high' => 1, 'med' => 1, 'low' => 1);
+
+    echo '<section class="bd-stat-card" aria-label="What to watch out for" id="risks">';
+    echo '  <h3>What to watch out for</h3>';
+    echo '  <ul class="bd-watchout-list">';
+
+    $rendered = 0;
+    foreach ($w as $item) {
+      // Legacy fallback: string item (vecchio formato)
+      if (is_string($item)) {
+        $item = array('sev' => 'low', 'title' => trim($item), 'body' => '');
+      }
+      if (!is_array($item)) continue;
+
+      $sev   = isset($item['sev']) ? (string)$item['sev'] : 'low';
+      if (!isset($allowedSev[$sev])) $sev = 'low';
+      $title = isset($item['title']) ? trim((string)$item['title']) : '';
+      $body  = isset($item['body'])  ? trim((string)$item['body'])  : '';
+      if ($title === '') continue;
+
+      echo '<li class="'.$esc($sev).'">';
+      echo   '<span class="sev"></span>';
+      echo   '<div>';
+      echo     '<div class="text">'.$esc($title).'</div>';
+      if ($body !== '') {
+        echo   '<div class="detail">'.$esc($body).'</div>';
+      }
+      echo   '</div>';
+      echo '</li>';
+      $rendered++;
+    }
+
+    if ($rendered === 0) {
+      echo '<li class="low">';
+      echo   '<span class="sev"></span>';
+      echo   '<div>';
+      echo     '<div class="text">No major red flags detected.</div>';
+      echo     '<div class="detail">Based on the available data, no significant concerns were identified. Always verify the full terms before claiming.</div>';
+      echo   '</div>';
+      echo '</li>';
+    }
+
+    echo '  </ul>';
+    echo '</section>';
+  }
+
+// --- fec_render_detail_hero_v2  (source lines 2452-2631; slices: bonuses)
+  function fec_render_detail_hero_v2($vm) {
+    $esc = function($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); };
+
+    $brandRaw  = isset($vm['brand']) ? trim((string)$vm['brand']) : '';
+    $brand     = $esc($brandRaw);
+    $amount    = $esc(isset($vm['bonusPrimary']) ? $vm['bonusPrimary'] : '');
+    $whatTxt   = $esc(isset($vm['typeText']) ? $vm['typeText'] : '');
+    $uptoTxt   = $esc(isset($vm['bonusUpto']) ? $vm['bonusUpto'] : '');
+
+    $status      = $esc(isset($vm['status']) ? $vm['status'] : '');
+    $statusclass = $esc(isset($vm['statusclass']) ? $vm['statusclass'] : '');
+
+    $reviewUrl   = isset($vm['reviewUrl']) ? (string)$vm['reviewUrl'] : '';
+    $reviewLabel = $esc(isset($vm['reviewLabel']) ? $vm['reviewLabel'] : 'Review');
+
+    $state   = isset($vm['state']) ? (string)$vm['state'] : 'ACTIVE';
+    $playUrl = isset($vm['playUrl']) ? (string)$vm['playUrl'] : '';
+    $canPlay = ($state === 'ACTIVE' && $playUrl !== '');
+
+    $yes = isset($vm['yes']) ? (int)$vm['yes'] : 0;
+    $no  = isset($vm['no'])  ? (int)$vm['no']  : 0;
+
+    // Rate -- shown only when total >= 5 (same rule as the FXCheck JS)
+    $t = $yes + $no;
+    $pctTxt = '—';
+    if ($t >= 5) {
+      $yesPct = ($t > 0) ? (int)round(($yes / $t) * 100) : 0;
+      $pctTxt = (string)$yesPct . '%';
+    }
+
+    $badgeHtml      = isset($vm['badgeHtml']) ? (string)$vm['badgeHtml'] : '';
+    $expiryPillHtml = isset($vm['expiryPillHtml']) ? (string)$vm['expiryPillHtml'] : '';
+    $exclusive      = !empty($vm['exclusive']);
+    $freshLine      = isset($vm['freshLine']) ? (string)$vm['freshLine'] : '';
+
+    // Game-meta secondary items: related-bonus link (uptoTxt sopra)
+    $relTxt  = $esc(isset($vm['heroTypeRelText']) ? $vm['heroTypeRelText'] : '');
+    $relUrl  = $esc(isset($vm['heroTypeRelUrl']) ? $vm['heroTypeRelUrl'] : '');
+
+    // -- .bd-hero (V2.1 / .fecx editorial detail) --
+    $html  = '<section class="bd-hero">';
+    $html .= '<div class="wrap">';
+    $html .= '<div class="bd-hero-card">';
+
+    // left column: casino line, headline, type meta
+    $html .= '<div class="bd-hero-left">';
+    $html .= '<div class="bd-hero-casinoline">';
+    if ($brandRaw !== '') {
+      $html .= fec_casino_chip($brandRaw, 56);
+    }
+    if ($brand !== '') $html .= '<span class="bd-hero-casino">'.$brand.'</span>';
+    $html .= '<div class="bd-hero-statuses">';
+    if ($status !== '') {
+      // Map data-layer statusclass to CSS tag classes
+      $statusTagMap = array(
+        'act'     => 'tag-active',
+        'expsoon' => 'tag-warn',
+        'exp'     => 'tag-mute',
+        'geo'     => 'tag-mute',
+        'na'      => 'tag-mute',
+      );
+      $statusTag = isset($statusTagMap[$statusclass]) ? $statusTagMap[$statusclass] : 'tag-active';
+      $html .= '<span class="tag '.$statusTag.'">&#9679; '.$status.'</span>';
+    }
+    if ($expiryPillHtml !== '') $html .= $expiryPillHtml;
+    if ($exclusive) $html .= '<span class="tag tag-info">EXCLUSIVE</span>';
+    $html .= '</div>'; // bd-hero-statuses
+    $html .= '</div>'; // bd-hero-casinoline
+
+    $html .= '<h1 class="bd-hero-title">';
+    if ($amount !== '')   $html .= '<span class="amount">'.$amount.'</span> ';
+    if ($whatTxt !== '') $html .= '<span class="what">'.$whatTxt.'</span>';
+    $html .= '</h1>';
+
+    // Secondary metadata line: provider + deposit info + eligibility +
+    // (optional) up-to addendum + (optional) related-bonus link.
+    // Items in order; vuoti vengono saltati; omit entire div if empty.
+    $provider     = isset($vm['provider'])     ? $esc($vm['provider'])     : '';
+    $depositLabel = isset($vm['depositLabel']) ? $esc($vm['depositLabel']) : '';
+    $playersLabel = isset($vm['playersLabel']) ? $esc($vm['playersLabel']) : '';
+
+    $metaItems = array();
+    if ($provider     !== '') $metaItems[] = '<span>'.$provider.'</span>';
+    if ($depositLabel !== '') $metaItems[] = '<span>'.$depositLabel.'</span>';
+    if ($playersLabel !== '') $metaItems[] = '<span>'.$playersLabel.'</span>';
+    if ($uptoTxt      !== '') $metaItems[] = '<span>'.$uptoTxt.'</span>';
+    if ($relTxt       !== '') {
+      if ($relUrl !== '') $metaItems[] = '<a class="meta-rel" href="'.$relUrl.'"><span class="lbl">Plus</span> '.$relTxt.'</a>';
+      else                $metaItems[] = '<span class="meta-rel"><span class="lbl">Plus</span> '.$relTxt.'</span>';
+    }
+    // lib v90: "Part of <main offer>" on an extra's own page (the 200 spins
+    // of a high-roller match said nothing about the match they came with).
+    $poTxt = isset($vm['heroPartOfText']) ? $esc($vm['heroPartOfText']) : '';
+    $poUrl = isset($vm['heroPartOfUrl'])  ? $esc($vm['heroPartOfUrl'])  : '';
+    if ($poTxt !== '') {
+      if ($poUrl !== '') $metaItems[] = '<a class="meta-rel meta-partof" href="'.$poUrl.'"><span class="lbl">Part of</span> '.$poTxt.'</a>';
+      else               $metaItems[] = '<span class="meta-rel meta-partof"><span class="lbl">Part of</span> '.$poTxt.'</span>';
+    }
+    // Social proof (lib v57+): the view may hand the hero a pre-rendered
+    // "Opened N times" item. Appended LAST so the static offer facts read
+    // first, and present only when the renderer cleared its own threshold —
+    // this is a popularity signal, never an FXCheck one.
+    $pulseHtml = isset($vm['pulseHtml']) ? trim((string)$vm['pulseHtml']) : '';
+    if ($pulseHtml !== '') $metaItems[] = $pulseHtml;
+
+    if (!empty($metaItems)) {
+      $html .= '<div class="bd-hero-game-meta">';
+      $html .= implode('<span class="dot" aria-hidden="true"></span>', $metaItems);
+      $html .= '</div>';
+    }
+
+    // lib v86 (2026-10-21): the three numbers the site says decide a bonus -
+    // wager, cashable, max cashout - in the hero, where the Claim button is,
+    // not only in Key facts a screen below the package band. Same values,
+    // already formatted by fec_vm_build_keyfacts; same line style as the
+    // meta line above. Nothing printed when the facts are missing.
+    $termItems = array();
+    if (!empty($vm['facts']) && is_array($vm['facts'])) {
+      $want = array('Wager' => 1, 'Cashable' => 1, 'Max cashout' => 1);
+      foreach ($vm['facts'] as $fct) {
+        if (!is_array($fct) || !isset($fct['k'], $fct['v'])) continue;
+        $fk = (string)$fct['k']; $fv = trim((string)$fct['v']);
+        if (isset($want[$fk]) && $fv !== '') $termItems[] = '<span>'.$esc($fk).' <b>'.$esc($fv).'</b></span>';
+      }
+    }
+    if (!empty($termItems)) {
+      $html .= '<div class="bd-hero-game-meta bd-hero-terms">';
+      $html .= implode('<span class="dot" aria-hidden="true"></span>', $termItems);
+      $html .= '</div>';
+    }
+    $html .= '</div>'; // bd-hero-left
+
+    // right column: FXCheck panel
+    $html .= '<div class="bd-fxpanel">';
+    $html .= '<div class="bd-fxpanel-head"><span>FXCheck&trade;</span>';
+    if ($badgeHtml !== '') $html .= $badgeHtml;
+    $html .= '</div>';
+    $html .= '<div class="bd-fxstats">';
+    $html .= '<span class="bd-fxstat"><span class="k">Yes</span><span class="v yes fec-yes">'.$yes.'</span></span>';
+    $html .= '<span class="bd-fxstat"><span class="k">No</span><span class="v no fec-no">'.$no.'</span></span>';
+    $html .= '<span class="bd-fxstat"><span class="k">Rate</span><span class="v fec-pct">'.$esc($pctTxt).'</span></span>';
+    if ($freshLine !== '') {
+      $html .= '<span class="bd-fxstat fresh"><span class="k">Fresh</span><span class="v fec-updated">'.$esc($freshLine).'</span></span>';
+    }
+    $html .= '</div>'; // bd-fxstats
+    $html .= '<div class="bd-hero-actions">';
+    if ($reviewUrl !== '') $html .= '<a class="btn btn-ghost" href="'.$esc($reviewUrl).'">'.$reviewLabel.'</a>';
+    if ($canPlay) {
+      $html .= '<a class="btn btn-primary btn-play" href="'.$esc($playUrl).'" target="_blank" rel="nofollow sponsored noopener">PLAY NOW</a>';
+    } elseif ($state === 'UNAVAILABLE' || $state === 'SKIP') {
+      // Casino-level block (closed / suspended / blacklisted): show a visible
+      // disabled CTA — same labels as the directory cards — instead of just
+      // omitting the button. The state banner above the hero explains why.
+      $stateReason = isset($vm['state_reason']) ? (string) $vm['state_reason'] : '';
+      $ctaDisabledLabels = array(
+        'CLOSED'      => 'Closed',
+        'SUSPENDED'   => 'Suspended',
+        'BLACKLISTED' => 'Avoid',
+      );
+      $ctaDisabledLabel = isset($ctaDisabledLabels[$stateReason]) ? $ctaDisabledLabels[$stateReason] : 'Not available';
+      $html .= '<button class="btn btn-primary btn-play btn-disabled" type="button" disabled aria-disabled="true">'.$esc($ctaDisabledLabel).'</button>';
+    }
+    $html .= '</div>'; // bd-hero-actions
+    $html .= '</div>'; // bd-fxpanel
+
+    $html .= '</div>'; // bd-hero-card
+    $html .= '</div>'; // wrap
+    $html .= '</section>';
+
+    // Sticky quick-actions bar -- kept as-is (separate widget with its own JS);
+    // restyled to the bd-* system in a later step.
+    $html .= '<div class="fec-cta-sticky" role="region" aria-label="Quick actions">';
+    $html .= '<div class="fec-cta-sticky__inner">';
+    if ($reviewUrl !== '') $html .= '<a class="fec-btn fec-btn--ghost fec-cta-sticky__details" href="'.$esc($reviewUrl).'">'.$reviewLabel.'</a>';
+    if ($canPlay) $html .= fec_render_cta('ACTIVE', 'PLAY NOW', $playUrl, 'fec-cta-sticky__play');
+    $html .= '</div>';
+    $html .= '</div>';
+
+    echo $html;
+  }
+
+// --- fec_vm_platform_label  (source lines 2639-2649; slices: bonuses)
+  function fec_vm_platform_label($raw) {
+    $p = strtolower(trim((string)$raw));
+
+    switch ($p) {
+      case 'd':  return 'Desktop';
+      case 'm':  return 'Mobile';
+      case 'md':
+      case 'dm': return 'Desktop • Mobile';
+      default:   return '';
+    }
+  }
+
+// --- fec_vm_players_label  (source lines 2653-2660; slices: bonuses)
+  function fec_vm_players_label($val) {
+    $val = strtolower(trim((string)$val));
+    if ($val === 'n')   return 'New only';
+    if ($val === 'e')   return 'Existing only';
+    if ($val === 'ne')  return 'Both New and Existing';
+    if ($val === 'ned') return 'Both New and Existing (Depositors)';
+    return '';
+  }
+
+// --- fec_vm_fetch_game_row  (source lines 2668-2687; slices: bonuses)
+  function fec_vm_fetch_game_row($db, $gid) {
+    $gid = trim((string)$gid);
+    if ($gid === '') return array();
+
+    static $cache = array();
+    if (isset($cache[$gid]) && is_array($cache[$gid])) return $cache[$gid];
+
+    $q = $db->getQuery(true)
+      ->select('*')
+      ->from($db->quoteName('#__games'))
+      ->where($db->quoteName('status') . ' = ' . $db->quote('1'))
+      ->where($db->quoteName('gid') . ' = ' . $db->quote($gid));
+
+    $db->setQuery($q);
+    $row = (array)$db->loadAssoc();
+    if (!is_array($row)) $row = array();
+
+    $cache[$gid] = $row;
+    return $row;
+  }
+
+// --- fec_vm_provider_url_from_value  (source lines 2697-2703; slices: bonuses)
+  function fec_vm_provider_url_from_value($provider_value) {
+    if (!FEC_PROVIDER_LINKS) return '';
+    $providerval = preg_replace('/[\*]+/', '', (string)$provider_value);
+    $providerval = trim($providerval);
+    if ($providerval === '') return '';
+    return JRoute::_('index.php?option=com_jreviews&Itemid=426&lang=en&url=tag%2Fsoft%2F'.$providerval);
+  }
+
+// --- fec_vm_slot_public_url  (source lines 2715-2744; slices: bonuses)
+  function fec_vm_slot_public_url($db, $gid) {
+    $gid = trim((string)$gid);
+    if ($gid === '' || $db === null) return '';
+
+    static $cache = array();
+    if (array_key_exists($gid, $cache)) return $cache[$gid];
+
+    try {
+      $q = $db->getQuery(true)
+        ->select($db->quoteName('slug'))
+        ->from($db->quoteName('#__slot_rtp'))
+        ->where($db->quoteName('gid') . ' = ' . $db->quote($gid))
+        ->where($db->quoteName('published') . ' = 1')
+        ->where($db->quoteName('retired') . ' = 0')
+        ->where($db->quoteName('slug') . " IS NOT NULL")
+        ->where($db->quoteName('slug') . " <> ''");
+      $db->setQuery($q);
+      $slug = (string)$db->loadResult();
+    } catch (Exception $e) {
+      $slug = '';
+    }
+
+    $url = '';
+    if ($slug !== '') {
+      $url = JRoute::_('index.php?option=com_authors&view=slot&slug=' . urlencode($slug));
+    }
+
+    $cache[$gid] = $url;
+    return $url;
+  }
+
+// --- fec_vm_fetch_slot_disclosure  (source lines 2775-2810; slices: bonuses)
+  function fec_vm_fetch_slot_disclosure($db, $gid) {
+    $gid = trim((string)$gid);
+    if ($gid === '' || $db === null) return null;
+
+    static $cache = array();
+    if (array_key_exists($gid, $cache)) return $cache[$gid];
+
+    try {
+      $q = $db->getQuery(true)
+        ->select(array(
+          'rtp.' . $db->quoteName('slug'),
+          'rtp.' . $db->quoteName('rtp_theoretical_max'),
+          'rtp.' . $db->quoteName('rtp_theoretical_min'),
+          'rtp.' . $db->quoteName('rtp_variants_json'),
+          'rtp.' . $db->quoteName('primary_source_url'),
+          'g.' . $db->quoteName('game_name'),
+        ))
+        ->from($db->quoteName('#__slot_rtp', 'rtp'))
+        ->innerJoin(
+          $db->quoteName('#__games', 'g')
+          . ' ON g.' . $db->quoteName('gid') . ' = rtp.' . $db->quoteName('gid')
+        )
+        ->where('rtp.' . $db->quoteName('gid') . ' = ' . $db->quote($gid))
+        ->where('rtp.' . $db->quoteName('published') . ' = 1')
+        ->where('rtp.' . $db->quoteName('retired') . ' = 0')
+        ->where('rtp.' . $db->quoteName('slug') . " IS NOT NULL")
+        ->where('rtp.' . $db->quoteName('slug') . " <> ''");
+      $db->setQuery($q);
+      $row = $db->loadObject();
+    } catch (Exception $e) {
+      $row = null;
+    }
+
+    $cache[$gid] = $row;
+    return $row;
+  }
+
+// --- fec_render_slot_disclosure_box  (source lines 2825-2897; slices: bonuses)
+  /**
+   * Emit a disclosure box for the given gid. Echoes nothing
+   * for slots that have no material disclosure (single-tier
+   * with public source) or that arent published.
+   *
+   * Call from the bonus details template wherever you want
+   * the box to appear (typically below the specifics card
+   * and above the T&C block).
+   *
+   *   <?php fec_render_slot_disclosure_box($set['gid']); ?>
+   */
+  function fec_render_slot_disclosure_box($gid) {
+    $gid = trim((string)$gid);
+    if ($gid === '') return;
+    $db = JFactory::getDbo();
+    $slot = fec_vm_fetch_slot_disclosure($db, $gid);
+    if (!$slot) return;
+
+    $rtpMax = isset($slot->rtp_theoretical_max) ? $slot->rtp_theoretical_max : null;
+    $rtpMin = isset($slot->rtp_theoretical_min) ? $slot->rtp_theoretical_min : null;
+    $isMultiTier = ($rtpMin !== null && $rtpMax !== null && (float)$rtpMin < (float)$rtpMax);
+    $isOpaque    = empty($slot->primary_source_url);
+
+    // No material disclosure for single-tier slots with public source.
+    if (!$isMultiTier && !$isOpaque) return;
+
+    $esc = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); };
+
+    $gameName       = !empty($slot->game_name) ? $slot->game_name : 'This slot';
+    $slotUrl        = JRoute::_('index.php?option=com_authors&view=slot&slug=' . urlencode($slot->slug));
+    $methodologyUrl = JRoute::_('index.php?option=com_authors&view=methodology&topic=rtp-verification');
+
+    if ($isMultiTier) {
+      // Build the variant string from JSON if present, else from max/min
+      $variants = array();
+      if (!empty($slot->rtp_variants_json)) {
+        $decoded = json_decode($slot->rtp_variants_json, true);
+        if (is_array($decoded)) $variants = $decoded;
+      }
+      if (empty($variants)) {
+        $variants = array(
+          number_format((float)$rtpMax, 2),
+          number_format((float)$rtpMin, 2),
+        );
+      }
+      $tierLabels = array();
+      foreach ($variants as $v) {
+        $v = trim((string)$v);
+        if ($v === '') continue;
+        $tierLabels[] = $esc($v) . '%';
+      }
+      $tierStr = implode(' / ', $tierLabels);
+
+      $diff = number_format(((float)$rtpMax - (float)$rtpMin), 2);
+
+      echo '<aside class="bd-slot-disclosure bd-slot-disclosure-multitier" role="note">'
+         .   '<div class="bd-slot-disclosure-label">&#9888; Multi-tier RTP</div>'
+         .   '<p><b>' . $esc($gameName) . '</b> ships in multiple RTP configurations '
+         .     '(<b>' . $tierStr . '</b>). The casino operator chooses which version to serve &mdash; '
+         .     'the difference between the top and bottom tier is roughly <b>' . $esc($diff) . ' percentage points</b> '
+         .     'of player return. Check the in-game paytable before depositing to confirm which version is configured here.</p>'
+         .   '<p class="bd-slot-disclosure-links">'
+         .     '<a class="bd-slot-disclosure-link" href="' . $esc($slotUrl) . '">See full RTP data &rarr;</a> '
+         .     '<a class="bd-slot-disclosure-link bd-slot-disclosure-link-secondary" href="' . $esc($methodologyUrl) . '">How we verify</a>'
+         .   '</p>'
+         . '</aside>';
+      return;
+    }
+
+    if ($isOpaque) {
+      $rtpStr = $rtpMax !== null ? number_format((float)$rtpMax, 2) . '%' : '';
+      echo '<aside class="bd-slot-disclosure bd-slot-disclosure-opaque" role="note">'
+         .   '<div class="bd-slot-disclosure-label">RTP verified via paytable observations</div>'
+         .   '<p><b>' . $esc($gameName) . '</b>&rsquo;s provider doesn&rsquo;t publish public game data pages. '
+         .     'Our RTP value' . ($rtpStr ? ' (<b>' . $rtpStr . '</b>)' : '') . ' is verified via timestamped in-game '
+         .     'paytable screenshots at licensed operators &mdash; see the per-casino observations for details.</p>'
+         .   '<p class="bd-slot-disclosure-links">'
+         .     '<a class="bd-slot-disclosure-link" href="' . $esc($slotUrl) . '">See per-casino observations &rarr;</a> '
+         .     '<a class="bd-slot-disclosure-link bd-slot-disclosure-link-secondary" href="' . $esc($methodologyUrl) . '">How we verify</a>'
+         .   '</p>'
+         . '</aside>';
+      return;
+    }
+  }
+
+// --- fec_render_bonus_offer_jsonld  (source lines 2928-3188; slices: bonuses)
+  function fec_render_bonus_offer_jsonld($result, $vm = array(), $rowgames = array()) {
+    if (!is_array($result) || empty($result['bid'])) return;
+
+    $bid   = (int)$result['bid'];
+    $cid   = isset($result['cid']) ? (int)$result['cid'] : 0;
+    $type  = isset($result['type']) ? (string)$result['type'] : '';
+    $brand = isset($result['brand']) ? trim((string)$result['brand']) : '';
+
+    // Canonical URL for this bonus
+    $bonusUrl = JRoute::_('index.php?option=com_bonuses&view=details'
+                        . '&type=' . $type
+                        . '&bid='  . $bid
+                        . '&cid='  . $cid);
+    $rootBase = rtrim(JUri::root(false), '/');
+    $canonical = $rootBase . '/' . ltrim($bonusUrl, '/');
+
+    // Currency symbol -> ISO 4217 best-effort map
+    $currIsoMap = array(
+      '$'  => 'USD', '€' => 'EUR', '£' => 'GBP', '¥' => 'JPY',
+      'C$' => 'CAD', 'A$' => 'AUD', '₿' => 'BTC', 'kr' => 'NOK',
+      'CHF' => 'CHF', '₹' => 'INR', 'R' => 'ZAR', '₽' => 'RUB',
+    );
+    // Resolve currency symbol from $result + global $currency map
+    $currSym = '$';
+    if (!empty($result['currency']) && isset($GLOBALS['currency']) && is_array($GLOBALS['currency'])) {
+      $cm = $GLOBALS['currency'];
+      if (isset($cm[$result['currency']]) && $cm[$result['currency']] !== '') {
+        $currSym = (string)$cm[$result['currency']];
+      }
+    }
+    $currIso = isset($currIsoMap[$currSym]) ? $currIsoMap[$currSym] : 'EUR';
+
+    // Bonus name (mirrors the type-specific logic used in meta title)
+    $bonus    = isset($result['bonus']) ? (string)$result['bonus'] : '';
+    $label    = isset($result['label']) ? trim((string)$result['label']) : '';
+    $game     = isset($result['game']) ? trim((string)$result['game']) : '';
+    $maxbonus = isset($result['max_bonus']) ? (string)$result['max_bonus'] : '';
+
+    if ($type === 'nd' || $type === 'fp' || $type === 'fc') {
+      $offerName = trim($brand . ' ' . $currSym . $bonus . ' ' . $label);
+    } elseif ($type === 'fs') {
+      $gameChunk = $game !== '' ? ' on ' . $game : '';
+      $offerName = trim($brand . ' ' . $bonus . ' ' . $label . $gameChunk);
+    } else {
+      $upTo = $maxbonus !== '' ? ' up to ' . $currSym . $maxbonus : '';
+      $offerName = trim($brand . ' ' . $bonus . '% ' . $label . $upTo);
+    }
+
+    // Category label
+    $typeLabels = array(
+      'nd' => 'No Deposit Bonus',
+      'fs' => 'Free Spins',
+      'fp' => 'Free Play',
+      'fc' => 'Free Chip',
+      'dm' => 'Deposit Match Bonus',
+      'r'  => 'Reload Bonus',
+      'cb' => 'Cashback Bonus',
+      'rb' => 'Rakeback Bonus',
+    );
+
+    // Description: pull from $vm if available, else compose from $result
+    $description = '';
+    if (!empty($vm['metaDesc'])) {
+      $description = (string)$vm['metaDesc'];
+    } else {
+      $parts = array();
+      if ($type === 'fs') {
+        $parts[] = 'Get ' . $bonus . ' ' . strtolower($label) . ($game !== '' ? ' on ' . $game : '');
+      } elseif ($type === 'nd' || $type === 'fp' || $type === 'fc') {
+        $parts[] = 'Claim ' . $currSym . $bonus . ' ' . strtolower($label);
+      } else {
+        $upTo = $maxbonus !== '' ? ' up to ' . $currSym . $maxbonus : '';
+        $parts[] = 'Claim ' . $bonus . '% ' . strtolower($label) . $upTo;
+      }
+      if (isset($result['wr']) && trim((string)$result['wr']) !== ''
+          && is_numeric($result['wr']) && (float)$result['wr'] == 0.0) {
+        $parts[] = 'no wagering requirements';
+      } elseif (!empty($result['wr'])) {
+        $wrMeth = isset($result['wr_meth']) ? trim((string)$result['wr_meth']) : '';
+        $wrSuffix = $wrMeth === 'b' ? ' on bonus' : ($wrMeth === '' ? '' : ' on ' . ($wrMeth === 'bd' ? 'bonus + deposit' : $wrMeth));
+        $parts[] = $result['wr'] . 'x wagering' . $wrSuffix;
+      }
+      if (!empty($result['max_cashout'])) {
+        $mcKind = isset($result['max_cashout_kind']) ? trim((string)$result['max_cashout_kind']) : '';
+        $mcLabel = function_exists('fec_vm_cashout_label')
+          ? fec_vm_cashout_label($result, $currSym)
+          : $currSym . $result['max_cashout'];
+        if ($mcLabel !== '') {
+          $parts[] = ($mcKind === 'x_dep' || $mcKind === 'x_bonus')
+            ? 'max cashout ' . $mcLabel
+            : $mcLabel . ' max cashout';
+        }
+      }
+      if (empty($result['min_dep'])) {
+        $parts[] = 'no deposit required';
+      }
+      $description = implode('. ', $parts) . '.';
+    }
+
+    // Pricing: entry cost. 0 for no-deposit, min_dep otherwise.
+    $priceVal = '0';
+    if (!empty($result['min_dep']) && (int)$result['min_dep'] > 0) {
+      $priceVal = (string)(int)$result['min_dep'];
+    }
+
+    // Availability based on state
+    $status = isset($result['status']) ? (string)$result['status'] : '';
+    $end    = isset($result['end']) ? (string)$result['end'] : '';
+    $endTs  = ($end !== '' && $end !== '0000-00-00' && $end !== '0000-00-00 00:00:00') ? strtotime($end) : 0;
+    $isExpired = ($endTs > 0 && $endTs < time());
+    $availability = ($status === 'active' && !$isExpired)
+      ? 'https://schema.org/InStock'
+      : 'https://schema.org/Discontinued';
+
+    // Build the Offer
+    $offer = array(
+      '@context'      => 'https://schema.org',
+      '@type'         => 'Offer',
+      '@id'           => $canonical . '#offer',
+      'name'          => $offerName,
+      'url'           => $canonical,
+      'description'   => $description,
+      'price'         => $priceVal,
+      'priceCurrency' => $currIso,
+      'availability'  => $availability,
+    );
+
+    if (isset($typeLabels[$type])) {
+      $offer['category'] = $typeLabels[$type];
+    }
+
+    // Image (casino logo) — jr_logosmall is the filename only (e.g. "bitstarz.png");
+    // the standard hosting path is /images/casino-logos/<filename>. See lines
+    // 6033 and 13589 of this same file for the canonical pattern.
+    if (!empty($result['jr_logosmall'])) {
+      $logoFile = trim((string)$result['jr_logosmall']);
+      if (stripos($logoFile, 'http') === 0) {
+        // Already a full URL — use as-is
+        $offer['image'] = $logoFile;
+      } elseif (strpos($logoFile, '/') !== false) {
+        // Already has path components — apply only the host
+        $offer['image'] = $rootBase . '/' . ltrim($logoFile, '/');
+      } else {
+        // Bare filename — apply the standard /images/casino-logos/ prefix
+        $offer['image'] = $rootBase . '/images/casino-logos/' . $logoFile;
+      }
+    }
+
+    // validFrom (added date)
+    if (!empty($result['added'])) {
+      $addedTs = strtotime((string)$result['added']);
+      if ($addedTs) $offer['validFrom'] = date('Y-m-d', $addedTs);
+    }
+    // validThrough + priceValidUntil (only if end set in future)
+    if ($endTs > 0) {
+      $offer['validThrough']    = date('Y-m-d', $endTs);
+      $offer['priceValidUntil'] = date('Y-m-d', $endTs);
+    }
+
+    // Seller (the casino)
+    if ($brand !== '') {
+      $seller = array(
+        '@type' => 'Organization',
+        'name'  => $brand,
+      );
+      // Best-effort slug -> /online-casinos/<slug>
+      $brandSlug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $brand));
+      $brandSlug = trim($brandSlug, '-');
+      if ($brandSlug !== '') {
+        $seller['url'] = $rootBase . '/online-casinos/' . $brandSlug;
+      }
+      $offer['seller'] = $seller;
+    }
+
+    // itemOffered (VideoGame) — fetch from #__games if not passed in
+    $gid = isset($result['gid']) ? trim((string)$result['gid']) : '';
+    if ($gid !== '' && empty($rowgames)) {
+      try {
+        $db = JFactory::getDbo();
+        $q = $db->getQuery(true)
+          ->select(array('game_name', 'provider_name'))
+          ->from($db->quoteName('#__games'))
+          ->where($db->quoteName('gid') . ' = ' . $db->quote($gid))
+          ->where($db->quoteName('status') . ' = ' . $db->quote('1'));
+        $db->setQuery($q);
+        $rowgames = (array)$db->loadAssoc();
+      } catch (Exception $e) {
+        $rowgames = array();
+      }
+    }
+    $gameName = '';
+    if (!empty($rowgames['game_name'])) {
+      $gameName = (string)$rowgames['game_name'];
+    } elseif ($game !== '') {
+      $gameName = $game;
+    }
+    if ($gameName !== '') {
+      $videoGame = array(
+        '@type' => 'VideoGame',
+        'name'  => $gameName,
+      );
+      if (!empty($rowgames['provider_name'])) {
+        $videoGame['publisher'] = array(
+          '@type' => 'Organization',
+          'name'  => (string)$rowgames['provider_name'],
+        );
+      }
+      // Link to /slots/<slug> if the slot is published in com_authors
+      if ($gid !== '' && function_exists('fec_vm_slot_public_url')) {
+        try {
+          $db = JFactory::getDbo();
+          $slotUrl = fec_vm_slot_public_url($db, $gid);
+          if ($slotUrl !== '') {
+            $videoGame['url'] = $rootBase . '/' . ltrim($slotUrl, '/');
+          }
+        } catch (Exception $e) { /* silent */ }
+      }
+      $offer['itemOffered'] = $videoGame;
+    }
+
+    // NOTE: aggregateRating intentionally NOT emitted on Offer.
+    // Schema.org strict spec doesn't list aggregateRating as a valid
+    // property of Offer (it belongs on Product, Service, CreativeWork,
+    // or Organization). Google Rich Results validator flags it as an
+    // error. The FXCheck signal is preserved via the FAQPage + Article
+    // graph + page text. If we want explicit rating later, the cleanest
+    // path is adding it to Article.aggregateRating (CreativeWork allows
+    // it) or wrapping in a Product schema with Offer nested.
+
+    // ineligibleRegion (restricted countries)
+    if (!empty($result['country_no'])) {
+      $restricted = trim((string)$result['country_no'], '*');
+      if ($restricted !== '') {
+        $countriesArrayFile = JPATH_COMPONENT . DS . 'helpers' . DS . 'countriesarray.php';
+        $countries_array = array();
+        if (is_file($countriesArrayFile)) {
+          include $countriesArrayFile;
+        }
+        $codes = explode('*', $restricted);
+        $regions = array();
+        foreach ($codes as $code) {
+          $code = strtoupper(trim($code));
+          if ($code === '') continue;
+          $name = isset($countries_array[$code]) ? (string)$countries_array[$code] : $code;
+          $regions[] = array(
+            '@type'      => 'Country',
+            'name'       => $name,
+            'identifier' => $code,
+          );
+        }
+        if (!empty($regions)) {
+          $offer['ineligibleRegion'] = $regions;
+        }
+      }
+    }
+
+    // Emit
+    echo "\n" . '<script type="application/ld+json">' . "\n";
+    echo json_encode($offer, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    echo "\n" . '</script>' . "\n";
+  }
+
+// --- fec_vm_build_specifics  (source lines 3196-3274; slices: bonuses)
+  function fec_vm_build_specifics(&$vm, $set, $ctx = array(), $db = null) {
+    $spec = array();
+
+    $playersRaw = isset($set['players']) ? $set['players'] : (isset($vm['players']) ? $vm['players'] : '');
+    $players = fec_vm_players_label($playersRaw);
+    if ($players !== '') {
+      $spec[] = array('k' => 'Players', 'v' => $players);
+    }
+
+    // Hero game-meta: friendlier phrasing (specifics card keeps the short one)
+    $playersNorm = strtolower(trim((string)$playersRaw));
+    $playersLongMap = array(
+      'n'   => 'New players only',
+      'e'   => 'Existing players only',
+      'ne'  => 'New and existing players',
+      'ned' => 'New and existing (depositors)',
+    );
+    $vm['playersLabel'] = isset($playersLongMap[$playersNorm]) ? $playersLongMap[$playersNorm] : '';
+
+    $game = '';
+    if (!empty($vm['game'])) $game = trim((string)$vm['game']);
+    elseif (!empty($set['game'])) $game = trim((string)$set['game']);
+    elseif (!empty($set['jr_game'])) $game = trim((string)$set['jr_game']);
+
+    $gid = isset($set['gid']) ? trim((string)$set['gid']) : '';
+    $rowgames = array();
+
+    if ($game === '' && $gid !== '' && $db) {
+      $rowgames = fec_vm_fetch_game_row($db, $gid);
+      foreach (array('title','name','game','game_name') as $k) {
+        if (!empty($rowgames[$k])) { $game = trim((string)$rowgames[$k]); break; }
+      }
+    }
+
+    if ($game !== '') {
+      $gameRow = array('k' => 'Game', 'v' => $game);
+      // Link to the public /slots/<slug> page if this slot is documented
+      // and published in com_authors. Silent no-op when not. The is_slot_link
+      // flag scopes the link rendering to this row only — other rows with
+      // an href (e.g. Game Provider) intentionally remain plain text.
+      if ($gid !== '' && $db && function_exists('fec_vm_slot_public_url')) {
+        $slotUrl = fec_vm_slot_public_url($db, $gid);
+        if ($slotUrl !== '') {
+          $gameRow['href'] = $slotUrl;
+          $gameRow['is_slot_link'] = true;
+        }
+      }
+      $spec[] = $gameRow;
+    }
+
+    $providerName = '';
+    $providerUrl  = '';
+
+    if ($gid !== '' && $db) {
+      if (empty($rowgames)) $rowgames = fec_vm_fetch_game_row($db, $gid);
+      if (!empty($rowgames['provider_name'])) {
+        $providerName = preg_replace('/[\*]+/', '', (string)$rowgames['provider_name']);
+        $providerName = trim($providerName);
+        $providerUrl  = fec_vm_provider_url_from_value($rowgames['provider_value']);
+      }
+    }
+
+    if ($providerName !== '') {
+      $row = array('k' => 'Game Provider', 'v' => $providerName);
+      if ($providerUrl !== '') $row['href'] = $providerUrl;
+      $spec[] = $row;
+    }
+
+    // Expose provider as top-level VM field (used by hero game-meta)
+    $vm['provider'] = $providerName;
+
+    $platRaw = isset($set['platform']) ? $set['platform'] : (isset($vm['platform']) ? $vm['platform'] : '');
+    $platform = fec_vm_platform_label($platRaw);
+    if ($platform !== '') {
+      $spec[] = array('k' => 'Platform', 'v' => $platform);
+    }
+
+    $vm['specifics'] = $spec;
+  }
+
+// --- fec_render_specifics_card  (source lines 3278-3315; slices: bonuses)
+  function fec_render_specifics_card($vm) {
+    $spec = (isset($vm['specifics']) && is_array($vm['specifics'])) ? $vm['specifics'] : array();
+    if (empty($spec)) return;
+
+    $esc = function($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); };
+
+    echo '<section class="bd-stat-card" aria-label="Bonus specifics">';
+    echo '  <h3>Bonus specifics</h3>';
+    echo '  <div class="kvs">';
+
+    foreach ($spec as $row) {
+      $k = isset($row['k']) ? trim((string)$row['k']) : '';
+      $v = isset($row['v']) ? trim((string)$row['v']) : '';
+      if ($k === '' || $v === '') continue;
+
+      $href = isset($row['href']) ? trim((string)$row['href']) : '';
+      $isSlotLink = !empty($row['is_slot_link']);
+
+      echo '    <div class="kv">';
+      echo '      <div class="k">'.$esc($k).'</div>';
+      echo '      <div class="v">';
+
+        if ($isSlotLink && $href !== '') {
+          echo '<a class="bd-slot-link" href="'.$esc($href).'">'
+             .   $esc($v)
+             .   ' <span class="bd-slot-link-info" aria-hidden="true" title="RTP, sources, and active bonuses on this slot">&#9432;</span>'
+             . '</a>';
+        } else {
+          echo $esc($v);
+        }
+
+      echo '      </div>';
+      echo '    </div>';
+    }
+
+    echo '  </div>';
+    echo '</section>';
+  }
+
+// --- fec_vm_starlist  (source lines 3323-3343; slices: bonuses)
+  function fec_vm_starlist($s) {
+    $s = trim((string)$s);
+    if ($s === '') return array();
+
+    $s = trim($s, '*');
+    if ($s === '') return array();
+
+    $parts = explode('*', $s);
+
+    $out = array();
+    $seen = array();
+    foreach ($parts as $p) {
+      $p = trim((string)$p);
+      if ($p === '') continue;
+      if (isset($seen[$p])) continue;
+      $seen[$p] = 1;
+      $out[] = $p;
+    }
+
+    return $out;
+  }
+
+// --- fec_vm_parse_country_codes  (source lines 3347-3369; slices: bonuses)
+  function fec_vm_parse_country_codes($raw) {
+    $raw = trim((string)$raw);
+    if ($raw === '') return array();
+
+    $raw = trim($raw, '*');
+    if ($raw === '') return array();
+
+    $parts = explode('*', $raw);
+
+    $out = array();
+    $seen = array();
+
+    foreach ($parts as $p) {
+      $cc = strtoupper(trim((string)$p));
+      $cc = preg_replace('/[^A-Z]/', '', $cc);
+      if (!preg_match('/^[A-Z]{2}$/', $cc)) continue;
+      if (isset($seen[$cc])) continue;
+      $seen[$cc] = 1;
+      $out[] = $cc;
+    }
+
+    return $out;
+  }
+
+// --- fec_vm_country_map  (source lines 3373-3413; slices: bonuses)
+  function fec_vm_country_map() {
+    static $map = null;
+    if (is_array($map)) return $map;
+
+    $map = array();
+
+    $src = null;
+    if (isset($GLOBALS['countries_array']) && is_array($GLOBALS['countries_array'])) {
+      $src = $GLOBALS['countries_array'];
+    }
+
+    if (empty($src) || !is_array($src)) {
+      $path = JPATH_COMPONENT.DS.'helpers'.DS.'countriesarray.php';
+      if (is_file($path)) {
+        include_once $path;
+        if (isset($countries_array) && is_array($countries_array)) {
+          $src = $countries_array;
+          $GLOBALS['countries_array'] = $countries_array;
+        } elseif (isset($GLOBALS['countries_array']) && is_array($GLOBALS['countries_array'])) {
+          $src = $GLOBALS['countries_array'];
+        }
+      }
+    }
+
+    if (empty($src) || !is_array($src)) return $map;
+
+    foreach ($src as $k => $v) {
+      $cc = strtoupper((string)$k);
+      $cc = preg_replace('/[^A-Z]/', '', $cc);
+
+      $name = trim((string)$v);
+      if ($cc !== '' && $name !== '' && preg_match('/^[A-Z]{2}$/', $cc)) {
+        // PATCH: normalize to Title Case ("ITALY" -> "Italy")
+        $map[$cc] = fec_country_display_name($name);
+      }
+    }
+
+    if (!empty($map['UK']) && empty($map['GB'])) $map['GB'] = $map['UK'];
+
+    return $map;
+  }
+
+// --- fec_vm_gametypes_map  (source lines 3471-3482; slices: bonuses)
+  function fec_vm_gametypes_map() {
+    static $map = null;
+    if (is_array($map)) return $map;
+
+    $map = array();
+    $path = JPATH_COMPONENT.DS.'helpers'.DS.'otherparams.php';
+    if (is_file($path)) {
+      include_once $path;
+      if (isset($gametype) && is_array($gametype)) $map = $gametype;
+    }
+    return $map;
+  }
+
+// --- fec_vm_split_games  (source lines 3486-3498; slices: bonuses)
+  function fec_vm_split_games($games) {
+    $map = fec_vm_gametypes_map();
+    $list = fec_vm_starlist($games);
+    if (!$list) return array();
+
+    $out = array();
+    foreach ($list as $k) {
+      $k = strtolower(trim($k));
+      if ($k === '') continue;
+      $out[] = isset($map[$k]) ? $map[$k] : $k;
+    }
+    return $out;
+  }
+
+// --- fec_vm_pick_bank_label  (source lines 3506-3535; slices: bonuses)
+  function fec_vm_pick_bank_label($text, $value) {
+    $text  = trim((string)$text);
+    $value = trim((string)$value);
+
+    if ($text === '' && $value === '') return '';
+    if ($text !== '' && $value === '') return $text;
+    if ($value !== '' && $text === '') return $value;
+
+    $looksLikeCode = function($s) {
+      $s = trim((string)$s);
+      return ($s !== '' && preg_match('/^[a-z0-9_-]{2,6}$/', $s));
+    };
+
+    $hasPrettyCase = function($s) {
+      $s = trim((string)$s);
+      return (preg_match('/[A-Z]/', $s) && preg_match('/[a-z]/', $s));
+    };
+
+    // Preferisci la stringa "umana"
+    if (strpos($text, ' ') !== false && strpos($value, ' ') === false) return $text;
+    if (strpos($value, ' ') !== false && strpos($text, ' ') === false) return $value;
+
+    if ($hasPrettyCase($text) && !$hasPrettyCase($value)) return $text;
+    if ($hasPrettyCase($value) && !$hasPrettyCase($text)) return $value;
+
+    if ($looksLikeCode($text) && !$looksLikeCode($value)) return $value;
+    if ($looksLikeCode($value) && !$looksLikeCode($text)) return $text;
+
+    return (strlen($text) >= strlen($value)) ? $text : $value;
+  }
+
+// --- fec_vm_bank_map  (source lines 3539-3590; slices: bonuses)
+  function fec_vm_bank_map($db) {
+    static $map = null;
+    if (is_array($map)) return $map;
+
+    $q = $db->getQuery(true)
+      ->select(array('text','value'))
+      ->from($db->quoteName('#__jreviews_fieldoptions'))
+      ->where($db->quoteName('fieldid').' = '.$db->quote('137'))
+      ->order($db->quoteName('text').' ASC');
+
+    $db->setQuery($q);
+    $rows = (array)$db->loadAssocList();
+
+    $map = array();
+
+    foreach ($rows as $r) {
+      $txt = isset($r['text']) ? trim((string)$r['text']) : '';
+      $val = isset($r['value']) ? trim((string)$r['value']) : '';
+
+      $label = fec_vm_pick_bank_label($txt, $val);
+      if ($label === '') continue;
+
+      $keys = array(
+        strtolower($val),
+        strtolower($txt),
+      );
+
+      foreach ($keys as $key) {
+        $key = trim((string)$key);
+        if ($key === '') continue;
+        $map[$key] = $label;
+      }
+    }
+
+    // Fallback hardcoded per crypto/common shortcodes
+    $fallback = array(
+      'btc'  => 'Bitcoin',
+      'eth'  => 'Ethereum',
+      'ltc'  => 'Litecoin',
+      'bch'  => 'Bitcoin Cash',
+      'usdt' => 'Tether',
+      'usdc' => 'USD Coin',
+    );
+
+    foreach ($fallback as $k => $label) {
+      if (!isset($map[$k]) || trim((string)$map[$k]) === '') {
+        $map[$k] = $label;
+      }
+    }
+
+    return $map;
+  }
+
+// --- fec_vm_split_banking  (source lines 3594-3607; slices: bonuses)
+  function fec_vm_split_banking($bank, $db, $bankMap = null) {
+    if ($bankMap === null) $bankMap = fec_vm_bank_map($db);
+
+    $list = fec_vm_starlist($bank);
+    if (!$list) return array();
+
+    $out = array();
+    foreach ($list as $v) {
+      $v = strtolower(trim($v));
+      if ($v === '') continue;
+      $out[] = isset($bankMap[$v]) ? $bankMap[$v] : $v;
+    }
+    return $out;
+  }
+
+// --- fec_vm_build_eligibility_limits  (source lines 3615-3689; slices: bonuses)
+  function fec_vm_build_eligibility_limits(&$vm, $set, $db) {
+    $rows = array();
+    $bankMap = null;
+
+    $ok = isset($set['country_ok']) ? (string)$set['country_ok'] : (isset($vm['country_ok']) ? (string)$vm['country_ok'] : '');
+    $no = isset($set['country_no']) ? (string)$set['country_no'] : (isset($vm['country_no']) ? (string)$vm['country_no'] : '');
+
+    $countryMap = fec_vm_country_map();
+
+    // Allowed (PATCH: "Italy" not uppercase via map)
+    $okCodes = ($ok !== '') ? fec_vm_parse_country_codes($ok) : array();
+    if (!empty($okCodes)) {
+      $okNames = array();
+      foreach ($okCodes as $cc) {
+        $cc = strtoupper((string)$cc);
+        $cc = preg_replace('/[^A-Z]/', '', $cc);
+        if (!preg_match('/^[A-Z]{2}$/', $cc)) continue;
+        $okNames[] = (!empty($countryMap[$cc])) ? $countryMap[$cc] : $cc;
+      }
+      if (!empty($okNames)) {
+        $rows[] = array('k' => 'Allowed countries', 'v' => implode(', ', $okNames));
+      }
+    }
+
+    // Restricted
+    $noCodes = ($no !== '') ? fec_vm_parse_country_codes($no) : array();
+    if (!empty($noCodes)) {
+      $noNames = array();
+      foreach ($noCodes as $cc) {
+        $cc = strtoupper((string)$cc);
+        $cc = preg_replace('/[^A-Z]/', '', $cc);
+        if (!preg_match('/^[A-Z]{2}$/', $cc)) continue;
+        $noNames[] = (!empty($countryMap[$cc])) ? $countryMap[$cc] : $cc;
+      }
+      if (!empty($noNames)) {
+        $rows[] = array('k' => 'Restricted countries', 'v' => implode(', ', $noNames));
+      }
+    }
+
+    // Banking
+    $bankOk = isset($set['bankok']) ? $set['bankok'] : (isset($vm['bankok']) ? $vm['bankok'] : '');
+    $bankNo = isset($set['bankno']) ? $set['bankno'] : (isset($vm['bankno']) ? $vm['bankno'] : '');
+
+    if ($bankOk) {
+      if ($bankMap === null) $bankMap = fec_vm_bank_map($db);
+      $items = fec_vm_split_banking($bankOk, $db, $bankMap);
+      if (!empty($items)) {
+        $rows[] = array('k' => 'Allowed deposit methods', 'v' => implode(', ', $items));
+      }
+    }
+
+    if ($bankNo) {
+      if ($bankMap === null) $bankMap = fec_vm_bank_map($db);
+      $items = fec_vm_split_banking($bankNo, $db, $bankMap);
+      if (!empty($items)) {
+        $rows[] = array('k' => 'Restricted deposit methods', 'v' => implode(', ', $items));
+      }
+    }
+
+    // Games
+    $gamesOk = isset($set['gamesok']) ? $set['gamesok'] : (isset($vm['gamesok']) ? $vm['gamesok'] : '');
+    $gamesNo = isset($set['gamesno']) ? $set['gamesno'] : (isset($vm['gamesno']) ? $vm['gamesno'] : '');
+
+    $gok = $gamesOk ? fec_vm_split_games($gamesOk) : array();
+    if (!empty($gok)) {
+      $rows[] = array('k' => 'Allowed games', 'v' => implode(', ', $gok));
+    }
+
+    $gno = $gamesNo ? fec_vm_split_games($gamesNo) : array();
+    if (!empty($gno)) {
+      $rows[] = array('k' => 'Restricted games', 'v' => implode(', ', $gno));
+    }
+
+    $vm['eligibility_limits'] = $rows;
+  }
+
+// --- fec_render_eligibility_limits_card  (source lines 3693-3808; slices: bonuses)
+  function fec_render_eligibility_limits_card($vm) {
+    if (empty($vm) || empty($vm['eligibility_limits']) || !is_array($vm['eligibility_limits'])) return;
+
+    $esc = function($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); };
+
+    $getPlainValue = function($row) {
+      $v = '';
+      if (isset($row['v']) && is_string($row['v'])) $v = trim($row['v']);
+      if ($v !== '') return $v;
+
+      if (isset($row['v_html']) && is_string($row['v_html'])) {
+        $t = trim(strip_tags($row['v_html']));
+        if ($t !== '') return $t;
+      }
+      return '';
+    };
+
+    $splitCSV = function($s) {
+      $s = trim((string)$s);
+      if ($s === '') return array();
+      $parts = preg_split('/\s*,\s*/', $s);
+      $out = array();
+      foreach ((array)$parts as $p) {
+        $p = trim((string)$p);
+        if ($p !== '') $out[] = $p;
+      }
+      return $out;
+    };
+
+    $renderSmartList = function($label, $csv, $limit = 8) use ($esc, $splitCSV) {
+      $items = $splitCSV($csv);
+      if (empty($items)) return array('has' => false, 'html' => '');
+
+      $limit = (int)$limit;
+      if ($limit < 3) $limit = 3;
+
+      $head = (count($items) <= $limit) ? $items : array_slice($items, 0, $limit);
+      $tail = (count($items) <= $limit) ? array() : array_slice($items, $limit);
+
+      $html = '<div class="bd-elig-list">';
+      foreach ($head as $item) {
+        $html .= '<span class="country">'.$esc($item).'</span>';
+      }
+      if (!empty($tail)) {
+        $html .= '<details class="bd-elig-more">';
+        $html .=   '<summary class="more">+'.count($tail).' more</summary>';
+        foreach ($tail as $item) {
+          $html .= '<span class="country">'.$esc($item).'</span>';
+        }
+        $html .= '</details>';
+      }
+      $html .= '</div>';
+
+      return array('has' => true, 'html' => $html);
+    };
+
+    $rowsIn = $vm['eligibility_limits'];
+    $map = array();
+    foreach ($rowsIn as $r) {
+      if (!is_array($r)) continue;
+      $k = isset($r['k']) ? trim((string)$r['k']) : '';
+      if ($k === '') continue;
+      $map[strtolower($k)] = $r;
+    }
+
+    $orderedKeys = array(
+      'allowed countries',
+      'restricted countries',
+      'allowed deposit methods',
+      'restricted deposit methods',
+      'allowed games',
+      'restricted games',
+    );
+
+    $rows = array();
+    foreach ($orderedKeys as $key) {
+      if (!isset($map[$key])) continue;
+      $val = $getPlainValue($map[$key]);
+      if ($val === '') continue;
+
+      $smart = null;
+      if ($key === 'restricted countries' || $key === 'allowed countries') {
+        $smart = $renderSmartList($key, $val, ($key === 'allowed countries' ? 6 : 8));
+      } elseif (strpos($key, 'deposit methods') !== false) {
+        $smart = $renderSmartList($key, $val, 6);
+      } elseif (strpos($key, 'games') !== false) {
+        $smart = $renderSmartList($key, $val, 6);
+      }
+
+      $rows[] = array(
+        'k' => $map[$key]['k'],
+        'v_html' => ($smart && $smart['has']) ? $smart['html'] : $esc($val)
+      );
+    }
+
+    if (empty($rows)) return;
+
+    echo '<section class="bd-stat-card" aria-label="Eligibility and limits">';
+      echo '<h3>Eligibility &amp; limits</h3>';
+      echo '<div class="kvs single">';
+
+        foreach ($rows as $r) {
+          $k = isset($r['k']) ? trim((string)$r['k']) : '';
+          $vHtml = isset($r['v_html']) ? (string)$r['v_html'] : '';
+
+          if ($k === '' || trim(strip_tags($vHtml)) === '') continue;
+
+          echo '<div class="kv">';
+            echo '<div class="k">'.$esc($k).'</div>';
+            echo '<div class="v">'.$vHtml.'</div>';
+          echo '</div>';
+        }
+
+      echo '</div>';
+    echo '</section>';
+  }
+
+// --- fec_build_query  (source lines 3816-4071; slices: bonuses)
+  function fec_build_query($db, $filters, $countrycode, &$w_out) {
+    $query = $db->getQuery(true);
+    $w = array();
+
+    $query->select(array(
+      'SQL_CALC_FOUND_ROWS a.*',
+      'b.*',
+      'COALESCE(agg.yes_count, 0) AS fec_yes',
+      'COALESCE(agg.no_count, 0) AS fec_no',
+      // related bonus (EXTRA row where r.related = main.bid)
+      'r.bid AS rel_bid',
+      'r.cid AS rel_cid',
+      'r.type AS rel_type',
+      'r.bonus AS rel_bonus',
+      'r.max_bonus AS rel_max_bonus',
+      'r.currency AS rel_currency',
+      'r.game AS rel_game',
+      'r.fp_time AS rel_fp_time',
+      'r.fp_time_den AS rel_fp_time_den',
+      // lib v84 (2026-10-20): the main bonus of an extra row (a.related > 0),
+      // for the card's "Part of" line. The extra stays a card of its own -
+      // 216 of them, a fifth of the catalogue, so folding them would move
+      // the count mismatch around rather than remove it - but it names the
+      // offer it belongs to and links to it.
+      'mn.bid AS main_bid',
+      'mn.type AS main_type',
+      'mn.bonus AS main_bonus',
+      'mn.max_bonus AS main_max_bonus',
+      'mn.currency AS main_currency',
+      'mn.game AS main_game',
+      'mn.fp_time AS main_fp_time',
+      'mn.fp_time_den AS main_fp_time_den'
+    ));
+
+    $query->from($db->quoteName('#__bonuses', 'a'));
+    $query->join('INNER', $db->quoteName('#__jreviews_content', 'b') . ' ON (' . $db->quoteName('a.cid') . ' = ' . $db->quoteName('b.contentid') . ')');
+    $query->join('LEFT',  $db->quoteName('#__bonus_feedback_agg', 'agg') . ' ON (' . $db->quoteName('agg.bid') . ' = ' . $db->quoteName('a.bid') . ')');
+
+    // related bonus (extra row points to main via r.related)
+    // lib v77 (2026-10-20): ONE related row per main bonus. The join was on
+    // r.related = a.bid, so a bonus with two linked rows came out twice:
+    // twice on the page (the two identical 7Bit rows on the home board),
+    // twice in SQL_CALC_FOUND_ROWS (the list page said 1,118 bonuses while
+    // the hero, counting bonuses, said 1,098), and twice in every total
+    // built on this query. The row kept is the active one when there is a
+    // choice, else the oldest, as before excluding pending.
+    $relPick = '(SELECT ' . $db->quoteName('r2.bid') . ' FROM ' . $db->quoteName('#__bonuses', 'r2')
+      . ' WHERE ' . $db->quoteName('r2.related') . ' = ' . $db->quoteName('a.bid')
+      . ' AND ' . $db->quoteName('r2.status') . ' <> ' . $db->quote('pending')
+      . ' ORDER BY (' . $db->quoteName('r2.status') . ' = ' . $db->quote('active') . ') DESC, ' . $db->quoteName('r2.bid') . ' ASC LIMIT 1)';
+    $query->join('LEFT',  $db->quoteName('#__bonuses', 'r') . ' ON (' . $db->quoteName('r.bid') . ' = ' . $relPick . ')');
+    // main bonus of an extra row (lib v84) - primary-key lookup, no row multiplication
+    $query->join('LEFT',  $db->quoteName('#__bonuses', 'mn') . ' ON (' . $db->quoteName('mn.bid') . ' = ' . $db->quoteName('a.related') . ' AND ' . $db->quoteName('mn.status') . ' = ' . $db->quote('active') . ')');
+
+    // Base scope
+    if (!empty($filters['view']) && $filters['view'] === 'casino') {
+      fec_where($query, $w, $db->quoteName('a.cid') . ' = ' . (int)$filters['cid']);
+      fec_where($query, $w, $db->quoteName('a.status') . " <> 'pending'");
+      $query->order('CASE WHEN '.$db->quoteName('a.status').' = "expired" then 1 else 0 end');
+    } else {
+      fec_where($query, $w, $db->quoteName('b.jr_closed') . " = ''");
+      fec_where($query, $w, $db->quoteName('b.jr_suspended') . " = ''");
+      fec_where($query, $w, $db->quoteName('b.jr_blacklisted') . " = ''");
+      fec_where($query, $w, $db->quoteName('a.status') . " = 'active'");
+    }
+
+    fec_where($query, $w, $db->quoteName('a.bonus') . ' > 0');
+
+// FX filter
+    $fx = isset($filters['fx']) ? $filters['fx'] : 'any';
+    if ($fx !== 'any') {
+      $totalExpr = '(COALESCE(agg.yes_count,0) + COALESCE(agg.no_count,0))';
+      $yesExpr   = 'COALESCE(agg.yes_count,0)';
+      $noExpr    = 'COALESCE(agg.no_count,0)';
+
+      if ($fx === 'lowdata') {
+        // Low data: meno di 3 reports totali
+        fec_where($query, $w, $totalExpr.' < 3');
+      } elseif ($fx === 'verified') {
+        // Verified: almeno 5 reports e almeno 80% positivi
+        fec_where($query, $w, $totalExpr.' >= 5');
+        fec_where($query, $w, '('.$yesExpr.'*100) >= (80*'.$totalExpr.')');
+      } elseif ($fx === 'issues') {
+        // Issues: almeno 3 reports e maggioranza negativa
+        fec_where($query, $w, $totalExpr.' >= 3');
+        fec_where($query, $w, '('.$noExpr.'*100) >= (50*'.$totalExpr.')');
+      } elseif ($fx === 'mixed') {
+        // Mixed: dato pubblicabile (>= 3) ma non Verified e non Issues
+        fec_where($query, $w, $totalExpr.' >= 3');
+        // Non è Verified
+        fec_where($query, $w, 'NOT ('.$totalExpr.' >= 5 AND ('.$yesExpr.'*100) >= (80*'.$totalExpr.'))');
+        // Non è Issues
+        fec_where($query, $w, 'NOT ( ('.$noExpr.'*100) >= (50*'.$totalExpr.') )');
+      }
+    }
+
+    // WR max
+if (!empty($filters['wr_max']) && (int)$filters['wr_max'] > 0) {
+  $wrCol = $db->quoteName('a.wr');
+
+  // Solo bonus con WR esplicito e ≤ soglia (esclude NULL/vuoto)
+  fec_where($query, $w, $wrCol.' IS NOT NULL');
+  fec_where($query, $w, 'TRIM('.$wrCol.') <> ""');
+  fec_where($query, $w, 'CAST(TRIM('.$wrCol.') AS DECIMAL(10,2)) <= '.(int)$filters['wr_max']);
+}
+    if (!empty($filters['cashable']) && $filters['cashable'] === 'yes') {
+      fec_where($query, $w, $db->quoteName('a.cashable').' = '.$db->quote('yes'));
+    }
+
+    if (isset($filters['code']) && $filters['code'] === 'no') {
+      fec_where($query, $w, '('
+        .$db->quoteName('a.code').' IS NULL OR '
+        .$db->quoteName('a.code')." = ''"
+      .')');
+    } elseif (isset($filters['code']) && $filters['code'] === 'yes') {
+      fec_where($query, $w, '(TRIM('.$db->quoteName('a.code').") <> '')");
+    }
+
+if (!empty($filters['crypto']) && $filters['crypto'] === 'yes') {
+  $cCol  = 'LOWER(COALESCE('.$db->quoteName('b.jr_currencies').', ""))';
+  $bnCol = 'LOWER(COALESCE('.$db->quoteName('a.bankno').', ""))';
+
+  $cryptoYes = '('
+    .$cCol.' LIKE "%*btc*%" OR '
+    .$cCol.' LIKE "%*eth*%" OR '
+    .$cCol.' LIKE "%*ltc*%" OR '
+    .$cCol.' LIKE "%*usdc*%" OR '
+    .$cCol.' LIKE "%*usdt*%"'
+  .')';
+
+  $cryptoBlocked = '('
+    .$bnCol.' LIKE "%*btc*%" OR '
+    .$bnCol.' LIKE "%*eth*%" OR '
+    .$bnCol.' LIKE "%*ltc*%" OR '
+    .$bnCol.' LIKE "%*usdc*%" OR '
+    .$bnCol.' LIKE "%*usdt*%"'
+  .')';
+
+  fec_where($query, $w, $cryptoYes);
+  fec_where($query, $w, 'NOT '.$cryptoBlocked);
+}
+
+if (!empty($filters['cashout'])) {
+      $col   = $db->quoteName('a.max_cashout');
+      $isNum = '(' . $col . ' REGEXP ' . $db->quote('^[0-9]+([.][0-9]+)?$') . ')';
+      $num   = 'CAST(' . $col . ' AS DECIMAL(12,2))';
+
+      if ($filters['cashout'] === 'nocap') {
+        // Riservato: nessun chip "No cap" nella UI attuale.
+        fec_where($query, $w, '(' . $isNum . ' AND ' . $num . ' = 0)');
+      } elseif (ctype_digit((string)$filters['cashout'])) {
+        // Chip "≥ N": max cashout >= N. "No cap" (0) = illimitato -> incluso.
+        $min = (int)$filters['cashout'];
+        fec_where($query, $w, '(' . $isNum . ' AND (' . $num . ' = 0 OR ' . $num . ' >= ' . $min . '))');
+      }
+    }
+
+    if (!empty($filters['hide_na']) && (int)$filters['hide_na'] === 1) {
+      $cc = $db->escape($countrycode);
+      fec_where($query, $w, $db->quoteName('b.jr_restrictedcountries').' NOT LIKE "%*'.$cc.'*%"');
+      fec_where($query, $w, '('.$db->quoteName('a.country_no').' = "" OR '.$db->quoteName('a.country_no').' NOT LIKE "%*'.$cc.'*%")');
+      fec_where($query, $w, '('.$db->quoteName('a.country_ok').' = "" OR '.$db->quoteName('a.country_ok').' LIKE "%*'.$cc.'*%")');
+    }
+
+    if (!empty($filters['exclusive']) && $filters['exclusive'] === 'yes') {
+      fec_where($query, $w, $db->quoteName('a.exclusive').' = '.$db->quote('yes'));
+    }
+
+    if (!empty($filters['type'])) {
+      fec_where($query, $w, $db->quoteName('a.type').' = '.$db->quote($filters['type']));
+    }
+
+    if (!empty($filters['type']) && $filters['type'] === 'fs' && !empty($filters['subtype']) && $filters['subtype'] === 'nd') {
+      fec_where($query, $w, '('.
+        $db->quoteName('a.type').' = '.$db->quote('fs').
+        ' AND ('.$db->quoteName('a.min_dep').' = "" OR '.$db->quoteName('a.min_dep').' IS NULL)'.
+      ')');
+    }
+
+    if (!empty($filters['type']) && $filters['type'] === 'fs' && !empty($filters['subtype']) && $filters['subtype'] === 'dr') {
+      fec_where($query, $w, $db->quoteName('a.type').' = '.$db->quote('fs'));
+      fec_where($query, $w, 'CAST('.$db->quoteName('a.min_dep').' AS DECIMAL(12,2)) > 0');
+    }
+
+    $sort = isset($filters['sort']) ? $filters['sort'] : 'best';
+
+    if ($sort === 'best') {
+      // Country tiers first (claimable here, then restricted), then by last
+      // touch: added or modified, whichever is later. Editorial choice
+      // (Davey, 2026-10-20): terms change, and a bonus whose terms were
+      // just revised belongs at the top of Best match. lib v82 makes the
+      // position legible instead of changing it: the card's freshness line
+      // says "Updated 2 days ago" when the edit is what put it there
+      // (fec_card_freshness_label with the modified date). GREATEST over
+      // COALESCE so a NULL or zero-date modified never hides the row.
+      // 'newest' stays by listing date (a.added).
+      $query->order('CASE WHEN b.jr_restrictedcountries LIKE "%*'.$countrycode.'*%" then 1 else 0 end');
+      $query->order('CASE WHEN a.country_ok LIKE "%*'.$countrycode.'*%" OR a.country_ok LIKE "" then 0 else 1 end');
+      $query->order('CASE WHEN a.country_no NOT LIKE "%*'.$countrycode.'*%" OR a.country_no LIKE "" then 0 else 1 end');
+      $query->order('GREATEST(COALESCE('.$db->quoteName('a.added').', '.$db->quote('1000-01-01').'), COALESCE('.$db->quoteName('a.modified').', '.$db->quote('1000-01-01').')) DESC');
+      $query->order($db->quoteName('a.bid').' DESC');
+    } elseif ($sort === 'wr_low') {
+  $wrCol  = $db->quoteName('a.wr');
+
+  // 1: NULL/vuoti -> in coda (1), numeri reali in testa (0)
+  $wrIsNull = '(CASE WHEN '.$wrCol.' IS NULL OR TRIM('.$wrCol.') = "" THEN 1 ELSE 0 END)';
+
+  // 2: il valore numerico effettivo (solo per le righe con dato)
+  $wrNum    = 'CAST(NULLIF(TRIM('.$wrCol.'), "") AS DECIMAL(10,2))';
+
+  $query->order($wrIsNull.' ASC');           // i numeri reali prima
+  $query->order($wrNum.' ASC');               // poi ordinati 0 → 60+
+  $query->order('COALESCE('.$db->quoteName('a.modified').', '.$db->quoteName('a.added').') DESC');
+  $query->order($db->quoteName('a.added').' DESC');
+
+    } elseif ($sort === 'cashout_high' || $sort === 'cashout_low') {
+      $col   = $db->quoteName('a.max_cashout');
+      $isNum = '(' . $col . ' REGEXP ' . $db->quote('^[0-9]+([.][0-9]+)?$') . ')';
+      $num   = 'CAST(' . $col . ' AS DECIMAL(12,2))';
+
+      // 1) "Not stated" (NULL/vuoto/non-numerico) sempre in fondo.
+      $query->order('(CASE WHEN ' . $isNum . ' THEN 0 ELSE 1 END) ASC');
+
+      if ($sort === 'cashout_high') {
+        // "No cap" (0) e' l'esito migliore -> in testa, poi dal piu' alto al piu' basso.
+        $query->order('(CASE WHEN ' . $isNum . ' AND ' . $num . ' = 0 THEN 0 ELSE 1 END) ASC');
+        $query->order($num . ' DESC');
+      } else {
+        // cashout_low: piu' restrittivo prima -> cap reale piu' basso,
+        // poi cap piu' alti, poi "No cap" in coda (meno restrittivo).
+        $query->order('(CASE WHEN ' . $isNum . ' AND ' . $num . ' = 0 THEN 1 ELSE 0 END) ASC');
+        $query->order($num . ' ASC');
+      }
+
+      $query->order('COALESCE(' . $db->quoteName('a.modified') . ', ' . $db->quoteName('a.added') . ') DESC');
+      $query->order($db->quoteName('a.added') . ' DESC');
+    } elseif ($sort === 'newest' || $sort === 'listed') {
+      // lib v75 (2026-10-20): by listing date - the date every surface
+      // prints ("Listed 5 Mar", "Added 3 days ago"). Up to v74 'newest'
+      // fell through to the legacy branch below and sorted by last edit
+      // (COALESCE(modified, added)): the list page's "Newest" put the rows
+      // the desk had touched last on top, a March listing above "3 days
+      // ago". 'listed' (v71, the home board) is the same order under the
+      // name it had before this fix. Callers: /bonuses/ ?sort=newest, the
+      // home board, "more bonuses from this casino" on the bonus page.
+      $query->order($db->quoteName('a.added').' DESC');
+      $query->order($db->quoteName('a.bid').' DESC');
+    } else {
+      // Legacy fallback for an unknown sort key: last edit first.
+      $query->order('COALESCE('.$db->quoteName('a.modified').', '.$db->quoteName('a.added').') DESC');
+      $query->order($db->quoteName('a.added').' DESC');
+    }
+
+    $w_out = $w;
+    return $query;
+  }
+
+// --- fec_render_fxcheck_panel_html  (source lines 4077-4160; slices: bonuses)
+  function fec_render_fxcheck_panel_html($vm, $opts = array()) {
+
+    $esc = function($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); };
+
+    $bid = isset($vm['bid']) ? (int)$vm['bid'] : 0;
+    if ($bid <= 0) return '';
+
+    // server-side voted check (CRITICAL)
+    $alreadyVoted = function_exists('fec_has_voted') ? fec_has_voted($bid) : false;
+
+    // tuning
+    $initialReports = isset($opts['reports_limit']) ? (int)$opts['reports_limit'] : 5;
+    if ($initialReports <= 0) $initialReports = 5;
+    if ($initialReports > 20) $initialReports = 20;
+
+    // IDs -- in-page anchors: stats accordion -> '#reports' (riconciliato Fase 4)
+    $reportsId = 'reports';
+    $statsId   = 'fec-stats-' . $bid;
+
+    $reportsHtml = fec_render_reports_html($bid, $initialReports, $reportsId);
+
+    $db       = JFactory::getDbo();
+    $yesCount = isset($vm['yes']) ? (int)$vm['yes'] : 0;
+    $noCount  = isset($vm['no'])  ? (int)$vm['no']  : 0;
+    $statsHtml = fec_render_stats_accordion_html($db, $bid, $yesCount, $noCount, $statsId, $reportsId);
+
+    $html = '';
+
+    /* ======================================================
+     * VOTE widget  (.bd-vote)
+     * ====================================================== */
+    $html .= '<div class="wrap">';
+    $html .= '<div class="bd-vote" data-bid="'.$bid.'"'.($alreadyVoted ? ' data-voted="1"' : '').'>';
+
+    $html .= '<div class="bd-vote-main">';
+    $html .= '<h3>Did it actually work for you?</h3>';
+    $html .= '<div class="bd-vote-fxnote">Verified by <b>FXCheck&trade;</b> &middot; player-reported outcomes</div>';
+    $html .= '<div class="bd-vote-msg" aria-live="polite">';
+    if ($alreadyVoted) {
+      $html .= 'You already voted for this bonus. <a class="bd-see-reports" href="#'.$esc($reportsId).'">See reports</a>';
+    }
+    $html .= '</div>';
+    $html .= '<div class="bd-vote-verified"'.($alreadyVoted ? '' : ' hidden').'>';
+    if ($alreadyVoted) {
+      $html .= 'Verified by <strong>FXCheck&trade;</strong>';
+    }
+    $html .= '</div>';
+    $html .= '</div>'; // bd-vote-main
+
+    /* ---------- ACTIONS + FORM (only if NOT voted) ---------- */
+    if (!$alreadyVoted) {
+      $html .= '<div class="bd-vote-actions" role="group" aria-label="Outcome">';
+      $html .= '<button type="button" class="btn btn-ghost" data-vote="no"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"/></svg> No</button>';
+      $html .= '<button type="button" class="btn btn-yes" data-vote="yes"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10v12"/><path d="M15 5.88 14 12h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></svg> Yes</button>';
+      $html .= '</div>';
+
+      $html .= '<div class="bd-vote-form">';
+      $html .= '<label class="bd-vote-field">';
+      $html .= '<span class="bd-vote-field-k">Name</span>';
+      $html .= '<input class="bd-vote-name" type="text" inputmode="text" autocomplete="nickname" placeholder="3&ndash;20 chars (A&ndash;Z, 0&ndash;9, _)">';
+      $html .= '</label>';
+      $html .= '<label class="bd-vote-field">';
+      $html .= '<span class="bd-vote-field-k">What happened? (optional)</span>';
+      $html .= '<textarea class="bd-vote-comment" rows="3" placeholder="Geo block, code issue, wagering, cashout cap&hellip;"></textarea>';
+      $html .= '</label>';
+      $html .= '<button type="button" class="btn btn-primary bd-vote-submit" disabled>Submit</button>';
+      $html .= '</div>'; // bd-vote-form
+    }
+
+    $html .= '</div>'; // bd-vote
+    $html .= '</div>'; // wrap
+
+    /* ======================================================
+     * STATS accordion  (kept + restyled, sits above the reports)
+     * ====================================================== */
+    $html .= $statsHtml;
+
+    /* ======================================================
+     * REPORTS
+     * ====================================================== */
+    $html .= $reportsHtml;
+
+    return $html;
+  }
+
+// --- fec_render_additional_details  (source lines 4167-4188; slices: bonuses)
+/**
+ * Render Additional Details (trusted editor HTML).
+ * Outputs HTML as-is (no stripping, no cleaning).
+ */
+function fec_render_additional_details($result, $opts = array()) {
+  $title = isset($opts['title']) && trim((string)$opts['title']) !== ''
+    ? (string)$opts['title']
+    : 'Decision notes';
+
+  $id = isset($opts['id']) && trim((string)$opts['id']) !== ''
+    ? (string)$opts['id']
+    : 'decision-notes';
+
+  $infos = isset($result['additional_infos']) ? trim((string)$result['additional_infos']) : '';
+  if ($infos === '') return '';
+
+  $titleEsc = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+  $idEsc    = htmlspecialchars($id, ENT_QUOTES, 'UTF-8');
+
+  $html  = '<div class="wrap"><article class="bd-notes" id="'.$idEsc.'" aria-label="'.$titleEsc.'">';
+  $html .= '  <h2 class="bd-section-title">'.$titleEsc.'</h2>';
+  $html .= '  <div class="hub-content">'.$infos.'</div>';
+  $html .= '</article></div>';
+
+  return $html;
+}
+
+// --- fec_fmt_date_long  (source lines 4197-4205; slices: bonuses)
+/**
+ * Format a SQL datetime to a readable long date (English).
+ * Input: "2026-01-29 11:58:28" -> "Jan 29, 2026"
+ */
+function fec_fmt_date_long($sqlDate) {
+  if (!$sqlDate) return '';
+  try {
+    $dt = new DateTime($sqlDate);
+    return $dt->format('M j, Y');
+  } catch (Exception $e) {
+    return '';
+  }
+}
+
+// --- fec_get_bonus_author  (source lines 4243-4279; slices: bonuses)
+/**
+ * Fetch author for a bonus id (bid). Returns assoc array or null.
+ */
+function fec_get_bonus_author($bid) {
+  $bid = (int)$bid;
+  if ($bid <= 0) return null;
+
+  $db = JFactory::getDbo();
+
+  $query = $db->getQuery(true)
+    ->select('a.id, a.slug, a.name, a.role, a.short_bio, a.avatar_url')
+    ->from($db->quoteName('#__bonuses') . ' AS b')
+    ->join('LEFT', $db->quoteName('#__casino_authors') . ' AS a ON a.id = b.author_id')
+    ->where('b.bid = ' . (int)$bid)
+    ->where('b.author_id IS NOT NULL')
+    ->where('a.id IS NOT NULL')
+    ->where('a.is_active = 1');
+
+  $db->setQuery($query, 0, 1);
+  $row = $db->loadAssoc();
+
+  if ($db->getErrorNum()) {
+    error_log('fec_get_bonus_author query failed: ' . $db->getErrorMsg());
+    return null;
+  }
+
+  if (!$row || empty($row['id'])) return null;
+
+  // Normalize
+  $row['id'] = (int)$row['id'];
+  $row['slug'] = isset($row['slug']) ? trim($row['slug']) : '';
+  $row['name'] = isset($row['name']) ? trim($row['name']) : '';
+  $row['role'] = isset($row['role']) ? trim($row['role']) : '';
+  $row['short_bio'] = isset($row['short_bio']) ? trim((string)$row['short_bio']) : '';
+  $row['avatar_url'] = isset($row['avatar_url']) ? trim((string)$row['avatar_url']) : '';
+
+  if ($row['slug'] === '' || $row['name'] === '') return null;
+
+  return $row;
+}
+
+// --- fec_get_bonus_editor  (source lines 4286-4321; slices: bonuses)
+/**
+ * Fetch editor (modified_by) for a bonus id. Returns assoc array or null.
+ * Mirrors fec_get_bonus_author but is driven by b.modified_by.
+ * Assumes modified_by points to jos_casino_authors.id (same target as author_id).
+ */
+function fec_get_bonus_editor($bid) {
+  $bid = (int)$bid;
+  if ($bid <= 0) return null;
+
+  $db = JFactory::getDbo();
+
+  $query = $db->getQuery(true)
+    ->select('a.id, a.slug, a.name, a.role, a.avatar_url')
+    ->from($db->quoteName('#__bonuses') . ' AS b')
+    ->join('LEFT', $db->quoteName('#__casino_authors') . ' AS a ON a.id = b.modified_by')
+    ->where('b.bid = ' . (int)$bid)
+    ->where('b.modified_by IS NOT NULL')
+    ->where('a.id IS NOT NULL')
+    ->where('a.is_active = 1');
+
+  $db->setQuery($query, 0, 1);
+  $row = $db->loadAssoc();
+
+  if ($db->getErrorNum()) {
+    error_log('fec_get_bonus_editor query failed: ' . $db->getErrorMsg());
+    return null;
+  }
+
+  if (!$row || empty($row['id'])) return null;
+
+  // Normalize
+  $row['id']         = (int)$row['id'];
+  $row['slug']       = isset($row['slug']) ? trim($row['slug']) : '';
+  $row['name']       = isset($row['name']) ? trim($row['name']) : '';
+  $row['role']       = isset($row['role']) ? trim($row['role']) : '';
+  $row['avatar_url'] = isset($row['avatar_url']) ? trim((string)$row['avatar_url']) : '';
+
+  if ($row['slug'] === '' || $row['name'] === '') return null;
+
+  return $row;
+}
+
+// --- fec_fmt_date_iso8601  (source lines 4336-4345; slices: bonuses)
+/**
+ * Format SQL datetime to ISO 8601 with timezone for JSON-LD.
+ * Input: "2026-01-29 11:58:28"
+ * Output: "2026-01-29T11:58:28+00:00"
+ */
+function fec_fmt_date_iso8601($sqlDate) {
+  if (!$sqlDate) return '';
+  try {
+    // Usa timezone del server (di solito UTC su FEC)
+    $dt = new DateTime($sqlDate);
+    return $dt->format('c'); // ISO 8601 completo
+  } catch (Exception $e) {
+    return '';
+  }
+}
+
+// --- fec_render_bonus_author_card  (source lines 4347-4590; slices: bonuses)
+function fec_render_bonus_author_card($bid, $publishedAtSql = '', $modifiedAtSql = '') {
+  $a = fec_get_bonus_author($bid);
+  if (!$a) return '';
+
+  $esc = function($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); };
+
+  $name = $esc($a['name']);
+  $role = $esc($a['role']);
+
+  // Keep bio short / trust-y (1–2 lines). No fluff.
+  $bioText = ($a['short_bio'] !== '') ? $a['short_bio'] : 'Bonus verification notes and decision support.';
+  $bioText = trim($bioText);
+  $bio = $esc($bioText);
+
+  // Route author page
+  $authorRoute = JRoute::_('index.php?option=com_authors&view=author&slug=' . urlencode($a['slug']));
+  $authorUrlEsc = $esc($authorRoute);
+
+  // Avatar (square + border - CSS handles)
+  $avatar = $a['avatar_url'];
+  $photoHtml = '';
+  if ($avatar !== '') {
+    $avatarEsc = $esc($avatar);
+    $photoHtml = '<img src="'.$avatarEsc.'" alt="'.$name.'" width="56" height="56" loading="lazy">';
+  } else {
+    $photoHtml = '<span aria-hidden="true"></span>';
+  }
+
+  // Dates
+$publishedLong = fec_fmt_date_long($publishedAtSql);
+$publishedIso  = fec_fmt_date_iso8601($publishedAtSql);
+$modifiedLong  = fec_fmt_date_long($modifiedAtSql);
+$modifiedIso   = fec_fmt_date_iso8601($modifiedAtSql);
+
+  // Show "modified" only if it is meaningfully later than "added" (skip the
+  // few-seconds gap from the initial save). Threshold: 5 minutes.
+  $showModified = false;
+  if ($modifiedLong !== '') {
+    if ($publishedAtSql && $modifiedAtSql) {
+      $diff = abs(strtotime($modifiedAtSql) - strtotime($publishedAtSql));
+      $showModified = ($diff > 300);
+    } else {
+      $showModified = true;
+    }
+  }
+
+  // Editor (may be null even when modified is set, if modified_by is NULL
+  // or points to an inactive/missing casino_author).
+  $editor     = $showModified ? fec_get_bonus_editor($bid) : null;
+  $sameEditor = ($editor && (int)$editor['id'] === (int)$a['id']);
+
+  // Badges line (connect to FXCheck / staff)
+  // lib v87 (2026-10-21): "Terms checked by staff", not "Verified by staff".
+  // The label is a constant on every bonus page, and on pages whose own
+  // "How we verified" section says "This bonus has not been tested by our
+  // staff" it read as a claim the page denies two screens later. What is
+  // true of every page is that the desk entered the terms from the operator;
+  // whether the desk also claimed the bonus is said in the Decision notes.
+  $verifiedLine = '<b>FXCheck™</b> · Terms checked by staff';
+  if ($publishedLong !== '') {
+    $verifiedLine .= ' · Published '.$esc($publishedLong);
+  }
+  // Condensed case: editor is the same person as the author -> one line only.
+  if ($showModified && $sameEditor) {
+    $verifiedLine .= ' · Updated '.$esc($modifiedLong);
+  }
+  // lib v88 (2026-10-21): the last approved player report, the freshest
+  // fact a bonus page has. The title's month stamp follows the same date
+  // (details view: latest of added / modified / last report, within 90
+  // days), so the title and the byline say the same thing: "(October 2026)"
+  // over "Published Jan 9, 2026" now reads "... Last player report Oct 17, 2026".
+  try {
+    $dbr = JFactory::getDbo();
+    $qlr = $dbr->getQuery(true)
+      ->select('MAX(' . $dbr->quoteName('created_at') . ')')
+      ->from($dbr->quoteName('#__bonus_feedback'))
+      ->where($dbr->quoteName('bid') . ' = ' . (int)$bid)
+      ->where($dbr->quoteName('moderation_status') . ' = ' . $dbr->quote('approved'));
+    $dbr->setQuery($qlr);
+    $lastReportSql = (string)$dbr->loadResult();
+    if ($lastReportSql !== '' && $lastReportSql !== '0000-00-00 00:00:00') {
+      $lastReportLong = fec_fmt_date_long($lastReportSql);
+      if ($lastReportLong !== '') $verifiedLine .= " \xC2\xB7 Last player report ".$esc($lastReportLong);
+    }
+  } catch (Exception $e) {}
+
+  // Edited-by line (only when editor differs, or when modified_by lookup
+  // returns null but modified is set -> date-only fallback).
+  $editedLine    = '';
+  $editorRouteEsc = '';
+  $editorAbs      = '';
+  $editorPersonId = '';
+  if ($showModified && !$sameEditor) {
+    if ($editor) {
+      $eName        = $esc($editor['name']);
+      $editorRoute  = JRoute::_('index.php?option=com_authors&view=author&slug=' . urlencode($editor['slug']));
+      $editorRouteEsc = $esc($editorRoute);
+      $editedLine = 'Edited by <a href="'.$editorRouteEsc.'" rel="editor">'.$eName.'</a>'
+                  . ' · Updated '.$esc($modifiedLong);
+    } else {
+      $editedLine = 'Updated '.$esc($modifiedLong);
+    }
+  }
+
+  // Base URLs
+  $siteBase = rtrim(JUri::root(), '/');
+
+  // Absolute author URL
+  $authorAbs = $siteBase . $authorRoute;
+  $authorAbs = preg_replace('#(?<!:)//+#', '/', $authorAbs);
+  $personId  = $authorAbs . '#person';
+
+  // Page URL
+  $uri = JUri::getInstance();
+  $pageUrl = $uri->toString(array('scheme','host','path'));
+  if ($pageUrl === '') $pageUrl = $siteBase;
+
+  $orgId     = $siteBase . '#org';
+  $webPageId = $pageUrl . '#webpage';
+  $articleId = $pageUrl . '#article';
+
+  $person = array(
+    '@type'    => 'Person',
+    '@id'      => $personId,
+    'name'     => $a['name'],
+    'url'      => $authorAbs,
+    'jobTitle' => $a['role'],
+    'description' => $bioText,
+    'worksFor' => array(
+      '@type' => 'Organization',
+      'name'  => 'FreeExtraChips',
+      'url'   => $siteBase
+    )
+  );
+
+  if ($avatar !== '') {
+    $img = $avatar;
+    if (strpos($img, 'http') !== 0) {
+      $img = $siteBase . $img;
+      $img = preg_replace('#(?<!:)//+#', '/', $img);
+    }
+    $person['image'] = $img;
+  }
+
+  $pageTitle = JFactory::getDocument()->getTitle();
+
+  $article = array(
+    '@type'   => 'Article',
+    '@id'     => $articleId,
+    'mainEntityOfPage' => array('@id' => $webPageId),
+    'headline' => $pageTitle,
+    'author'   => array('@id' => $personId),
+    'publisher'=> array('@id' => $orgId),
+  );
+
+  // For now: use added as datePublished
+  if ($publishedIso !== '') {
+    $article['datePublished'] = $publishedIso;
+  }
+  if ($showModified && $modifiedIso !== '') {
+    $article['dateModified'] = $modifiedIso;
+  }
+
+  $jsonLdGraph = array(
+    '@context' => 'https://schema.org',
+    '@graph' => array(
+      array(
+        '@type' => 'Organization',
+        '@id'   => $orgId,
+        'name'  => 'FreeExtraChips',
+        'url'   => $siteBase
+      ),
+      $person,
+      array(
+        '@type' => 'WebPage',
+        '@id'   => $webPageId,
+        'url'   => $pageUrl,
+        'name'  => $pageTitle,
+        'publisher' => array('@id' => $orgId),
+        'author'    => array('@id' => $personId),
+        'mainEntity'=> array('@id' => $articleId)
+      ),
+      $article
+    )
+  );
+
+  // If the editor is a different person, append a second Person to the @graph
+  // and reference it on the Article as `editor` (E-E-A-T-friendly).
+  if ($showModified && $editor && !$sameEditor) {
+    $editorAbs      = $siteBase . JRoute::_('index.php?option=com_authors&view=author&slug=' . urlencode($editor['slug']));
+    $editorAbs      = preg_replace('#(?<!:)//+#', '/', $editorAbs);
+    $editorPersonId = $editorAbs . '#person';
+
+    $editorPerson = array(
+      '@type'    => 'Person',
+      '@id'      => $editorPersonId,
+      'name'     => $editor['name'],
+      'url'      => $editorAbs,
+      'jobTitle' => $editor['role'],
+      'worksFor' => array(
+        '@type' => 'Organization',
+        'name'  => 'FreeExtraChips',
+        'url'   => $siteBase
+      )
+    );
+    if (!empty($editor['avatar_url'])) {
+      $eImg = $editor['avatar_url'];
+      if (strpos($eImg, 'http') !== 0) {
+        $eImg = $siteBase . $eImg;
+        $eImg = preg_replace('#(?<!:)//+#', '/', $eImg);
+      }
+      $editorPerson['image'] = $eImg;
+    }
+
+    // Push to @graph and bind to Article.editor.
+    $jsonLdGraph['@graph'][] = $editorPerson;
+    // Re-place the article in graph with editor binding (last element is the Article).
+    $lastIdx = count($jsonLdGraph['@graph']) - 2; // Article is the element before the pushed editor
+    if (isset($jsonLdGraph['@graph'][$lastIdx]) && is_array($jsonLdGraph['@graph'][$lastIdx])
+        && isset($jsonLdGraph['@graph'][$lastIdx]['@type'])
+        && $jsonLdGraph['@graph'][$lastIdx]['@type'] === 'Article') {
+      $jsonLdGraph['@graph'][$lastIdx]['editor'] = array('@id' => $editorPersonId);
+    }
+  }
+
+  $jsonLdStr = json_encode($jsonLdGraph, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+  return '
+  <div class="wrap">
+  <aside class="bd-author" aria-label="Author information">
+    <div class="avatar">'.$photoHtml.'</div>
+    <div>
+      <div class="who">Written by</div>
+      <div class="name"><a href="'.$authorUrlEsc.'" rel="author">'.$name.'</a></div>
+      <div class="role">'.$role.'</div>
+      <div class="meta">'.$verifiedLine.'</div>'
+      .($editedLine !== '' ? '
+      <div class="meta meta--edited">'.$editedLine.'</div>' : '').'
+      <div class="bio">'.$bio.'</div>
+    </div>
+  </aside>
+  </div>
+  <script type="application/ld+json">'.$jsonLdStr.'</script>';
+}
+
+// --- fec_list_context_from_request  (source lines 4599-4638; slices: bonuses)
+  function fec_list_context_from_request() {
+    $app = JFactory::getApplication();
+    $input = $app->input;
+
+    $view = strtolower((string)$input->getCmd('view', ''));
+    // Solo liste (evita details/altro)
+    if ($view !== 'show') {
+      return array('title' => '', 'type' => '', 'subtype' => '');
+    }
+
+    $type    = strtolower(trim((string)$input->getCmd('type', '')));
+    $subtype = strtolower(trim((string)$input->getCmd('subtype', '')));
+
+    // Mappa combinazioni (type+subtype)
+    $combo = array(
+      'fs:nd' => 'Free Spins No Deposit',
+      'fs:dr' => 'Free Spins Deposit Required'
+      // aggiungi qui altre combo se servono
+    );
+
+    // Mappa type “singolo”
+    $typeMap = array(
+      'nd'     => 'No Deposit Bonus Codes',
+      'fs'     => 'Free Spins Bonuses',
+      'su'     => 'First Deposit Match Bonuses',
+      'crypto' => 'Crypto Bonuses',
+      'hr' => 'High Roller Bonuses'
+    );
+
+    $key = ($type !== '' && $subtype !== '') ? ($type . ':' . $subtype) : '';
+    if ($key && isset($combo[$key])) {
+      return array('title' => $combo[$key], 'type' => $type, 'subtype' => $subtype);
+    }
+
+    if ($type !== '' && isset($typeMap[$type])) {
+      return array('title' => $typeMap[$type], 'type' => $type, 'subtype' => $subtype);
+    }
+
+    return array('title' => 'Bonuses', 'type' => $type, 'subtype' => $subtype);
+  }
+
+// --- fec_render_list_itemlist_jsonld  (source lines 4642-4737; slices: bonuses)
+  function fec_render_list_itemlist_jsonld($detailUrls, $opts = array()) {
+    $detailUrls = array_values(array_filter((array)$detailUrls, function($u){
+      $u = trim((string)$u);
+      return $u !== '';
+    }));
+
+    // De-dup (important with load more / duplicates)
+    $detailUrls = array_values(array_unique($detailUrls));
+
+    if (count($detailUrls) === 0) return '';
+
+    $app = JFactory::getApplication();
+    $input = $app->input;
+
+    // Page (pagination)
+    $page = (int)$input->getInt('page', 1);
+    if ($page < 1) $page = 1;
+
+    // Per-page: pass your real limit here; fallback to count() if missing
+    $perPage = isset($opts['per_page']) ? (int)$opts['per_page'] : 0;
+    if ($perPage <= 0) $perPage = count($detailUrls);
+
+    // Offset resolution: explicit opts['offset'] wins; else the ?start=N
+    // parameter used by the live V2 listing pagination; else legacy
+    // ?page=N arithmetic. Keeps ItemList positions aligned with the
+    // slice actually rendered on the page.
+    if (isset($opts['offset'])) {
+      $offset = max(0, (int)$opts['offset']);
+    } else {
+      $startParam = (int)$input->getInt('start', -1);
+      $offset = ($startParam >= 0) ? $startParam : (($page - 1) * $perPage);
+    }
+
+    // Title: prefer opts['title']
+    $doc = JFactory::getDocument();
+    $pageTitle = isset($opts['title']) && trim((string)$opts['title']) !== ''
+      ? trim((string)$opts['title'])
+      : trim((string)$doc->getTitle());
+
+// Page URL (keep querystring AND preserve trailing slash if present in canonical)
+$uri = JUri::getInstance();
+$pageUrl = $uri->toString();
+$pageUrl = preg_replace('/\s+/', '', $pageUrl);
+
+    // WebPage @id
+    $webPageId = $pageUrl . '#webpage';
+
+    // Host base for absolute URLs (avoid /v2/v2)
+    $hostBase = rtrim(JUri::getInstance()->toString(array('scheme','host','port')), '/');
+
+    $items = array();
+    $pos = 1;
+
+    foreach ($detailUrls as $u) {
+      $u = trim((string)$u);
+      if ($u === '') continue;
+
+      // protocol-relative
+      if (strpos($u, '//') === 0) $u = 'https:' . $u;
+
+      // relative -> absolute (using host only)
+      if (!preg_match('#^https?://#i', $u)) {
+        if (substr($u, 0, 1) !== '/') $u = '/'.$u;
+        $u = $hostBase . $u;
+      }
+
+      $u = preg_replace('/\s+/', '', $u);
+
+      $items[] = array(
+        '@type' => 'ListItem',
+        // IMPORTANT: offset positions for pagination
+        'position' => $offset + $pos,
+        'url' => $u
+      );
+      $pos++;
+    }
+
+    $data = array(
+      '@context' => 'https://schema.org',
+      '@type' => 'WebPage',
+      '@id'   => $webPageId,
+      'url'   => $pageUrl,
+      'name'  => $pageTitle,
+      'mainEntity' => array(
+        '@type' => 'ItemList',
+        'itemListOrder' => 'https://schema.org/ItemListOrderDescending',
+        'numberOfItems' => count($items),
+        'itemListElement' => $items
+      )
+    );
+
+    $json = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    if (!$json) return '';
+
+    return '<script type="application/ld+json">'.$json.'</script>';
+  }
+
+// --- fec_render_hub_code_copy_assets  (source lines 4746-4763; slices: bonuses)
+  /**
+   * FEC V2.1 — Bonuses Hub click-to-copy: the toast node + a delegated
+   * .bt-code click handler (same mechanism as the homepage Big Board).
+   * Emitted once per hub page by fec_render_hub_bonus_card().
+   */
+  function fec_render_hub_code_copy_assets() {
+    return '<div class="copy-toast" id="fecHubToast">Copied</div>'
+      . '<script>(function(){'
+      . 'if(window.__FEC_HUB_COPY)return;window.__FEC_HUB_COPY=true;'
+      . 'var toast=document.getElementById("fecHubToast"),t;'
+      . 'document.addEventListener("click",function(e){'
+        . 'var btn=e.target.closest&&e.target.closest(".bt-code");if(!btn)return;'
+        . 'var code=btn.getAttribute("data-code")||"";'
+        . 'var done=function(){if(!toast)return;'
+          . 'toast.textContent="Copied "+code;'
+          . 'toast.classList.add("show");'
+          . 'clearTimeout(t);t=setTimeout(function(){toast.classList.remove("show");},1600);};'
+        . 'if(navigator.clipboard&&navigator.clipboard.writeText){'
+          . 'navigator.clipboard.writeText(code).then(done,done);'
+        . '}else{done();}'
+      . '});'
+      . '})();</script>';
+  }
+
+// --- fec_voter_voted_bids  (source lines 4778-4799; slices: bonuses)
+  /**
+   * FEC V2.1 — the set of bonus IDs the current voter has ALREADY voted on,
+   * returned as an { (int)bid => true } map. Identity is identical to
+   * fec_has_voted(): the fec_voter cookie hashed to voter_key. This is the
+   * AUTHORITATIVE already-voted signal for the hub cards — a vote cast in the
+   * past lives only in #__bonus_feedback, so a client-side (localStorage)
+   * ledger can never see it. Cost is ONE indexed query per request, memoized
+   * via a static, so it is the same whether the page renders 1 card or 100. A
+   * single voter has only a handful of rows, so the result set is tiny. Soft-
+   * fails to an empty set: a DB hiccup must never block the report UI.
+   */
+  function fec_voter_voted_bids() {
+    static $cache = null;
+    if ($cache !== null) return $cache;
+    $cache = array();
+    if (empty($_COOKIE['fec_voter'])) return $cache;
+    $voter_key = hash('sha256', $_COOKIE['fec_voter']);
+    try {
+      $db = JFactory::getDbo();
+      $q  = $db->getQuery(true)
+        ->select($db->quoteName('bid'))
+        ->from($db->quoteName('#__bonus_feedback'))
+        ->where($db->quoteName('voter_key') . ' = ' . $db->quote($voter_key));
+      $db->setQuery($q);
+      $rows = $db->loadColumn();
+      if (is_array($rows)) {
+        foreach ($rows as $b) { $cache[(int)$b] = true; }
+      }
+    } catch (Exception $e) {
+      // soft-fail: leave $cache empty
+    }
+    return $cache;
+  }
+
+// --- fec_render_hub_ask_assets  (source lines 4813-4840; slices: bonuses)
+  /**
+   * FEC V2.1 — Bonuses Hub card micro-report (FXCheck): a delegated click/submit
+   * handler plus the bonus_feedback.php endpoint constant. Emitted ONCE per hub
+   * page by fec_render_hub_bonus_card() (same once-guard mechanism as the
+   * click-to-copy assets). This is a SECOND CLIENT of the details vote
+   * write-path, never a new one: the server still enforces the username gate
+   * (bad_username), per-bonus dedup via the fec_voter cookie (duplicate:true),
+   * and network rate limiting (rate_limited). The thumbs degrade to the Phase-1
+   * #fxvote anchors when JS is off.
+   */
+  function fec_render_hub_ask_assets() {
+    $ep   = rtrim(JUri::root(), '/') . '/components/com_bonuses/ajax/bonus_feedback.php';
+    $epJs = json_encode($ep, JSON_UNESCAPED_SLASHES);
+    return '<script>(function(){'
+      . 'if(window.__FEC_HUB_ASK)return;window.__FEC_HUB_ASK=true;'
+      . 'var EP=' . $epJs . ',NRE=/^[a-zA-Z0-9_]{3,20}$/;'
+      . 'function ask(el){return el&&el.closest?el.closest(".hub-bonus-ask"):null;}'
+      . 'function q(box,s){return box.querySelector(s);}'
+      . 'function setMsg(box,t,k){var m=q(box,".hub-ask__msg");if(!m)return;m.textContent=t||"";m.className="hub-ask__msg"+(k?(" is-"+k):"");}'
+      . 'function canSubmit(box){var n=q(box,".hub-ask__name"),s=q(box,".hub-ask__submit");if(!n||!s)return;s.disabled=!(box.__vote&&NRE.test((n.value||"").trim()));}'
+      . 'function openForm(box,vote,tap){box.__vote=vote;var b=box.querySelectorAll(".hub-ask");for(var i=0;i<b.length;i++)b[i].classList.remove("is-selected");if(tap)tap.classList.add("is-selected");var f=q(box,".hub-bonus-ask__form");if(f)f.hidden=false;var n=q(box,".hub-ask__name");if(n){try{n.focus({preventScroll:true});}catch(e){n.focus();}}canSubmit(box);}'
+      . 'function counts(box,agg){if(!agg)return;var card=box.closest&&box.closest(".hub-bonus");if(!card)return;var y=card.querySelector(".hub-bonus-facts .v.fx .yes"),no=card.querySelector(".hub-bonus-facts .v.fx .no");if(y&&typeof agg.yes!=="undefined")y.textContent=agg.yes;if(no&&typeof agg.no!=="undefined")no.textContent=agg.no;}'
+      . 'function lock(box,label){box.classList.add("is-done");var f=q(box,".hub-bonus-ask__form");if(f){var els=f.querySelectorAll("input,button");for(var i=0;i<els.length;i++)els[i].disabled=true;}var qq=q(box,".hub-bonus-ask__q");if(qq)qq.textContent=label||"Thanks \u2014 counted";var t=box.querySelectorAll(".hub-ask");for(var j=0;j<t.length;j++)t[j].setAttribute("aria-disabled","true");setMsg(box,"","");}'
+      . 'function submit(box){if(box.__busy)return;var vote=box.__vote;if(!vote){setMsg(box,"Pick Worked or Didn\u2019t first.","error");return;}var n=q(box,".hub-ask__name"),c=q(box,".hub-ask__comment"),bid=box.getAttribute("data-bid");if(!n||!NRE.test((n.value||"").trim())){setMsg(box,"Name: 3\u201320 chars (letters, numbers, _).","error");return;}box.__busy=true;var s=q(box,".hub-ask__submit");if(s)s.disabled=true;setMsg(box,"Saving\u2026","info");'
+        . 'var x=new XMLHttpRequest();x.open("POST",EP,true);x.setRequestHeader("Content-Type","application/x-www-form-urlencoded; charset=UTF-8");'
+        . 'x.onreadystatechange=function(){if(x.readyState!==4)return;box.__busy=false;var r;try{r=JSON.parse(x.responseText);}catch(e){setMsg(box,"Error saving. Try again.","error");if(s)s.disabled=false;return;}'
+          . 'if(r&&r.ok){counts(box,r.agg);if(r.duplicate)lock(box,"Already counted");else if(r.comment_status==="pending")lock(box,"Thanks \u2014 comment in review");else lock(box,"Thanks \u2014 counted");return;}'
+          . 'if(r&&r.error==="rate_limited")setMsg(box,"Too many from your network. Try later.","error");'
+          . 'else if(r&&r.error==="bad_username")setMsg(box,"Name: 3\u201320 chars (letters, numbers, _).","error");'
+          . 'else setMsg(box,"Error saving. Try again.","error");if(s)s.disabled=false;};'
+        . 'x.send("bid="+encodeURIComponent(bid)+"&vote="+encodeURIComponent(vote)+"&username="+encodeURIComponent(n.value.trim())+"&comment="+encodeURIComponent(c&&c.value?c.value.trim():""));}'
+      . 'document.addEventListener("click",function(e){'
+        . 'var th=e.target.closest&&e.target.closest(".hub-ask");if(th){var box=ask(th);if(!box||box.classList.contains("is-done"))return;e.preventDefault();openForm(box,th.getAttribute("data-vote"),th);return;}'
+        . 'var sb=e.target.closest&&e.target.closest(".hub-ask__submit");if(sb){var b2=ask(sb);if(b2){e.preventDefault();submit(b2);}}'
+      . '});'
+      . 'document.addEventListener("input",function(e){var n=e.target.closest&&e.target.closest(".hub-ask__name");if(n){var b=ask(n);if(b)canSubmit(b);}});'
+      . '})();</script>';
+  }
+
+// --- fec_is_fecx_bonus  (source lines 4852-4872; slices: bonuses)
+  /**
+   * FEC V2.1 — is the current request a com_bonuses page on the .fecx
+   * editorial system? True for the Bonuses Hub (/bonuses/) plus every
+   * migrated sibling listed below. SINGLE SOURCE OF TRUTH for the migration
+   * allowlist: index.php, fec_common_bootstrap.php and the lib card / picks
+   * renderers all defer to this. To migrate a sibling page, add its URL path
+   * to the array — nothing else needs to change.
+   */
+  function fec_is_fecx_bonus() {
+    $path = trim((string)JUri::getInstance()->getPath(), '/');
+    if ($path === 'bonuses') { return true; } // the hub itself
+    // GEO market children (phase 1: AU/NZ) share the .fecx editorial system
+    // with the hub: same fec-edition.css, same V2 card dispatcher. Gate keyed
+    // on the same whitelist as the routing (fec_geo_config), so adding a
+    // market there automatically extends this gate too.
+    if (preg_match('#^bonuses/no-deposit-casinos/allowed-countries/([a-z]{2})$#', $path, $m)
+        && function_exists('fec_geo_config') && fec_geo_config($m[1])) {
+      return true;
+    }
+    return in_array($path, array(
+      'bonuses/no-deposit-casinos',
+      'bonuses/free-spins',
+      'bonuses/free-spins/no-deposit',
+      'bonuses/free-spins/deposit-required',
+      'bonuses/1st-deposit-match',
+      'bonuses/high-roller-bonuses',
+      'bonuses/crypto',
+    ), true);
+  }
+
+// --- fec_is_fecx_detail  (source lines 4883-4887; slices: bonuses)
+  /**
+   * FEC V2.1 — is the current request the com_bonuses single-bonus detail
+   * view? The bonus detail page is NOT under /bonuses/, so the path-based
+   * fec_is_fecx_bonus() allowlist cannot catch it; this view-param check is
+   * the companion gate. index.php loads fec-edition.css and adds the .fecx
+   * body class when EITHER gate returns true.
+   */
+  function fec_is_fecx_detail() {
+    $in = JFactory::getApplication()->input;
+    return ($in->getCmd('option', '') === 'com_bonuses'
+         && strtolower(trim($in->getString('view', ''))) === 'details');
+  }
+
+// --- fec_is_fecx_casino  (source lines 4900-4904; slices: bonuses)
+  /**
+   * FEC V2.1 — is the current request the com_bonuses casino bonuses view?
+   * (URL: /online-casinos/<brand-slug>). Path is not under /bonuses/ so the
+   * fec_is_fecx_bonus() allowlist cannot catch it; this view-param check is
+   * the companion gate, in the same shape as fec_is_fecx_detail(). When this
+   * returns true, index.php loads fec-edition.css and the v2 list-card
+   * dispatcher in fec_render_v2_list_card_html routes through the .hub-bonus
+   * renderer instead of the legacy .fec-card markup.
+   */
+  function fec_is_fecx_casino() {
+    $in = JFactory::getApplication()->input;
+    return ($in->getCmd('option', '') === 'com_bonuses'
+         && strtolower(trim($in->getString('view', ''))) === 'casino');
+  }
+
+// --- fec_is_fecx_casino_review  (source lines 4975-4981; slices: bonuses)
+  /**
+   * FEC V2.1 — gate for the Casino Review page (/online-casinos/<slug>), which
+   * is rendered by com_content view=article with catid=8. Single-article path
+   * uses the lib's casino review helpers (fec_render_casino_hero_a, etc.) plus
+   * the v2 bonus card markup via fec_render_casino_bonus_strip → 
+   * fec_render_more_bonuses_from_casino → fec_render_v2_list_card_html.
+   * When this returns true the card dispatcher routes through
+   * fec_render_hub_bonus_card same as for the bonus hub/detail/casino views.
+   *
+   * Test-mode override: if $GLOBALS['_fec_force_fecx_casino_review'] is truthy
+   * the gate returns true regardless of the request. fec_render_casino_bonus_strip
+   * sets that flag for the duration of its call so the standalone template-test
+   * preview (which doesn't pass through Joomla's normal article routing) gets
+   * the same card markup as production.
+   */
+  function fec_is_fecx_casino_review() {
+    if (!empty($GLOBALS['_fec_force_fecx_casino_review'])) return true;
+    $in = JFactory::getApplication()->input;
+    return ($in->getCmd('option', '') === 'com_content'
+         && strtolower(trim($in->getString('view', ''))) === 'article'
+         && (int) $in->getInt('catid', 0) === 8);
   }
 
 // --- fec_initials_from_name  (source lines 4999-5018; slices: authors)
@@ -475,12 +4471,1423 @@ function fec_bonus_full_title($set, $countrycode, $currencyMap, $bonustypeMap) {
     return isset($map[$type]) ? $map[$type] : 220;
   }
 
-// --- fec_breadcrumb_capitalize_after_digit  (source lines 6492-6494; slices: authors)
+// --- fec_part_of_html  (source lines 5053-5060; slices: bonuses)
+  /**
+   * lib v84 (2026-10-20): "Part of <main offer>" for an extra row - the
+   * free spins linked to a match, a rakeback's spins - when the listing
+   * query carried its main bonus (main_* columns, fec_build_query). Returns
+   * '' for a standalone bonus or when the main is not active. The label is
+   * the main's own title ("300% up to $3,000 1st Deposit Match", "30% 7-Day
+   * Rakeback Bonus"), the link its details page. Maps from $GLOBALS (the
+   * bootstrap loads them before the lib) or from their files.
+   */
+  function fec_part_of_html($set, $currencyMap = null, $bonustypeMap = null) {
+    $po = fec_part_of_parts($set, $currencyMap, $bonustypeMap);
+    if ($po === null) return '';
+    $esc = function ($x) { return htmlspecialchars((string)$x, ENT_QUOTES, 'UTF-8'); };
+    return '<div class="hub-bonus-sub hub-bonus-partof">Part of '
+      . ($po['url'] !== '' ? '<a href="' . $esc($po['url']) . '">' . $esc($po['label']) . '</a>' : $esc($po['label']))
+      . '</div>';
+  }
+
+// --- fec_part_of_parts  (source lines 5070-5107; slices: bonuses)
+  /**
+   * lib v90 (2026-10-21): label and URL of the main offer an extra row
+   * belongs to - array('label' => "300% up to $3,000 1st Deposit Match",
+   * 'url' => details page) or null. Shared by the card line
+   * (fec_part_of_html) and the detail hero ("Part of ..." meta item).
+   */
+  function fec_part_of_parts($set, $currencyMap = null, $bonustypeMap = null) {
+    $mainBid = isset($set['main_bid']) ? (int)$set['main_bid'] : 0;
+    $cid     = isset($set['cid']) ? (int)$set['cid'] : 0;
+    if ($mainBid <= 0 || $cid <= 0) return null;
+    if (!is_array($currencyMap))  $currencyMap  = (isset($GLOBALS['currency'])  && is_array($GLOBALS['currency']))  ? $GLOBALS['currency']  : array();
+    if (!is_array($bonustypeMap)) $bonustypeMap = (isset($GLOBALS['bonustype']) && is_array($GLOBALS['bonustype'])) ? $GLOBALS['bonustype'] : array();
+    if ((!$currencyMap || !$bonustypeMap) && defined('JPATH_SITE')) {
+      $hd = JPATH_SITE . '/components/com_bonuses/helpers/';
+      if (!$currencyMap && is_readable($hd . 'currenciesarray.php')) {
+        $currency = array(); include $hd . 'currenciesarray.php';
+        if (isset($currency) && is_array($currency)) $currencyMap = $currency;
+      }
+      if (!$bonustypeMap && is_readable($hd . 'bonustypesarray.php')) {
+        $bonustype = array(); include $hd . 'bonustypesarray.php';
+        if (isset($bonustype) && is_array($bonustype)) $bonustypeMap = $bonustype;
+      }
+    }
+    $main = array(
+      'type'        => isset($set['main_type']) ? (string)$set['main_type'] : '',
+      'bonus'       => isset($set['main_bonus']) ? (string)$set['main_bonus'] : '',
+      'max_bonus'   => isset($set['main_max_bonus']) ? (string)$set['main_max_bonus'] : '',
+      'currency'    => isset($set['main_currency']) ? (string)$set['main_currency'] : '',
+      'game'        => isset($set['main_game']) ? (string)$set['main_game'] : '',
+      'fp_time'     => isset($set['main_fp_time']) ? (string)$set['main_fp_time'] : '',
+      'fp_time_den' => isset($set['main_fp_time_den']) ? (string)$set['main_fp_time_den'] : '',
+    );
+    if ($main['type'] === '') return null;
+    $bits = array();
+    if (trim($main['bonus']) !== '' && function_exists('fec_amount_primary')) $bits[] = fec_amount_primary($main, $currencyMap);
+    if (function_exists('fec_amount_upto')) { $u = fec_amount_upto($main, $currencyMap); if ($u !== '') $bits[] = $u; }
+    if (function_exists('fec_typetxt_card')) $bits[] = fec_typetxt_card($main, '', $bonustypeMap);
+    $label = trim(html_entity_decode(implode(' ', $bits), ENT_QUOTES, 'UTF-8'));
+    if ($label === '') return null;
+    $url = class_exists('JRoute')
+      ? JRoute::_('index.php?option=com_bonuses&view=details&type=' . urlencode($main['type']) . '&bid=' . $mainBid . '&cid=' . $cid)
+      : '';
+    return array('label' => $label, 'url' => (string)$url);
+  }
+
+// --- fec_render_hub_bonus_card  (source lines 5117-5338; slices: bonuses)
+  /**
+   * FEC V2.1 — Bonuses Hub bonus card (mockup BonusCard -> .hub-bonus).
+   * Single shared renderer for the listing grid (fec_common_bootstrap.php)
+   * and the Editor's Picks band. All fields are pre-computed by the caller,
+   * so the 7 legacy com_bonuses pages keep their own .fec-card output.
+   */
+  function fec_render_hub_bonus_card($d) {
+    $set     = (isset($d['set']) && is_array($d['set'])) ? $d['set'] : array();
+    $state   = isset($d['state']) ? (string)$d['state'] : '';
+    $fxBadge = (isset($d['fxBadge']) && is_array($d['fxBadge'])) ? $d['fxBadge'] : array('key'=>'lowdata','text'=>'');
+    $curr    = isset($d['curr']) ? (string)$d['curr'] : '';
+    $perc    = isset($d['perc']) ? (string)$d['perc'] : '';
+    $upto    = isset($d['upto']) ? (string)$d['upto'] : '';
+    $code    = isset($d['code']) ? (string)$d['code'] : '';
+    $cashoutHtml   = isset($d['cashoutHtml']) ? (string)$d['cashoutHtml'] : '';
+    $exclusivePill = isset($d['exclusivePill']) ? (string)$d['exclusivePill'] : '';
+    $showFxcheck   = !empty($d['showFxcheck']);
+    $expiryLabel   = isset($d['expiryLabel']) ? (string)$d['expiryLabel'] : '';
+    $expiredLabel  = isset($d['expiredLabel']) ? (string)$d['expiredLabel'] : '';
+    $noteHtml      = isset($d['noteHtml']) ? (string)$d['noteHtml'] : '';
+    // lib v101: freshness as data (see fec_card_freshness_parts) and the
+    // same-casino grouping - moreCount on the first card of a casino on
+    // this page, moreOf (the cid) on the extras that follow it hidden.
+    $fresh     = (isset($d['fresh']) && is_array($d['fresh'])) ? $d['fresh'] : null;
+    $moreCount = isset($d['moreCount']) ? (int)$d['moreCount'] : 0;
+    $moreOf    = isset($d['moreOf']) ? (int)$d['moreOf'] : 0;
+    $fec_yes = isset($d['fec_yes']) ? (int)$d['fec_yes'] : 0;
+    $fec_no  = isset($d['fec_no'])  ? (int)$d['fec_no']  : 0;
+    $wrLabel = isset($d['wrLabel']) ? (string)$d['wrLabel'] : '';
+    $cashTxt = isset($d['cashTxt']) ? (string)$d['cashTxt'] : '';
+    $typetxt = isset($d['typetxt']) ? (string)$d['typetxt'] : '';
+    $url     = isset($d['url']) ? (string)$d['url'] : '';
+    $ctaLabel= isset($d['ctaLabel']) ? (string)$d['ctaLabel'] : '';
+    $ctaHref = isset($d['ctaHref']) ? (string)$d['ctaHref'] : '';
+
+    $brand = isset($set['brand']) ? (string)$set['brand'] : '';
+    $bonus = isset($set['bonus']) ? (string)$set['bonus'] : '';
+    $fxKey = isset($fxBadge['key'])  ? $fxBadge['key']  : 'lowdata';
+    $fxTxt = isset($fxBadge['text']) ? $fxBadge['text'] : '';
+
+    $cashClass = ($cashTxt === 'Yes') ? 'yes' : (($cashTxt === 'No') ? 'no' : '');
+
+    $hubCashoutSpan = (strpos($cashoutHtml, 'placeholder') !== false)
+      ? ''
+      : str_replace(
+          array('<div class="fec-card__cashout">', '</div>', '<strong>', '</strong>'),
+          array('<span>', '</span>', '<b>', '</b>'),
+          $cashoutHtml
+        );
+
+    $fxTagMap   = array('verified'=>'tag-ok', 'mixed'=>'tag-warn', 'lowdata'=>'tag-mute', 'issues'=>'tag-bad');
+    $fxTagClass = isset($fxTagMap[$fxKey]) ? $fxTagMap[$fxKey] : 'tag-mute';
+
+    $hubTags  = ($exclusivePill !== '') ? '<span class="tag tag-info">Exclusive</span>' : '';
+    // Casino "under review" flag — independent of bonus state, rides on every
+    // card of a flagged casino. $set carries jr_flag/jr_flagreason because the
+    // listing query selects b.* from #__jreviews_content.
+    if (isset($set['jr_flag']) && strpos((string)$set['jr_flag'], '*flagged*') !== false) {
+      $flagTip = isset($set['jr_flagreason']) ? trim((string)$set['jr_flagreason']) : '';
+      $hubTags .= '<span class="tag tag-flag"'
+        . ($flagTip !== '' ? ' title="'.htmlspecialchars($flagTip, ENT_QUOTES, 'UTF-8').'"' : '')
+        . '>&#9888; Casino under review</span>';
+    }
+    if ($state === 'ACTIVE') {
+      // Active card: FXCheck verification status + (optional) "Expires soon" pill.
+      $hubTags .= $showFxcheck ? '<span class="tag '.$fxTagClass.'">&#9679; '.htmlspecialchars($fxTxt, ENT_QUOTES, 'UTF-8').'</span>' : '';
+      $hubTags .= ($expiryLabel !== '') ? '<span class="tag tag-expires">'.htmlspecialchars($expiryLabel, ENT_QUOTES, 'UTF-8').'</span>' : '';
+    } else {
+      // Non-active card (EXPIRED / GEO_BLOCK / UNAVAILABLE): FXCheck status is
+      // irrelevant for a dead/unreachable bonus -- showing "LOW DATA" on an
+      // expired offer is noise. Replace it with a single muted pill that
+      // labels the state, matching the mockup. tag-mute = bg-2 + ink-3.
+      $stateLabel = ($state === 'EXPIRED') ? 'Expired'
+                  : (($state === 'GEO_BLOCK') ? 'Geo-blocked'
+                  : 'Unavailable');
+      $hubTags .= '<span class="tag tag-mute">&#9679; '.$stateLabel.'</span>';
+    }
+    // FXRate (lib v69): welcome-package pill, pre-rendered by the standalone
+    // helper (fec_fxrate_render.php) and handed in as 'pkgTag'. '' = no package.
+    if (!empty($d['pkgTag'])) $hubTags .= (string)$d['pkgTag'];
+
+    $hubMetaText = trim(strip_tags($noteHtml));
+    // lib v101: the meta line = note text (e.g. "Multiple negative player
+    // reports") and/or the freshness span; before, an Issues card lost its
+    // date because both wanted the same slot.
+    $hubMetaHtml = '';
+    if ($state === 'ACTIVE') {
+      $freshSpan = ($fresh && function_exists('fec_card_freshness_span')) ? fec_card_freshness_span($fresh, $hubMetaText !== '') : '';
+      if ($hubMetaText !== '' || $freshSpan !== '') {
+        $hubMetaHtml = '<div class="hub-bonus-meta">' . $hubMetaText . ($hubMetaText !== '' && $freshSpan !== '' ? ' ' : '') . $freshSpan . '</div>';
+      }
+    }
+    $hubCid = isset($set['cid']) ? (int)$set['cid'] : 0;
+    $hubMoreHtml = '';
+    if ($moreCount > 0 && $hubCid > 0) {
+      $lblMore = '+' . $moreCount . ' more ' . ($moreCount === 1 ? 'offer' : 'offers') . ' at this casino';
+      $lblLess = 'Hide the other ' . ($moreCount === 1 ? 'offer' : $moreCount . ' offers');
+      $hubMoreHtml = '<button type="button" class="hub-bonus-more" data-fec-more="' . $hubCid . '" aria-expanded="false"'
+                   . ' data-label-more="' . htmlspecialchars($lblMore, ENT_QUOTES, 'UTF-8') . '" data-label-less="' . htmlspecialchars($lblLess, ENT_QUOTES, 'UTF-8') . '"'
+                   . ' style="display:block;background:none;border:0;padding:0;margin:4px 0 0;font:inherit;font-size:.8rem;color:inherit;text-decoration:underline;cursor:pointer;opacity:.85">'
+                   . htmlspecialchars($lblMore, ENT_QUOTES, 'UTF-8') . '</button>';
+    }
+
+    $hubFacts3 = $showFxcheck
+      ? '<div><div class="v fx"><span class="yes">'.$fec_yes.'</span>/<span class="no">'.$fec_no.'</span></div><div class="k">FXCheck&trade;</div></div>'
+      : '<div><div class="v">&mdash;</div><div class="k">FXCheck&trade;</div></div>';
+
+    /* FEC V2.1 — card-level micro-report (inline AJAX vote, Phase 2).
+     * Rendered on ACTIVE cards only: an EXPIRED / GEO_BLOCK / UNAVAILABLE bonus
+     * has no "did it work right now" signal worth collecting.
+     *
+     * Two thumbs + a collapsible name/comment form, submitting straight to the
+     * SAME endpoint the details widget uses (components/com_bonuses/ajax/
+     * bonus_feedback.php), with the identical contract (bid/vote/username/
+     * comment -> {ok, agg, duplicate, comment_status, error}). The integrity
+     * model is untouched: username is still required (server rejects with
+     * bad_username), dedup is still server-side via the fec_voter cookie, and
+     * rate limiting still applies — the card is just a second client of the
+     * proven write-path, never a new one. The delegated handler + endpoint
+     * constant live in fec_render_hub_ask_assets(), emitted ONCE per page.
+     *
+     * Progressive enhancement: the thumbs remain real anchors deep-linking to
+     * the details panel via #fxvote=yes|no (the Phase-1 handoff). With JS the
+     * handler preventDefault()s and votes inline; without JS the anchor still
+     * carries the user to the details widget.
+     *
+     * Already-voted is resolved SERVER-SIDE via fec_voter_voted_bids() — one
+     * memoized, indexed query per request keyed on the fec_voter cookie, the
+     * same identity fec_has_voted() uses. This is the authoritative signal: a
+     * vote cast in the past lives only in the DB, so a client-side ledger can
+     * never know about it. When the voter has already voted this bonus, the card
+     * renders a STATIC locked row (no thumbs, no form) — no flash, no JS needed.
+     * Fresh votes still get an instant client-side lock from the AJAX handler. */
+    $askYesSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10v12"/><path d="M15 5.88 14 12h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></svg>';
+    $askNoSvg  = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"/></svg>';
+    $askChkSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+    $askBrandEsc = htmlspecialchars($brand, ENT_QUOTES, 'UTF-8');
+    $askBid      = isset($set['bid']) ? (int)$set['bid'] : 0;
+    $askVoted = false;
+    if ($state === 'ACTIVE' && $askBid > 0 && function_exists('fec_voter_voted_bids')) {
+      $votedBids = fec_voter_voted_bids();
+      $askVoted  = isset($votedBids[$askBid]);
+    }
+    if ($state !== 'ACTIVE') {
+      $hubAsk = '';
+    } elseif ($askVoted) {
+      $hubAsk = '<div class="hub-bonus-ask is-done" data-bid="'.$askBid.'" data-voted="1">'
+          .'<div class="hub-bonus-ask__row">'
+            .'<span class="hub-bonus-ask__q hub-bonus-ask__q--done">'.$askChkSvg.'You already voted</span>'
+            .'<a class="hub-ask-seereports" href="'.$url.'#reports" rel="nofollow">See reports</a>'
+          .'</div>'
+        .'</div>';
+    } else {
+      $hubAsk = '<div class="hub-bonus-ask" data-bid="'.$askBid.'" role="group" aria-label="Did this '.$askBrandEsc.' bonus work for you?">'
+          .'<div class="hub-bonus-ask__row">'
+            .'<span class="hub-bonus-ask__q">Tried it?</span>'
+            .'<span class="hub-bonus-ask__btns">'
+              .'<a class="hub-ask hub-ask--yes" href="'.$url.'#fxvote=yes" data-vote="yes" rel="nofollow" aria-label="Report that this '.$askBrandEsc.' bonus worked">'.$askYesSvg.'<span>Worked</span></a>'
+              .'<a class="hub-ask hub-ask--no" href="'.$url.'#fxvote=no" data-vote="no" rel="nofollow" aria-label="Report that this '.$askBrandEsc.' bonus did not work">'.$askNoSvg.'<span>Didn&rsquo;t</span></a>'
+            .'</span>'
+          .'</div>'
+          .'<div class="hub-bonus-ask__form" hidden>'
+            .'<input class="hub-ask__name" type="text" inputmode="text" autocomplete="nickname" maxlength="20" placeholder="Name (3&ndash;20: A&ndash;Z, 0&ndash;9, _)" aria-label="Your name">'
+            .'<input class="hub-ask__comment" type="text" maxlength="140" placeholder="What happened? (optional)" aria-label="What happened (optional)">'
+            .'<button type="button" class="hub-ask__submit" disabled>Submit</button>'
+            .'<div class="hub-ask__msg" aria-live="polite"></div>'
+          .'</div>'
+        .'</div>';
+    }
+
+    $copySvg = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+
+    // click-to-copy assets (toast + delegated handler) — emitted once per page
+    static $fecHubCopyDone = false;
+    $copyAssets = '';
+    if (!$fecHubCopyDone) { $fecHubCopyDone = true; $copyAssets = fec_render_hub_code_copy_assets(); }
+
+    // card micro-report assets (delegated vote handler) — emitted once per page,
+    // and only when an ACTIVE card actually rendered an ask widget ($hubAsk).
+    static $fecHubAskDone = false;
+    $askAssets = '';
+    if ($hubAsk !== '' && !$fecHubAskDone) { $fecHubAskDone = true; $askAssets = fec_render_hub_ask_assets(); }
+
+    // lib v101: freshness + "+N more" script, once per page
+    static $fecHubCardsDone = false;
+    $cardsAssets = '';
+    if (!$fecHubCardsDone && function_exists('fec_render_hub_cards_assets')) { $fecHubCardsDone = true; $cardsAssets = fec_render_hub_cards_assets(); }
+
+    return $askAssets.$copyAssets.$cardsAssets.'
+  <article class="hub-bonus '.($fxKey === 'verified' ? 'fx-verified ' : '').($state !== 'ACTIVE' ? 'hub-bonus--dim' : '').($moreOf > 0 ? ' hub-bonus--more' : '').'"'.($moreOf > 0 ? ' data-fec-more-of="'.$moreOf.'" style="display:none"' : '').'>
+
+    <div class="hub-bonus-head">
+      '.fec_casino_chip($brand, 36).'
+      <div>
+        <div class="hub-bonus-name">'.htmlspecialchars($brand, ENT_QUOTES, 'UTF-8').'</div>
+        <div class="hub-bonus-sub">'.htmlspecialchars($typetxt, ENT_QUOTES, 'UTF-8').'</div>'.(function_exists('fec_part_of_html') ? fec_part_of_html($set) : '').'
+      </div>
+    </div>
+
+    <div class="hub-bonus-amount">'.$curr.htmlspecialchars($bonus, ENT_QUOTES, 'UTF-8').$perc.($upto !== '' ? '<span class="unit">'.$upto.'</span>' : '').'</div>
+
+    <div class="hub-bonus-codeline">
+      '.($code !== '' ? '<span>Code: <button class="bt-code" type="button" data-code="'.htmlspecialchars($code, ENT_QUOTES, 'UTF-8').'">'.htmlspecialchars($code, ENT_QUOTES, 'UTF-8').' '.$copySvg.'</button></span>' : '<span>No code required</span>').'
+      '.$hubCashoutSpan.'
+    </div>
+
+    <div class="hub-bonus-status">'.$hubTags.'</div>
+
+    <div class="hub-bonus-facts">
+      <div><div class="v">'.htmlspecialchars($wrLabel, ENT_QUOTES, 'UTF-8').'</div><div class="k">Wager</div></div>
+      <div><div class="v '.$cashClass.'">'.htmlspecialchars($cashTxt, ENT_QUOTES, 'UTF-8').'</div><div class="k">Cashable</div></div>
+      '.$hubFacts3.'
+    </div>
+
+    '.($expiredLabel !== '' ? '<div class="hub-bonus-expired-date">'.htmlspecialchars($expiredLabel, ENT_QUOTES, 'UTF-8').'</div>' : '').'
+
+    '.$hubMetaHtml.'
+    '.$hubMoreHtml.'
+
+    '.$hubAsk.'
+
+    <div class="hub-bonus-cta">
+      <a href="'.$url.'" class="fec-btn fec-btn--ghost" aria-label="Details for '.htmlspecialchars($brand, ENT_QUOTES, 'UTF-8').' bonus">Details</a>
+      '.fec_render_cta($state, $ctaLabel, $ctaHref, '').'
+    </div>
+
+  </article>';
+  }
+
+// --- fec_render_v2_list_card_html  (source lines 5342-5563; slices: bonuses)
+  function fec_render_v2_list_card_html($set, $countrycode, $countryname, $bonustype, $currency) {
+
+    $cidRow = isset($set['cid']) ? (int)$set['cid'] : 0;
+    $bidRow = isset($set['bid']) ? (int)$set['bid'] : 0;
+    if ($bidRow <= 0) return '';
+
+    $decision = fec_decide_state($set, $countrycode);
+    $state    = $decision['state'];
+    if ($state === 'SKIP') return '';
+
+    // Play URL
+    $linkRaw = isset($set['link']) ? trim((string)$set['link']) : '';
+    if ($linkRaw === '' || $linkRaw === '0') {
+      $playUrl = fec_pick_play_url($set);
+    } else {
+      $playUrl = JRoute::_('index.php?option=com_bonuses&view=ads&cid='.$cidRow.'&bid='.$bidRow.'&tmpl=component');
+    }
+
+    $ctaLabel = 'PLAY NOW';
+    $ctaHref  = $playUrl;
+
+    // Note: $cardStateClass was set here per state (fec-card--active/unavailable
+    // /expired/geo) for the legacy renderer; it is no longer consumed by the
+    // hub-bonus renderer (state is read directly off $state) so the variable
+    // has been removed. $showFxcheck still drives the FXCheck pill below.
+    $showFxcheck    = true;
+
+    $stateNote = '';
+    if ($state === 'UNAVAILABLE') {
+      $ctaLabel = 'Unavailable';
+      $ctaHref  = '';
+      $showFxcheck = false;
+      $stateNote = (isset($set['brand']) ? (string)$set['brand'] : 'This casino') . ' is currently unavailable';
+    } elseif ($state === 'EXPIRED') {
+      $ctaLabel = 'Expired';
+      $ctaHref  = '';
+      $stateNote = 'This bonus has expired';
+    } elseif ($state === 'GEO_BLOCK') {
+      $ctaLabel = 'Not available in '.$countryname;
+      $ctaHref  = '';
+      // lib v104 (2026-10-21): a page that has already said, once, that the
+      // casino is closed to the visitor (the casino Bonuses page banner sets
+      // $GLOBALS['fec_geo_said']) does not repeat it as a note on every card;
+      // the disabled CTA still names the country on each one.
+      $stateNote = empty($GLOBALS['fec_geo_said']) ? 'Not available in your country' : '';
+    }
+
+    // Expiry pill
+    $expiryPill = '';
+    if ($state === 'ACTIVE') {
+      $expiryLabel = fec_expiry_label(isset($set['end']) ? $set['end'] : '');
+      $expiryPill  = fec_render_expiry_pill($expiryLabel, isset($set['end']) ? $set['end'] : '');
+    }
+
+    // FX counts
+    $fec_yes = isset($set['fec_yes']) ? (int)$set['fec_yes'] : 0;
+    $fec_no  = isset($set['fec_no'])  ? (int)$set['fec_no']  : 0;
+
+    $fxBadge = fec_fxcheck_classify($fec_yes, $fec_no);
+    $fxLine  = fec_fxcheck_line($fxBadge['key']);
+
+    $fec_total = $fec_yes + $fec_no;
+    $fec_tip = ($fec_total > 0)
+      ? ($fec_yes.' Yes / '.$fec_no.' No ('.$fec_total.' reports)')
+      : 'No reports yet';
+
+    // Type text
+    $typetxt = fec_typetxt($set, $countrycode, $bonustype);
+
+    // Amount pieces
+    $curr = '';
+    $perc = '';
+    $upto = '';
+
+    if ((string)$set['type'] === 'fs') {
+      $curr = '';
+      $perc = '';
+    } elseif (!isset($set['currency']) || $set['currency'] == '') {
+      $curr = '<sup class="curr">$</sup>';
+    } else {
+      $sym = isset($currency[$set['currency']]) ? $currency[$set['currency']] : '$';
+      $curr = '<sup class="curr">'.$sym.'</sup>';
+    }
+
+    if (!empty($set['max_bonus']) && (float)$set['max_bonus'] > 0) {
+      $sym2 = isset($currency[$set['currency']]) ? $currency[$set['currency']] : '$';
+      $upto = 'up to '.$sym2.htmlspecialchars($set['max_bonus'], ENT_QUOTES, 'UTF-8').'';
+    }
+
+    if ((string)$set['type'] === 'nd' || (string)$set['type'] === 'fs' || (string)$set['type'] === 'fp' || (string)$set['type'] === 'fc') {
+      $perc = '';
+      $upto = '';
+    } else {
+      $perc = '<sup class="perc">%</sup>';
+      $curr = '';
+    }
+
+    $wrLabel = fec_vm_wager_label($set, isset($set['type']) ? $set['type'] : '', isset($set['wr_meth']) ? $set['wr_meth'] : '');
+    if ($wrLabel === '') $wrLabel = 'Not stated';
+
+    $cashTxt = isset($set['cashable']) ? strtolower(trim((string)$set['cashable'])) : '';
+    $cashTxt = ($cashTxt === 'yes' || $cashTxt === 'no') ? ucfirst($cashTxt) : 'Not stated';
+
+    $url = JRoute::_('index.php?option=com_bonuses&view=details&type='.$set['type'].'&bid='.$bidRow.'&cid='.$cidRow);
+
+    $logo = isset($set['jr_logosmall']) ? (string)$set['jr_logosmall'] : '';
+
+    $exclusivePill = '';
+    if (isset($set['exclusive']) && fnmatch('yes', (string)$set['exclusive'])) {
+      $exclusivePill = '<span class="fec-pill fec-pill--excl">Exclusive</span>';
+    }
+
+    // Note: $fec_fact (built via fec_render_fxcheck_fact) was previously the
+    // legacy renderer's FXCheck fact box; the current hub-bonus card renders
+    // FXCheck inline (see $hubFacts3 in fec_render_hub_bonus_card) so this
+    // intermediate is no longer needed. The helper function remains defined
+    // for backward compatibility with external callers; see its @deprecated
+    // marker at the function declaration.
+
+$noteHtml = '';
+  if ($stateNote !== '') {
+    // State note (UNAVAILABLE / EXPIRED / GEO_BLOCK) → critical, full box
+    $noteHtml = '<div class="fec-card__note">'.htmlspecialchars($stateNote, ENT_QUOTES, 'UTF-8').'</div>';
+  } elseif ($fxBadge['key'] === 'issues') {
+    // FXCheck issues → important signal, full box
+    $noteHtml = '<div class="fec-card__note">'.htmlspecialchars((string)$fxLine, ENT_QUOTES, 'UTF-8').'</div>';
+  }
+  // lib v103: freshness travels as data (fec_card_freshness_parts) and the
+  // hub card prints it beside the note - same contract as the bootstrap
+  // cards since v101 (absolute on the server, relative in the browser).
+  $v2Fresh = function_exists('fec_card_freshness_parts')
+    ? fec_card_freshness_parts(isset($set['added']) ? $set['added'] : '', isset($set['modified']) ? $set['modified'] : '')
+    : null;
+
+
+    $code = (isset($set['code']) && trim((string)$set['code']) !== '') ? trim((string)$set['code']) : '';
+    
+  // ---- Max cashout inline row (sub-bonus) ----
+  // Display rules:
+  //   NULL/empty/non-numeric → placeholder (invisible, but reserves vertical space)
+  //   0 (or 0.00)            → "Max cashout: No cap" (explicit positive signal)
+  //   any positive amount    → "Max cashout: $X" using bonus currency
+  //
+  // The placeholder is critical for visual alignment across cards in the same row:
+  // without it, cards with cashout data would be taller than cards without it,
+  // and the sections below (meta, facts) would not align horizontally.
+  $mxRaw = '';
+  if (isset($set['max_cashout']) && trim((string)$set['max_cashout']) !== '') {
+    $mxRaw = trim((string)$set['max_cashout']);
+  }
+  if ($mxRaw !== '' && is_numeric($mxRaw)) {
+    if ((float)$mxRaw <= 0) {
+      $cashoutHtml = '<div class="fec-card__cashout">Max cashout: <strong>No cap</strong></div>';
+    } else {
+      $cashoutSym = (isset($set['currency']) && isset($currency[$set['currency']])) ? $currency[$set['currency']] : '$';
+      // kind-aware label (abs = denaro, multipli = Nx, non classificato = numero nudo)
+      $cashoutVal = function_exists('fec_vm_cashout_label')
+        ? fec_vm_cashout_label($set, $cashoutSym)
+        : $cashoutSym . $mxRaw;
+      $cashoutHtml = '<div class="fec-card__cashout">Max cashout: <strong>'.htmlspecialchars($cashoutVal, ENT_QUOTES, 'UTF-8').'</strong></div>';
+    }
+  } else {
+    // Invisible placeholder to keep card sections aligned
+    $cashoutHtml = '<div class="fec-card__cashout fec-card__cashout--placeholder" aria-hidden="true">&nbsp;</div>';
+  }
+
+    // FXRate card pill (lib v69, 2026-10-15): "Package · effective 34%" on the
+    // first-deposit card of a welcome package, "Package · deposit 2 of 4" on
+    // the later legs. The helper is standalone and guarded: absent helper or
+    // tables = no pill, nothing else changes. One small query per request.
+    $pkgTag = '';
+    if (defined('JPATH_SITE')) {
+      $fxrHelper = JPATH_SITE . '/components/com_bonuses/helpers/fec_fxrate_render.php';
+      if (is_readable($fxrHelper)) {
+        require_once $fxrHelper;
+        if (function_exists('fec_fxrate_card_tag')) {
+          try { $pkgTag = (string)fec_fxrate_card_tag($bidRow); } catch (Exception $e) { $pkgTag = ''; }
+        }
+      }
+    }
+
+    // fec_v2card_force_hub (v64): request-scoped override set by renderers
+    // that draw hub cards on pages OUTSIDE the fec_is_fecx_* path gates —
+    // today the homepage trending band (shell='band'). The whole template
+    // has been .fecx since the May 2026 migration completion, so the hub
+    // card is always visually safe; the gates stay authoritative wherever
+    // the flag is not set.
+    $fec_is_fecx = fec_is_fecx_bonus() || fec_is_fecx_detail() || fec_is_fecx_casino()
+                || (function_exists('fec_is_fecx_casino_review') && fec_is_fecx_casino_review()) // hub, detail, casino bonuses view, or casino review page
+                || !empty($GLOBALS['fec_v2card_force_hub']);
+    if ($fec_is_fecx) {
+      // For non-ACTIVE cards, format expiry as "Expired Mon YYYY" (e.g. "Expired Nov 2025").
+      // The mockup uses this absolute date as a recency breadcrumb ("scaduto il
+      // mese scorso, magari torna" vs "scaduto 2 anni fa, archive"). $set['end']
+      // is already used at L3498 for the ACTIVE-state "Ends in N days" pill.
+      $expiredLabel = '';
+      if ($state !== 'ACTIVE' && !empty($set['end'])) {
+        $ts = is_numeric($set['end']) ? (int)$set['end'] : strtotime((string)$set['end']);
+        if ($ts > 0) $expiredLabel = 'Expired ' . date('M Y', $ts);
+      }
+      return fec_render_hub_bonus_card(array(
+        'set'=>$set, 'state'=>$state, 'fxBadge'=>$fxBadge,
+        'curr'=>$curr, 'perc'=>$perc, 'upto'=>$upto, 'code'=>$code,
+        'cashoutHtml'=>$cashoutHtml, 'exclusivePill'=>$exclusivePill,
+        'showFxcheck'=>$showFxcheck, 'expiryLabel'=>($state === 'ACTIVE' ? $expiryLabel : ''),
+        'expiredLabel'=>$expiredLabel,
+        'noteHtml'=>$noteHtml, 'fec_yes'=>$fec_yes, 'fec_no'=>$fec_no,
+        'wrLabel'=>$wrLabel, 'cashTxt'=>$cashTxt, 'typetxt'=>$typetxt,
+        'logo'=>$logo, 'url'=>$url, 'ctaLabel'=>$ctaLabel, 'ctaHref'=>$ctaHref,
+        'pkgTag'=>$pkgTag, 'fresh'=>$v2Fresh
+      ));
+    }
+
+    // Defensive fallback. All com_bonuses views are fecx as of the May 2026
+    // migration completion; this branch should be unreachable. Return empty
+    // string rather than the legacy .fec-card markup (which would now have no
+    // matching stylesheet since fecv2.casino.css and fecv2.details.css were
+    // dropped from index.php in the same migration pass). If a non-fecx code
+    // path is added in the future, fix the dispatcher's fec_is_fecx_* gates
+    // rather than restoring the legacy renderer here.
+    return '';
+  }
+
+// --- fec_get_bonuses_menu_itemid  (source lines 5589-5612; slices: bonuses)
+  /**
+   * Returns the Itemid of the published /bonuses/ menu item that handles
+   * com_bonuses. Result is statically cached for the lifetime of the
+   * request so the SQL fires at most once.
+   *
+   * Why this matters: JRoute::_() in Joomla 2.5 needs an Itemid in the
+   * raw URL string to resolve to a SEF URL. Without it, the router falls
+   * back to "/component/bonuses/?..." (non-SEF). In standalone scripts
+   * (sandbox, cron, custom landing pages) the application is not fully
+   * routed so JRoute can't auto-discover the menu item; we must pass it
+   * explicitly. Same fix pattern as easyblog Itemid=416 already hardcoded
+   * elsewhere in this lib.
+   *
+   * Selection logic: pick the lowest-level, lowest-lft published menu
+   * item whose link contains option=com_bonuses (root of the bonuses
+   * menu tree). Returns 0 on any failure → caller should fall back to
+   * the raw JRoute (which will produce the non-SEF /component/bonuses/
+   * URL, same as today's broken behaviour - no regression).
+   *
+   * @param JDatabaseDriver|null $db
+   * @return int Itemid, or 0 if not found / on error
+   */
+  function fec_get_bonuses_menu_itemid($db = null) {
+    static $cached = null;
+    if ($cached !== null) return $cached;
+
+    if ($db === null) {
+      if (!class_exists('JFactory')) { $cached = 0; return 0; }
+      try { $db = JFactory::getDbo(); } catch (Exception $e) { $cached = 0; return 0; }
+    }
+
+    try {
+      $q = $db->getQuery(true)
+        ->select($db->quoteName('id'))
+        ->from($db->quoteName('#__menu'))
+        ->where($db->quoteName('link') . ' LIKE ' . $db->quote('%option=com_bonuses%'))
+        ->where($db->quoteName('published') . ' = 1')
+        ->order($db->quoteName('level') . ' ASC, ' . $db->quoteName('lft') . ' ASC');
+      $db->setQuery($q, 0, 1);
+      $cached = (int) $db->loadResult();
+    } catch (Exception $e) {
+      error_log('fec_get_bonuses_menu_itemid failed: ' . $e->getMessage());
+      $cached = 0;
+    }
+    return $cached;
+  }
+
+// --- fec_render_more_bonuses_from_casino  (source lines 5621-5736; slices: bonuses)
+  /**
+   * Render N latest bonuses from same casino (cid), reusing V2 card markup.
+   * Uses fec_build_query() so fields match list cards.
+   * NOTE: excludes expired bonuses.
+   */
+  function fec_render_more_bonuses_from_casino($db, $cid, $excludeBid, $countrycode, $countryname, $bonustype, $currency, $limit = 3) {
+    $cid       = (int) $cid;
+    $excludeBid= (int) $excludeBid;
+    $limit     = (int) $limit;
+
+    if ($cid <= 0) return '';
+    if ($limit <= 0) $limit = 3;
+    if ($limit > 6) $limit = 6;
+
+    // Build a "casino view" query: newest first, no filters
+    $filters = array(
+      'fx'        => 'any',
+      'wr_max'    => 0,
+      'cashable'  => '',
+      'cashout'   => '',
+      'code'      => '',
+      'crypto'    => '',
+      'hide_na'   => 0,
+      'exclusive' => '',
+      'sort'      => 'newest',
+      'type'      => '',
+      'subtype'   => '',
+      'view'      => 'casino',
+      'cid'       => $cid
+    );
+
+    $w = array();
+    $q = fec_build_query($db, $filters, $countrycode, $w);
+
+    // IMPORTANT: casino view includes expired by default → exclude them here
+    $q->where($db->quoteName('a.status') . " <> 'expired'");
+
+    // Fetch a bit more and then skip the current bid
+    $fetch = $limit + 5; // small buffer for excludeBid / empty cards
+    if ($fetch > 12) $fetch = 12;
+
+    $db->setQuery($q, 0, $fetch);
+    $rows = (array) $db->loadAssocList();
+
+    if ($db->getErrorNum()) {
+      error_log('fec_render_more_bonuses_from_casino query failed: ' . $db->getErrorMsg());
+      return '';
+    }
+
+    // Build cards
+    $cards = '';
+    $count = 0;
+    $casinoBrand = '';
+
+    foreach ($rows as $set) {
+      $bidRow = isset($set['bid']) ? (int) $set['bid'] : 0;
+      if ($bidRow <= 0) continue;
+      if ($excludeBid > 0 && $bidRow === $excludeBid) continue;
+
+      // extra safety (should already be filtered at SQL level)
+      $st = isset($set['status']) ? strtolower(trim((string) $set['status'])) : '';
+      if ($st === 'expired') continue;
+
+      if ($casinoBrand === '' && !empty($set['brand'])) {
+        $casinoBrand = (string) $set['brand'];
+      }
+
+      $cardHtml = fec_render_v2_list_card_html($set, $countrycode, $countryname, $bonustype, $currency);
+      if ($cardHtml === '') continue;
+
+      $cards .= $cardHtml;
+      $count++;
+
+      if ($count >= $limit) break;
+    }
+
+    if ($count <= 0) return '';
+
+    // Wrapper V2
+    $casinoNameSafe = htmlspecialchars(($casinoBrand !== '' ? $casinoBrand : 'this casino'), ENT_QUOTES, 'UTF-8');
+
+    $bonusesItemid = function_exists('fec_get_bonuses_menu_itemid')
+      ? fec_get_bonuses_menu_itemid() : 0;
+    $rawListUrl = 'index.php?option=com_bonuses&cid=' . (int) $cid . '&lang=en&view=casino';
+    if ($bonusesItemid > 0) $rawListUrl .= '&Itemid=' . $bonusesItemid;
+    $casinoListUrl = JRoute::_($rawListUrl);
+
+    $html  = '';
+    $html .= '<section class="bd-related" aria-label="Active bonuses at ' . $casinoNameSafe . '">';
+    $html .= '  <div class="wrap">';
+    $html .= '  <div class="top">';
+    $html .= '    <h2>Active bonuses</h2>';
+
+    $html .= '    <a class="alllink" href="' . htmlspecialchars($casinoListUrl, ENT_QUOTES, 'UTF-8') . '">';
+    if ($casinoBrand !== '') {
+      $html .= '      See all ' . $casinoNameSafe . ' bonuses';
+    } else {
+      $html .= '      See all casino bonuses';
+    }
+    $html .= '    </a>';
+
+    $html .= '  </div>';
+    $html .= '  <div class="hub-grid">';
+    $html .=        $cards;
+    $html .= '  </div>';
+
+    // Telegram alert CTA (v67): the brand-follow action lives INSIDE this
+    // section, as its footer row — anchored to the zone it belongs to
+    // instead of floating between sections in the view.
+    if (function_exists('fec_render_tg_alert_cta')) {
+      $ctaHtml = fec_render_tg_alert_cta($cid, isset($casinoBrand) ? $casinoBrand : '');
+      if ($ctaHtml !== '') {
+        $html .= '<div class="fec-tgcta-row">' . $ctaHtml . '</div>';
+      }
+    }
+
+    $html .= '  </div>';
+    $html .= '</section>';
+
+    return $html;
+  }
+
+// --- fec_similar_extract_current_features  (source lines 5754-5801; slices: bonuses)
+  /**
+   * Build a normalized "current bonus" feature set from a #__bonuses row
+   * (or from explicit overrides). Used both for the SQL similarity score
+   * and the PHP-side match label assignment.
+   */
+  function fec_similar_extract_current_features($currentSet) {
+    $type = isset($currentSet['type']) ? strtolower(trim((string)$currentSet['type'])) : '';
+
+    // Subtype only matters for fs (no-deposit vs deposit-required)
+    $subtype = '';
+    if ($type === 'fs') {
+      $minDep = '';
+      if (isset($currentSet['min_dep']) && trim((string)$currentSet['min_dep']) !== '') {
+        $minDep = trim((string)$currentSet['min_dep']);
+      } elseif (isset($currentSet['min_deposit']) && trim((string)$currentSet['min_deposit']) !== '') {
+        $minDep = trim((string)$currentSet['min_deposit']);
+      }
+      $minDepNum = ($minDep === '' || !is_numeric($minDep)) ? 0 : (float)$minDep;
+      $subtype = ($minDepNum > 0) ? 'dr' : 'nd';
+    }
+
+    $wrRaw = isset($currentSet['wr']) ? trim((string)$currentSet['wr']) : '';
+    $wr = ($wrRaw === '' || !is_numeric($wrRaw)) ? null : (int)$wrRaw;
+
+    $mxRaw = isset($currentSet['max_cashout']) ? trim((string)$currentSet['max_cashout']) : '';
+    $maxCashout = ($mxRaw === '' || !is_numeric($mxRaw)) ? null : (float)$mxRaw;
+
+    $cashable = isset($currentSet['cashable']) ? strtolower(trim((string)$currentSet['cashable'])) : '';
+
+    $countryOk = isset($currentSet['country_ok']) ? (string)$currentSet['country_ok'] : '';
+    $countryNo = isset($currentSet['country_no']) ? (string)$currentSet['country_no'] : '';
+
+    $yes = isset($currentSet['fec_yes']) ? (int)$currentSet['fec_yes'] : 0;
+    $no  = isset($currentSet['fec_no'])  ? (int)$currentSet['fec_no']  : 0;
+    $tot = $yes + $no;
+    $yesRate = ($tot > 0) ? ($yes / $tot) : 0;
+
+    return array(
+      'cid'         => isset($currentSet['cid']) ? (int)$currentSet['cid'] : 0,
+      'bid'         => isset($currentSet['bid']) ? (int)$currentSet['bid'] : 0,
+      'type'        => $type,
+      'subtype'     => $subtype,
+      'wr'          => $wr,
+      'max_cashout' => $maxCashout,
+      'cashable'    => $cashable,
+      'country_ok'  => $countryOk,
+      'country_no'  => $countryNo,
+      'yes'         => $yes,
+      'no'          => $no,
+      'yes_rate'    => $yesRate,
+      'fx_total'    => $tot,
+    );
+  }
+
+// --- fec_similar_country_codes_from_starlist  (source lines 5809-5821; slices: bonuses)
+  /**
+   * Extract country codes from a starlist like *US**CA**IT*
+   * Returns array of uppercase 2-letter codes. Handles empty input.
+   */
+  function fec_similar_country_codes_from_starlist($s) {
+    $s = trim((string)$s);
+    if ($s === '') return array();
+    $s = trim($s, '*');
+    if ($s === '') return array();
+    $parts = explode('*', $s);
+    $out = array();
+    foreach ((array)$parts as $p) {
+      $cc = strtoupper(preg_replace('/[^A-Z]/i', '', (string)$p));
+      if (preg_match('/^[A-Z]{2}$/', $cc)) $out[$cc] = 1;
+    }
+    return array_keys($out);
+  }
+
+// --- fec_similar_country_overlap_score  (source lines 5835-5857; slices: bonuses)
+  /**
+   * 0..1 score for country overlap.
+   * - 1.0: identical eligibility profile
+   * - 0.5: at least one country in common
+   * - 0.0: zero overlap
+   * - 0.7: both globally open (empty country_ok with restrictive country_no)
+   *
+   * Note: empty country_ok = "open to all except country_no", so we treat
+   * (empty,empty) as fully overlapping.
+   */
+  function fec_similar_country_overlap_score($currentOk, $currentNo, $candOk, $candNo) {
+    $a = fec_similar_country_codes_from_starlist($currentOk);
+    $b = fec_similar_country_codes_from_starlist($candOk);
+
+    // both globally open via OK
+    if (empty($a) && empty($b)) {
+      // both rely on country_no only — high overlap unless one explicitly bans many
+      $aNo = fec_similar_country_codes_from_starlist($currentNo);
+      $bNo = fec_similar_country_codes_from_starlist($candNo);
+      if (empty($aNo) && empty($bNo)) return 1.0;
+      // some asymmetric blocking — still mostly compatible
+      return 0.7;
+    }
+
+    // one open, one restricted — partial
+    if (empty($a) || empty($b)) return 0.5;
+
+    $inter = array_intersect($a, $b);
+    if (count($inter) === 0) return 0.0;
+
+    $union = array_unique(array_merge($a, $b));
+    return (float)count($inter) / max(1, (float)count($union));
+  }
+
+// --- fec_similar_assign_match_label  (source lines 5867-5930; slices: bonuses)
+  /**
+   * Decide the descriptive label for a candidate card given the current bonus.
+   * Priority order is intentional: the FIRST condition that matches wins.
+   * The first slot also gets "Closest match" override if it's the top-ranked
+   * candidate AND closely mirrors the current set across all dimensions.
+   */
+  function fec_similar_assign_match_label($cur, $cand, $isFirst = false) {
+    $curWr   = isset($cur['wr']) ? $cur['wr'] : null;
+    $candWr  = isset($cand['wr']) ? (is_numeric($cand['wr']) ? (int)$cand['wr'] : null) : null;
+
+    $curMx   = isset($cur['max_cashout']) ? $cur['max_cashout'] : null;
+    $candMx  = isset($cand['max_cashout']) ? (is_numeric($cand['max_cashout']) ? (float)$cand['max_cashout'] : null) : null;
+
+    $curCash  = isset($cur['cashable']) ? $cur['cashable'] : '';
+    $candCash = isset($cand['cashable']) ? strtolower(trim((string)$cand['cashable'])) : '';
+
+    $curYesRate = isset($cur['yes_rate']) ? (float)$cur['yes_rate'] : 0.0;
+    $candYes    = isset($cand['fec_yes']) ? (int)$cand['fec_yes'] : 0;
+    $candNo     = isset($cand['fec_no']) ? (int)$cand['fec_no'] : 0;
+    $candTot    = $candYes + $candNo;
+    $candYesRate = ($candTot > 0) ? ((float)$candYes / (float)$candTot) : 0.0;
+
+    // --- "Closest match" — only valid for the FIRST card, and only if it really is close ---
+    if ($isFirst) {
+      $wrClose = false;
+      if ($curWr !== null && $candWr !== null) {
+        $wrClose = (abs($candWr - $curWr) <= 5);
+      } elseif ($curWr === null && $candWr === null) {
+        $wrClose = true;
+      }
+
+      $mxClose = false;
+      if ($curMx !== null && $candMx !== null && $curMx > 0) {
+        $mxClose = (abs($candMx - $curMx) <= ($curMx * 0.25));
+      } elseif ($curMx === null && $candMx === null) {
+        $mxClose = true;
+      } elseif (($curMx === null || $curMx <= 0) && ($candMx === null || $candMx <= 0)) {
+        $mxClose = true;
+      }
+
+      $cashMatch = ($curCash === $candCash);
+
+      if ($wrClose && $mxClose && $cashMatch) {
+        return 'Closest match';
+      }
+    }
+
+    // --- Lower wager — meaningful only when both have wr ---
+    if ($curWr !== null && $candWr !== null && $candWr < $curWr && ($curWr - $candWr) >= 5) {
+      return 'Lower wager';
+    }
+
+    // --- Higher cap — at least 50% bigger and current must have a real cap ---
+    if ($curMx !== null && $candMx !== null && $curMx > 0 && $candMx >= ($curMx * 1.5)) {
+      return 'Higher cap';
+    }
+
+    // --- Cashable upgrade ---
+    if ($curCash !== 'yes' && $candCash === 'yes') {
+      return 'Cashable';
+    }
+
+    // --- Higher Yes-rate (need enough volume to be meaningful) ---
+    if ($candTot >= 5 && $candYesRate > $curYesRate && ($candYesRate - $curYesRate) >= 0.10) {
+      return 'Higher Yes-rate';
+    }
+
+    // --- Fallback ---
+    return 'Alternative pick';
+  }
+
+// --- fec_render_similar_offers  (source lines 5946-6242; slices: bonuses)
+  /**
+   * Render top N cross-casino similar offers, scored by weighted similarity.
+   *
+   * @param JDatabaseDriver $db
+   * @param array $currentSet  Current bonus row (must contain at least: bid, cid, type, wr, max_cashout, cashable, country_ok, country_no, min_dep, fec_yes, fec_no)
+   * @param string $countrycode
+   * @param string $countryname
+   * @param array $bonustype
+   * @param array $currency
+   * @param int $limit
+   * @return string HTML
+   */
+  function fec_render_similar_offers($db, $currentSet, $countrycode, $countryname, $bonustype, $currency, $limit = 3) {
+    if (!is_array($currentSet) || empty($currentSet)) return '';
+
+    $cur = fec_similar_extract_current_features($currentSet);
+
+    $excludeCid = (int)$cur['cid'];
+    $excludeBid = (int)$cur['bid'];
+    if ($excludeBid <= 0) return '';
+
+    $type = $cur['type'];
+    if ($type === '') return '';
+
+    $limit = (int)$limit;
+    if ($limit <= 0) $limit = 3;
+    if ($limit > 6) $limit = 6;
+
+    /* ---------- SQL similarity score (each component clamped to 0..1) ---------- */
+
+    // Wager similarity: bell curve around current.wr, sigma=15
+    // sim = 1 - min(1, |cand.wr - cur.wr| / 30)
+    if ($cur['wr'] !== null) {
+      $wrSim = '(1 - LEAST(1.0, ABS(CAST(COALESCE(NULLIF(' . $db->quoteName('a.wr') . ',""), "999") AS DECIMAL(10,2)) - ' . (int)$cur['wr'] . ') / 30.0))';
+    } else {
+      // current has no WR — give 0.5 to all so this dimension doesn't dominate
+      $wrSim = '0.5';
+    }
+
+    // Max cashout similarity: relative distance, capped
+    if ($cur['max_cashout'] !== null && $cur['max_cashout'] > 0) {
+      $curMx = (float)$cur['max_cashout'];
+      $candMxExpr = 'CAST(COALESCE(NULLIF(' . $db->quoteName('a.max_cashout') . ',""), "0") AS DECIMAL(12,2))';
+      // sim = 1 - min(1, |cand - cur| / cur)  → linear decay, hits 0 at 2x or 0
+      $cashoutSim = '(1 - LEAST(1.0, ABS(' . $candMxExpr . ' - ' . $curMx . ') / ' . $curMx . '))';
+    } else {
+      // current has no cap — favor candidates that also have no cap (rare but symmetric)
+      $cashoutSim = '(CASE WHEN ' . $db->quoteName('a.max_cashout') . ' IS NULL OR ' . $db->quoteName('a.max_cashout') . ' = "" OR CAST(' . $db->quoteName('a.max_cashout') . ' AS DECIMAL(12,2)) <= 0 THEN 1.0 ELSE 0.5 END)';
+    }
+
+    // Cashable similarity: 1 if same status, 0.5 if one says yes & other unknown, 0 otherwise
+    $curCashQ = $db->quote($cur['cashable']);
+    $cashableSim = '(CASE '
+      . 'WHEN LOWER(' . $db->quoteName('a.cashable') . ') = ' . $curCashQ . ' THEN 1.0 '
+      . 'WHEN LOWER(' . $db->quoteName('a.cashable') . ') = "" OR ' . $curCashQ . ' = "" THEN 0.5 '
+      . 'ELSE 0.0 END)';
+
+    // Country overlap: simplified SQL signal — 1.0 if user's CC works for both, 0.5 if otherwise compatible
+    // (A more accurate Jaccard is computed PHP-side after fetch for re-ranking if needed)
+    $cc = strtolower(preg_replace('/[^a-z]/i', '', (string)$countrycode));
+    if ($cc !== '' && preg_match('/^[a-z]{2}$/', $cc)) {
+      $countrySim = '(CASE '
+        . 'WHEN ' . $db->quoteName('b.jr_restrictedcountries') . ' NOT LIKE "%*' . $cc . '*%" '
+          . 'AND (' . $db->quoteName('a.country_no') . ' = "" OR ' . $db->quoteName('a.country_no') . ' NOT LIKE "%*' . $cc . '*%") '
+          . 'AND (' . $db->quoteName('a.country_ok') . ' = "" OR ' . $db->quoteName('a.country_ok') . ' LIKE "%*' . $cc . '*%") '
+        . 'THEN 1.0 ELSE 0.3 END)';
+    } else {
+      $countrySim = '0.7';
+    }
+
+    // FXCheck similarity: weight by candidate having enough data, prefer non-Issues
+    $totalExpr = '(COALESCE(agg.yes_count,0) + COALESCE(agg.no_count,0))';
+    $yesRateExpr = '(CASE WHEN ' . $totalExpr . ' > 0 THEN COALESCE(agg.yes_count,0) / ' . $totalExpr . ' ELSE 0 END)';
+    $fxSim = '(CASE '
+      . 'WHEN ' . $totalExpr . ' >= 5 AND ' . $yesRateExpr . ' >= 0.80 THEN 1.0 '   // verified
+      . 'WHEN ' . $totalExpr . ' >= 3 AND ' . $yesRateExpr . ' >= 0.50 THEN 0.7 '   // mixed-positive
+      . 'WHEN ' . $totalExpr . ' < 3 THEN 0.4 '                                      // lowdata
+      . 'ELSE 0.1 END)';                                                              // issues
+
+    // Recency: 1 if added within 30 days, decaying
+    $recencySim = '(CASE '
+      . 'WHEN ' . $db->quoteName('a.added') . ' >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1.0 '
+      . 'WHEN ' . $db->quoteName('a.added') . ' >= DATE_SUB(NOW(), INTERVAL 90 DAY) THEN 0.7 '
+      . 'WHEN ' . $db->quoteName('a.added') . ' >= DATE_SUB(NOW(), INTERVAL 180 DAY) THEN 0.4 '
+      . 'ELSE 0.2 END)';
+
+    // Weighted sum (totals 1.0)
+    $similarityScore =
+      '(' . $wrSim . ' * 0.30 '
+      . '+ ' . $cashoutSim . ' * 0.20 '
+      . '+ ' . $cashableSim . ' * 0.15 '
+      . '+ ' . $countrySim . ' * 0.15 '
+      . '+ ' . $fxSim . ' * 0.10 '
+      . '+ ' . $recencySim . ' * 0.10)';
+
+    /* ---------- Build query ---------- */
+    $query = $db->getQuery(true);
+
+    $query->select(array(
+      'a.*',
+      'b.*',
+      'COALESCE(agg.yes_count, 0) AS fec_yes',
+      'COALESCE(agg.no_count, 0)  AS fec_no',
+      'r.bid AS rel_bid',
+      'r.cid AS rel_cid',
+      'r.type AS rel_type',
+      'r.bonus AS rel_bonus',
+      'r.max_bonus AS rel_max_bonus',
+      'r.currency AS rel_currency',
+      'r.game AS rel_game',
+      'r.fp_time AS rel_fp_time',
+      'r.fp_time_den AS rel_fp_time_den',
+      $similarityScore . ' AS fec_sim_score'
+    ));
+
+    $query->from($db->quoteName('#__bonuses', 'a'));
+    $query->join('INNER', $db->quoteName('#__jreviews_content', 'b')
+      . ' ON (' . $db->quoteName('a.cid') . ' = ' . $db->quoteName('b.contentid') . ')');
+    $query->join('LEFT', $db->quoteName('#__bonus_feedback_agg', 'agg')
+      . ' ON (' . $db->quoteName('agg.bid') . ' = ' . $db->quoteName('a.bid') . ')');
+    $query->join('LEFT', $db->quoteName('#__bonuses', 'r')
+      . ' ON (' . $db->quoteName('r.related') . ' = ' . $db->quoteName('a.bid')
+      . " AND " . $db->quoteName('r.status') . " <> 'pending')");
+
+    /* ---------- HARD filters ---------- */
+    $query->where($db->quoteName('b.jr_closed')      . ' = ""');
+    $query->where($db->quoteName('b.jr_suspended')   . ' = ""');
+    $query->where($db->quoteName('b.jr_blacklisted') . ' = ""');
+    $query->where($db->quoteName('a.status')         . " = 'active'");
+    $query->where($db->quoteName('a.bonus')          . ' > 0');
+
+    // Different casino, different bonus
+    if ($excludeCid > 0) {
+      $query->where($db->quoteName('a.cid') . ' <> ' . $excludeCid);
+    }
+    $query->where($db->quoteName('a.bid') . ' <> ' . $excludeBid);
+
+    // Same type
+    $query->where($db->quoteName('a.type') . ' = ' . $db->quote($type));
+
+    // Same subtype for fs (no-deposit vs deposit-required)
+    if ($type === 'fs' && $cur['subtype'] !== '') {
+      if ($cur['subtype'] === 'nd') {
+        $query->where('(' . $db->quoteName('a.min_dep') . ' = "" OR '
+                         . $db->quoteName('a.min_dep') . ' IS NULL OR '
+                         . 'CAST(' . $db->quoteName('a.min_dep') . ' AS DECIMAL(12,2)) <= 0)');
+      } elseif ($cur['subtype'] === 'dr') {
+        $query->where('CAST(' . $db->quoteName('a.min_dep') . ' AS DECIMAL(12,2)) > 0');
+      }
+    }
+
+    // Quality floor: don't surface "Issues" candidates as similar
+    $query->where('NOT (' . $totalExpr . ' >= 3 AND COALESCE(agg.no_count,0) * 100 >= 50 * ' . $totalExpr . ')');
+
+    // lib v85 (2026-10-21): no casino under review among the alternatives.
+    // "Similar offers" is a recommendation ("Closest match", "Alternative
+    // pick"); the three slots under a CasinoMax match were all flagged
+    // casinos. Closed/suspended/blacklisted were already out; the flag was
+    // not. The current casino's own flag, if any, is its own page's business.
+    $query->where('(' . $db->quoteName('b.jr_flag') . ' IS NULL OR ' . $db->quoteName('b.jr_flag') . ' NOT LIKE ' . $db->quote('%*flagged*%') . ')');
+
+    // Score threshold to avoid weak matches
+    $query->having('fec_sim_score >= 0.50');
+
+    $query->order('fec_sim_score DESC');
+    $query->order($db->quoteName('a.added') . ' DESC');
+
+    /* ---------- Fetch ---------- */
+    // Fetch a small buffer to allow PHP-side overlap re-ranking and dedupe
+    // (lib v85: wider, the family rule below skips more candidates)
+    $fetch = $limit * 4;
+    if ($fetch > 20) $fetch = 20;
+
+    $db->setQuery($query, 0, $fetch);
+    $rows = (array)$db->loadAssocList();
+
+    if ($db->getErrorNum()) {
+      error_log('fec_render_similar_offers query failed: ' . $db->getErrorMsg());
+      return '';
+    }
+
+    if (empty($rows)) return '';
+
+    /* ---------- PHP-side: refine country overlap and dedupe by casino ---------- */
+    // We don't want 3 cards from the same alternate casino — limit to 1 per cid.
+    // lib v85: and one per operator family (fec_editor_picks_family_key: the
+    // network or the owner, normalized), the same rule as the Editor's Picks
+    // - three sister sites are one alternative, not three. The current
+    // casino's own family is not excluded: a sister with a different offer
+    // is a legitimate alternative, and the family key keeps it to one card.
+    $seenCid = array();
+    $seenFam = array();
+    $picked = array();
+
+    foreach ($rows as $row) {
+      $rowCid = isset($row['cid']) ? (int)$row['cid'] : 0;
+      $rowBid = isset($row['bid']) ? (int)$row['bid'] : 0;
+
+      if ($rowBid <= 0) continue;
+      if ($rowCid > 0 && isset($seenCid[$rowCid])) continue;
+      if (function_exists('fec_editor_picks_family_key')) {
+        $fam = fec_editor_picks_family_key($row);
+        if (isset($seenFam[$fam])) continue;
+        $seenFam[$fam] = 1;
+      }
+
+      // Compute proper Jaccard country overlap (better than SQL approximation)
+      $jaccard = fec_similar_country_overlap_score(
+        $cur['country_ok'], $cur['country_no'],
+        isset($row['country_ok']) ? (string)$row['country_ok'] : '',
+        isset($row['country_no']) ? (string)$row['country_no'] : ''
+      );
+      $row['_jaccard'] = $jaccard;
+
+      // Lightly nudge SQL score with PHP-computed Jaccard:
+      // replace the country component (15%) with the more accurate signal
+      $sqlScore = isset($row['fec_sim_score']) ? (float)$row['fec_sim_score'] : 0.0;
+      $row['_final_score'] = $sqlScore + (($jaccard - 0.5) * 0.05); // small bias toward true overlap
+
+      $picked[] = $row;
+      if ($rowCid > 0) $seenCid[$rowCid] = 1;
+    }
+
+    if (empty($picked)) return '';
+
+    // Re-sort by adjusted score
+    usort($picked, function($a, $b) {
+      $sa = isset($a['_final_score']) ? (float)$a['_final_score'] : 0.0;
+      $sb = isset($b['_final_score']) ? (float)$b['_final_score'] : 0.0;
+      if ($sa === $sb) return 0;
+      return ($sa < $sb) ? 1 : -1;
+    });
+
+    $picked = array_slice($picked, 0, $limit);
+
+    /* ---------- Render cards with match labels ---------- */
+    $cardsHtml = '';
+    $isFirst = true;
+    $usedLabels = array(); // avoid duplicate labels across the 3 cards
+
+    foreach ($picked as $row) {
+      $cardHtml = fec_render_v2_list_card_html($row, $countrycode, $countryname, $bonustype, $currency);
+      if ($cardHtml === '') continue;
+
+      // Decide match label (PHP-side, with current bonus context)
+      $label = fec_similar_assign_match_label($cur, $row, $isFirst);
+
+      // Avoid same label twice — fallback if duplicate
+      if (isset($usedLabels[$label]) && $label !== 'Closest match') {
+        $label = 'Alternative pick';
+      }
+      $usedLabels[$label] = 1;
+
+      $labelClass = 'fec-similar__tag--' . preg_replace('/[^a-z]/i', '', strtolower(str_replace(' ', '-', $label)));
+      $labelEsc = htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
+
+      $cardsHtml .= '<div class="fec-similar__card">'
+        . '<div class="fec-similar__tag ' . $labelClass . '">' . $labelEsc . '</div>'
+        . $cardHtml
+        . '</div>';
+
+      $isFirst = false;
+    }
+
+    if ($cardsHtml === '') return '';
+
+    /* ---------- Wrapper ---------- */
+    // Build "see more" URL: link to the listing for this bonus type
+    $seeAllUrl = '';
+    if ($type !== '') {
+      $params = array('option' => 'com_bonuses', 'view' => 'show', 'lang' => 'en', 'type' => $type);
+      if ($type === 'fs' && $cur['subtype'] !== '') {
+        $params['subtype'] = $cur['subtype'];
+      }
+      $seeAllUrl = JRoute::_('index.php?' . http_build_query($params, '', '&'));
+    }
+
+    $typeLabelMap = array(
+      'nd'     => 'No Deposit bonuses',
+      'fs'     => 'Free Spins bonuses',
+      'su'     => '1st Deposit Match bonuses',
+      'crypto' => 'Crypto bonuses',
+      'hr'     => 'High Roller bonuses',
+      'fp'     => 'Free Play bonuses',
+      'fc'     => 'Free Cash bonuses',
+    );
+    $typeLabel = isset($typeLabelMap[$type]) ? $typeLabelMap[$type] : 'similar bonuses';
+    if ($type === 'fs' && $cur['subtype'] === 'nd') $typeLabel = 'Free Spins No Deposit bonuses';
+    if ($type === 'fs' && $cur['subtype'] === 'dr') $typeLabel = 'Free Spins Deposit Required bonuses';
+
+    $html  = '';
+    $html .= '<section class="bd-related" aria-label="Similar offers from other casinos">';
+    $html .= '  <div class="wrap">';
+    $html .= '  <div class="top">';
+    $html .= '    <h2>Similar offers from other casinos</h2>';
+    if ($seeAllUrl !== '') {
+      $html .= '    <a class="alllink" href="' . htmlspecialchars($seeAllUrl, ENT_QUOTES, 'UTF-8') . '">';
+      $html .= '      Browse all ' . htmlspecialchars($typeLabel, ENT_QUOTES, 'UTF-8');
+      $html .= '    </a>';
+    }
+    $html .= '  </div>';
+    $html .= '  <div class="hub-grid">';
+    $html .=        $cardsHtml;
+    $html .= '  </div>';
+    $html .= '  </div>';
+    $html .= '</section>';
+
+    return $html;
+  }
+
+// --- fec_no_pattern_definitions  (source lines 6261-6296; slices: bonuses)
+  /**
+   * Pattern catalog for No-comments. Order here is presentation tiebreak
+   * (when two patterns have the same count, the earlier one wins).
+   * Add new patterns here as you learn from real data.
+   */
+  function fec_no_pattern_definitions() {
+    return array(
+      'country_block' => array(
+        'label' => 'Country block',
+        'regex' => '/\b(country|geo|region|location|blocked|restricted|not\s+available|not\s+allowed)\b/i',
+      ),
+      'code_issue' => array(
+        'label' => 'Bonus code issue',
+        'regex' => '/\b(code\s+(?:invalid|expired|wrong|not\s+working|didn[\'o]?t\s+work|doesn\'?t\s+work)|invalid\s+code|wrong\s+code|coupon\s+(?:invalid|wrong|expired))\b/i',
+      ),
+      'deposit_required' => array(
+        'label' => 'Deposit was required',
+        'regex' => '/\b(deposit\s+required|asked\s+(?:for|to)\s+deposit|need(?:ed)?\s+to\s+deposit|had\s+to\s+deposit)\b/i',
+      ),
+      'wagering' => array(
+        'label' => 'Wagering too high',
+        'regex' => '/\b(wager(?:ing)?|playthrough|rollover|too\s+high|impossible\s+to\s+clear)\b/i',
+      ),
+      'cashout_cap' => array(
+        'label' => 'Cashout cap',
+        'regex' => '/\b(max\s+cashout|max\s+win|capped|withdraw(?:al)?\s+limit|cashout\s+limit)\b/i',
+      ),
+      'verification' => array(
+        'label' => 'KYC / verification',
+        'regex' => '/\b(verif(?:y|ication|ied)|kyc|document|id\s+check)\b/i',
+      ),
+      'game_restriction' => array(
+        'label' => 'Game restriction',
+        'regex' => '/\b(game\s+(?:not|restrict|excluded)|excluded\s+game|wrong\s+game|slot\s+(?:not|excluded))\b/i',
+      ),
+      'expired' => array(
+        'label' => 'Bonus expired',
+        'regex' => '/\b(expired|no\s+longer\s+(?:available|works|valid)|offer\s+(?:ended|gone))\b/i',
+      ),
+    );
+  }
+
+// --- fec_extract_no_patterns  (source lines 6312-6373; slices: bonuses)
+  /**
+   * Fetch approved No-comments for a bid, count pattern matches.
+   *
+   * @param JDatabaseDriver $db
+   * @param int $bid
+   * @return array
+   *   [
+   *     'no_total'     => int,  // total approved No comments analyzed
+   *     'patterns'     => array of ['key', 'label', 'count'] sorted desc, count >= 2, top 3
+   *     'has_patterns' => bool,
+   *   ]
+   */
+  function fec_extract_no_patterns($db, $bid) {
+    $bid = (int)$bid;
+    $out = array('no_total' => 0, 'patterns' => array(), 'has_patterns' => false);
+    if ($bid <= 0) return $out;
+
+    $q = $db->getQuery(true)
+      ->select($db->quoteName('comment'))
+      ->from($db->quoteName('#__bonus_feedback'))
+      ->where($db->quoteName('bid') . ' = ' . $bid)
+      ->where($db->quoteName('vote') . ' = 0')
+      ->where($db->quoteName('moderation_status') . ' = ' . $db->quote('approved'))
+      ->where($db->quoteName('comment') . ' IS NOT NULL')
+      ->where('TRIM(' . $db->quoteName('comment') . ') <> ""');
+
+    $db->setQuery($q);
+    $rows = (array)$db->loadColumn();
+
+    if ($db->getErrorNum()) {
+      error_log('fec_extract_no_patterns failed: ' . $db->getErrorMsg());
+      return $out;
+    }
+
+    $out['no_total'] = count($rows);
+    if ($out['no_total'] === 0) return $out;
+
+    $defs = fec_no_pattern_definitions();
+
+    // Each comment can match multiple categories — that's intentional
+    $counts = array();
+    foreach ($defs as $key => $_) $counts[$key] = 0;
+
+    foreach ($rows as $comment) {
+      $c = (string)$comment;
+      if ($c === '') continue;
+      foreach ($defs as $key => $def) {
+        if (preg_match($def['regex'], $c)) {
+          $counts[$key]++;
+        }
+      }
+    }
+
+    // Filter threshold + sort
+    $list = array();
+    foreach ($counts as $key => $count) {
+      if ($count < 2) continue;
+      $list[] = array(
+        'key'   => $key,
+        'label' => $defs[$key]['label'],
+        'count' => $count,
+      );
+    }
+
+    usort($list, function($a, $b) {
+      if ($a['count'] === $b['count']) return 0;
+      return ($a['count'] < $b['count']) ? 1 : -1;
+    });
+
+    $out['patterns'] = array_slice($list, 0, 3);
+    $out['has_patterns'] = !empty($out['patterns']);
+
+    return $out;
+  }
+
+// --- fec_render_stats_accordion_html  (source lines 6393-6484; slices: bonuses)
+  /**
+   * Render the "Why people report issues" accordion. Returns '' if it should be hidden.
+   *
+   * Hides when:
+   * - no votes at all (no=0)
+   * - total feedback < 3 (low data)
+   * - no approved no-comments to analyze AND no clear pattern signal
+   *
+   * @param JDatabaseDriver $db
+   * @param int $bid
+   * @param int $yesCount
+   * @param int $noCount
+   * @param string $statsId DOM id prefix (e.g. "fec-stats-8903")
+   * @param string $reportsId DOM id of the reports section (for "See reports" link)
+   * @return string
+   */
+  function fec_render_stats_accordion_html($db, $bid, $yesCount, $noCount, $statsId, $reportsId = '') {
+    $bid = (int)$bid;
+    $yesCount = (int)$yesCount;
+    $noCount = (int)$noCount;
+
+    if ($bid <= 0) return '';
+
+    $total = $yesCount + $noCount;
+
+    // Hide when there's nothing worth analyzing
+    if ($noCount === 0) return '';
+    if ($total < 3) return '';
+
+    $esc = function($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); };
+
+    $extracted = fec_extract_no_patterns($db, $bid);
+    $hasPatterns = !empty($extracted['has_patterns']);
+    $analyzedCount = (int)$extracted['no_total'];
+
+    // No usable signal at all (No-votes exist but no approved comments / no patterns) → hide
+    // (Better than showing the generic placeholder we want to retire.)
+    if (!$hasPatterns && $analyzedCount === 0) return '';
+
+    /* ---------- Build inner panel ---------- */
+    $body = '';
+
+    if ($hasPatterns) {
+      $intro = ($analyzedCount === 1)
+        ? 'Most common reasons cited in 1 negative report:'
+        : 'Most common reasons cited in ' . $analyzedCount . ' negative reports:';
+
+      $body .= '<p class="bd-whystats-intro">' . $esc($intro) . '</p>';
+      $body .= '<ul class="bd-whystats-reasons">';
+      foreach ($extracted['patterns'] as $p) {
+        $body .= '<li>'
+          . '<span class="k">' . $esc($p['label']) . '</span>'
+          . '<span class="v">' . (int)$p['count'] . '</span>'
+          . '</li>';
+      }
+      $body .= '</ul>';
+
+      if ($reportsId !== '') {
+        $body .= '<p class="bd-whystats-cta">'
+          . '<a class="bd-see-reports" href="#' . $esc($reportsId) . '">Read the reports &rarr;</a>'
+          . '</p>';
+      }
+    } else {
+      // Patterns weren't strong enough but No-comments exist → soft fallback
+      $msg = ($analyzedCount === 1)
+        ? '1 player left a negative comment without a clear common pattern.'
+        : $analyzedCount . ' players left negative comments without a clear common pattern.';
+
+      $body .= '<p class="bd-whystats-intro">' . $esc($msg) . '</p>';
+
+      if ($reportsId !== '') {
+        $body .= '<p class="bd-whystats-cta">'
+          . '<a class="bd-see-reports" href="#' . $esc($reportsId) . '">Read the reports &rarr;</a>'
+          . '</p>';
+      }
+    }
+
+    /* ---------- Wrapper ---------- */
+    $statsIdEsc = $esc($statsId);
+
+    $html  = '<div class="wrap"><div class="bd-whystats" id="' . $statsIdEsc . '">';
+    $html .= '<button type="button" class="bd-whystats-toggle" aria-expanded="false" aria-controls="' . $statsIdEsc . '-panel">';
+    $html .= '<span class="bd-whystats-label">Why people report issues</span>';
+
+    // Subtle count cue on the toggle itself (signals signal density before opening)
+    if ($hasPatterns) {
+      $top = $extracted['patterns'][0];
+      $html .= '<span class="bd-whystats-hint">'
+        . $esc($top['label'])
+        . ($top['count'] >= 2 ? ' &middot; ' . (int)$top['count'] : '')
+        . '</span>';
+    }
+
+    $html .= '<span class="bd-whystats-chev" aria-hidden="true">';
+    $html .= '<svg viewBox="0 0 16 16" width="16" height="16" focusable="false" aria-hidden="true">';
+    $html .= '<path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>';
+    $html .= '</svg>';
+    $html .= '</span>';
+    $html .= '</button>';
+
+    $html .= '<div class="bd-whystats-panel" id="' . $statsIdEsc . '-panel" hidden>';
+    $html .= '<div class="bd-whystats-body">' . $body . '</div>';
+    $html .= '</div>';
+
+    $html .= '</div></div>';
+
+    return $html;
+  }
+
+// --- fec_breadcrumb_capitalize_after_digit  (source lines 6492-6494; slices: authors, bonuses)
   function fec_breadcrumb_capitalize_after_digit($m) {
     return $m[1] . strtoupper($m[2]);
   }
 
-// --- fec_breadcrumb_label_from_slug  (source lines 6498-6546; slices: authors)
+// --- fec_breadcrumb_label_from_slug  (source lines 6498-6546; slices: authors, bonuses)
   function fec_breadcrumb_label_from_slug($slug) {
     $s = trim((string)$slug);
     $s = trim($s, "/");
@@ -531,7 +5938,7 @@ function fec_bonus_full_title($set, $countrycode, $currencyMap, $bonustypeMap) {
     return $out;
   }
 
-// --- fec_breadcrumb_is_slashless  (source lines 6558-6566; slices: authors)
+// --- fec_breadcrumb_is_slashless  (source lines 6558-6566; slices: authors, bonuses)
   /**
    * Paths whose CANONICAL form has no trailing slash (the com_bonuses
    * type hubs, registered slashless in sh404SEF and linked slashless in
@@ -550,7 +5957,7 @@ function fec_bonus_full_title($set, $countrycode, $currencyMap, $bonustypeMap) {
     return in_array($relPath, $slashless, true);
   }
 
-// --- fec_build_breadcrumb_items_from_path  (source lines 6570-6654; slices: authors)
+// --- fec_build_breadcrumb_items_from_path  (source lines 6570-6654; slices: authors, bonuses)
   function fec_build_breadcrumb_items_from_path($path, $siteBase) {
     // Normalize path
     $path = '/' . ltrim((string)$path, '/');
@@ -637,7 +6044,7 @@ foreach ($cleanSegs as $i => $seg) {
     return $items;
   }
 
-// --- fec_render_breadcrumb_html  (source lines 6658-6679; slices: authors)
+// --- fec_render_breadcrumb_html  (source lines 6658-6679; slices: authors, bonuses)
   function fec_render_breadcrumb_html($items) {
     if (empty($items) || count($items) < 2) return '';
 
@@ -661,7 +6068,7 @@ foreach ($cleanSegs as $i => $seg) {
     return $out;
   }
 
-// --- fec_render_breadcrumb_jsonld  (source lines 6683-6729; slices: authors)
+// --- fec_render_breadcrumb_jsonld  (source lines 6683-6729; slices: authors, bonuses)
   function fec_render_breadcrumb_jsonld($items) {
     if (empty($items) || count($items) < 2) return '';
 
@@ -710,7 +6117,753 @@ foreach ($cleanSegs as $i => $seg) {
       . '</script>';
   }
 
-// --- fec_chip_hue  (source lines 8390-8399; slices: authors)
+// --- fec_render_editor_picks_section  (source lines 6733-6873; slices: bonuses)
+  function fec_render_editor_picks_section($rows, $countrycode, $countryname, $bonustype, $currency) {
+    if (empty($rows) || !is_array($rows)) return '';
+    $fec_is_fecx = fec_is_fecx_bonus(); // hub or migrated sibling
+
+    $cards = '';
+    $count = 0;
+
+    foreach ($rows as $set) {
+      $cardHtml = fec_render_v2_list_card_html($set, $countrycode, $countryname, $bonustype, $currency);
+      if ($cardHtml === '') continue;
+
+      // Ribbon rimosso: il contenitore + bordo già comunicano "questi sono curati"
+      $cards .= $fec_is_fecx ? $cardHtml : '<div class="fec-editor-pick">'.$cardHtml.'</div>';
+      $count++;
+    }
+
+    if ($count === 0) return '';
+
+    // lib v101: the floor the picks must clear, said where the weights are.
+    $floorNote = ((string)$bonustype === 'nd')
+      ? ' Offers that clear the Quick Verdict&rsquo;s floor (40x or lower, cashout cap of at least $100 or none) rank first; when fewer than three clear it, the best verified offers below the floor fill the band. A casino under review is never picked.'
+      : ' A casino under review is never picked.';
+
+    if ($fec_is_fecx) {
+      return '
+<div class="wrap">
+  <div class="hub-picks-band">
+    <div class="hub-picks-band-head">
+      <div class="hub-picks-band-title">
+        <span class="star" aria-hidden="true">&#9733;</span>
+        <h3>Editor&rsquo;s Picks</h3>
+        <span class="stamp">Verified by FXCheck&trade;</span>
+      </div>
+      <div class="fec-editors-picks__info">
+        <button type="button" class="fec-info-btn" aria-expanded="false" aria-controls="fec-picks-info-popover" aria-label="Why these three picks">
+          <span class="fec-info-btn__icon" aria-hidden="true">&#9432;</span>
+          <span class="fec-info-btn__label">Why these three</span>
+        </button>
+        <div class="fec-info-popover" id="fec-picks-info-popover" role="dialog" aria-label="How picks are ranked" hidden>
+          <button type="button" class="fec-info-popover__close" aria-label="Close">&times;</button>
+          <div class="fec-info-popover__arrow" aria-hidden="true"></div>
+          <h3 class="fec-info-popover__title">How these picks are ranked</h3>
+          <p class="fec-info-popover__intro">Ranked by player feedback and bonus economics.</p>
+          <ul class="fec-info-popover__list">
+            <li><span class="fec-info-popover__metric">FXCheck&trade; Yes-rate</span><span class="fec-info-popover__weight">40%</span></li>
+            <li><span class="fec-info-popover__metric">Wager multiplier</span><span class="fec-info-popover__weight">25%</span></li>
+            <li><span class="fec-info-popover__metric">Cashable</span><span class="fec-info-popover__weight">15%</span></li>
+            <li><span class="fec-info-popover__metric">Max cashout</span><span class="fec-info-popover__weight">10%</span></li>
+            <li><span class="fec-info-popover__metric">Recency</span><span class="fec-info-popover__weight">10%</span></li>
+          </ul>
+          <p class="fec-info-popover__note">Eligible: 5+ player reports, 80%+ Yes-rate. One pick per operator: sister casinos never take two slots.'.$floorNote.'</p>
+          <a class="fec-info-popover__link" href="/methodology">Read full methodology &rarr;</a>
+        </div>
+      </div>
+    </div>
+    <div class="hub-picks-grid">'.$cards.'</div>
+    <script>(function(){var btn=document.querySelector(".fec-editors-picks__info .fec-info-btn");var pop=document.getElementById("fec-picks-info-popover");if(!btn||!pop)return;var bd=null;function isMobile(){return window.matchMedia("(max-width:560px)").matches;}function close(){pop.hidden=true;btn.setAttribute("aria-expanded","false");if(bd){bd.remove();bd=null;}document.body.style.overflow="";}function open(){pop.hidden=false;btn.setAttribute("aria-expanded","true");if(isMobile()){bd=document.createElement("div");bd.className="fec-info-backdrop";bd.addEventListener("click",close);document.body.appendChild(bd);document.body.style.overflow="hidden";}}btn.addEventListener("click",function(e){e.stopPropagation();pop.hidden?open():close();});var closeBtn=pop.querySelector(".fec-info-popover__close");if(closeBtn){closeBtn.addEventListener("click",close);}document.addEventListener("click",function(e){if(pop.hidden)return;if(pop.contains(e.target)||btn.contains(e.target))return;close();});document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!pop.hidden){close();btn.focus();}});})();</script>
+  </div>
+</div>';
+    }
+
+    $popoverId = 'fec-picks-info-popover';
+
+    $html  = '';
+    $html .= '<section class="fec-editors-picks" aria-label="Editor\'s Picks — Verified by FXCheck">';
+    $html .= '  <header class="fec-editors-picks__head">';
+    $html .= '    <h2 class="fec-editors-picks__title">';
+    $html .= '      <span class="fec-editors-picks__star" aria-hidden="true">&#9733;</span> ';
+    $html .= '      Editor&rsquo;s Picks';
+    $html .= '      <span class="fec-editors-picks__sub">Verified by FXCheck&trade;</span>';
+    $html .= '    </h2>';
+
+    // Info popover (button + floating panel)
+    $html .= '    <div class="fec-editors-picks__info">';
+    $html .= '      <button type="button" class="fec-info-btn"';
+    $html .= '              aria-expanded="false" aria-controls="'.$popoverId.'"';
+    $html .= '              aria-label="Why these three picks">';
+    $html .= '        <span class="fec-info-btn__icon" aria-hidden="true">&#9432;</span>';
+    $html .= '        <span class="fec-info-btn__label">Why these three</span>';
+    $html .= '      </button>';
+
+$html .= '      <div class="fec-info-popover" id="'.$popoverId.'" role="dialog" aria-label="How picks are ranked" hidden>';
+$html .= '        <button type="button" class="fec-info-popover__close" aria-label="Close">&times;</button>';
+$html .= '        <div class="fec-info-popover__arrow" aria-hidden="true"></div>';
+$html .= '        <h3 class="fec-info-popover__title">How these picks are ranked</h3>';
+    $html .= '        <p class="fec-info-popover__intro">Ranked by player feedback and bonus economics.</p>';
+    $html .= '        <ul class="fec-info-popover__list">';
+    $html .= '          <li><span class="fec-info-popover__metric">FXCheck&trade; Yes-rate</span><span class="fec-info-popover__weight">40%</span></li>';
+    $html .= '          <li><span class="fec-info-popover__metric">Wager multiplier</span><span class="fec-info-popover__weight">25%</span></li>';
+    $html .= '          <li><span class="fec-info-popover__metric">Cashable</span><span class="fec-info-popover__weight">15%</span></li>';
+    $html .= '          <li><span class="fec-info-popover__metric">Max cashout</span><span class="fec-info-popover__weight">10%</span></li>';
+    $html .= '          <li><span class="fec-info-popover__metric">Recency</span><span class="fec-info-popover__weight">10%</span></li>';
+    $html .= '        </ul>';
+    $html .= '        <p class="fec-info-popover__note">Eligible: 5+ player reports, 80%+ Yes-rate. One pick per operator: sister casinos never take two slots.'.$floorNote.'</p>';
+    $html .= '        <a class="fec-info-popover__link" href="/methodology">Read full methodology &rarr;</a>';
+    $html .= '      </div>';
+    $html .= '    </div>';
+
+    $html .= '  </header>';
+    $html .= '  <div class="fec-editors-picks__grid">';
+    $html .= $cards;
+    $html .= '  </div>';
+
+
+// Inline JS: toggle, click-outside, Escape, mobile backdrop, close button
+$html .= '<script>(function(){';
+$html .= 'var btn=document.querySelector(".fec-editors-picks__info .fec-info-btn");';
+$html .= 'var pop=document.getElementById("'.$popoverId.'");';
+$html .= 'if(!btn||!pop)return;';
+$html .= 'var bd=null;';
+$html .= 'function isMobile(){return window.matchMedia("(max-width:560px)").matches;}';
+$html .= 'function close(){';
+$html .=   'pop.hidden=true;btn.setAttribute("aria-expanded","false");';
+$html .=   'if(bd){bd.remove();bd=null;}';
+$html .=   'document.body.style.overflow="";';
+$html .= '}';
+$html .= 'function open(){';
+$html .=   'pop.hidden=false;btn.setAttribute("aria-expanded","true");';
+$html .=   'if(isMobile()){';
+$html .=     'bd=document.createElement("div");';
+$html .=     'bd.className="fec-info-backdrop";';
+$html .=     'bd.addEventListener("click",close);';
+$html .=     'document.body.appendChild(bd);';
+$html .=     'document.body.style.overflow="hidden";';
+$html .=   '}';
+$html .= '}';
+$html .= 'btn.addEventListener("click",function(e){e.stopPropagation();pop.hidden?open():close();});';
+$html .= 'var closeBtn=pop.querySelector(".fec-info-popover__close");';
+$html .= 'if(closeBtn){closeBtn.addEventListener("click",close);}';
+$html .= 'document.addEventListener("click",function(e){';
+$html .=   'if(pop.hidden)return;';
+$html .=   'if(pop.contains(e.target)||btn.contains(e.target))return;';
+$html .=   'close();';
+$html .= '});';
+$html .= 'document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!pop.hidden){close();btn.focus();}});';
+$html .= '})();</script>';
+
+    $html .= '</section>';
+
+    return $html;
+  }
+
+// --- fec_build_editor_picks_query  (source lines 6881-6991; slices: bonuses)
+  function fec_build_editor_picks_query($db, $countrycode, $limit = 3, $filters = array()) {
+    $cc    = strtolower(preg_replace('/[^a-z]/i', '', (string)$countrycode));
+    $limit = (int)$limit; if ($limit < 1) $limit = 1; if ($limit > 6) $limit = 6;
+
+    $totalExpr  = '(COALESCE(agg.yes_count,0) + COALESCE(agg.no_count,0))';
+    $yesExpr    = 'COALESCE(agg.yes_count,0)';
+    $wrNum      = 'CAST(NULLIF('.$db->quoteName('a.wr').', "") AS DECIMAL(10,2))';
+    $cashoutNum = 'CAST(NULLIF('.$db->quoteName('a.max_cashout').', "") AS DECIMAL(12,2))';
+
+    $score = '('
+      . '(CASE WHEN '.$totalExpr.' > 0 THEN '.$yesExpr.' / '.$totalExpr.' ELSE 0 END) * 0.40'
+      . ' + GREATEST(0, LEAST(1, (60 - COALESCE('.$wrNum.', 60)) / 40)) * 0.25'
+      . ' + (CASE WHEN LOWER('.$db->quoteName('a.cashable').') = "yes" THEN 1 ELSE 0 END) * 0.15'
+      . ' + (CASE '
+          . 'WHEN '.$cashoutNum.' IS NULL OR '.$cashoutNum.' = 0 THEN 1.0 '
+          . 'WHEN '.$cashoutNum.' >= 200 THEN 0.8 '
+          . 'WHEN '.$cashoutNum.' >= 51  THEN 0.5 '
+          . 'ELSE 0.2 END) * 0.10'
+      . ' + (CASE WHEN '.$db->quoteName('a.added').' >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) * 0.10'
+    . ')';
+
+    $query = $db->getQuery(true);
+
+    $query->select(array(
+      'a.*',
+      'b.*',
+      'COALESCE(agg.yes_count, 0) AS fec_yes',
+      'COALESCE(agg.no_count, 0)  AS fec_no',
+      'r.bid AS rel_bid',
+      'r.cid AS rel_cid',
+      'r.type AS rel_type',
+      'r.bonus AS rel_bonus',
+      'r.max_bonus AS rel_max_bonus',
+      'r.currency AS rel_currency',
+      'r.game AS rel_game',
+      'r.fp_time AS rel_fp_time',
+      'r.fp_time_den AS rel_fp_time_den',
+      $score . ' AS fec_pick_score'
+    ));
+
+    $query->from($db->quoteName('#__bonuses', 'a'));
+    $query->join('INNER', $db->quoteName('#__jreviews_content', 'b')
+      . ' ON (' . $db->quoteName('a.cid') . ' = ' . $db->quoteName('b.contentid') . ')');
+    $query->join('LEFT', $db->quoteName('#__bonus_feedback_agg', 'agg')
+      . ' ON (' . $db->quoteName('agg.bid') . ' = ' . $db->quoteName('a.bid') . ')');
+    $query->join('LEFT', $db->quoteName('#__bonuses', 'r')
+      . ' ON (' . $db->quoteName('r.related') . ' = ' . $db->quoteName('a.bid')
+      . " AND "  . $db->quoteName('r.status')  . " <> 'pending')");
+
+    $query->where($db->quoteName('b.jr_closed')      . ' = ""');
+    $query->where($db->quoteName('b.jr_suspended')   . ' = ""');
+    $query->where($db->quoteName('b.jr_blacklisted') . ' = ""');
+    // lib v101 (2026-10-21): a pick is an endorsement - never a casino under
+    // review (the list keeps it, the player's call; the picks do not).
+    $query->where('(' . $db->quoteName('b.jr_flag') . ' IS NULL OR ' . $db->quoteName('b.jr_flag') . ' NOT LIKE "%*flagged*%")');
+    $query->where($db->quoteName('a.status')         . " = 'active'");
+    $query->where($db->quoteName('a.bonus')          . ' > 0');
+
+    // lib v101/v102: the page's own tests as a FLOOR TIER, not a filter. The
+    // no-deposit hub's Quick Verdict says "wagering 40x or lower, max cashout
+    // at least $100"; two of three picks had a $50 cap because cashout
+    // weighs 10% of the score. Offers that clear the floor (wager known and
+    // <= max_wr, cashout known and >= min_cashout or no cap) now rank first;
+    // the rest of the verified pool follows, so the band still fills to
+    // three when fewer clear it (v101 filtered them out and the band shrank
+    // to one card - the verified pool is small). Per-type defaults here,
+    // overridable via $filters['picks_floor'].
+    $floorDefaults = array('nd' => array('max_wr' => 40, 'min_cashout' => 100));
+    $floor = array();
+    if (!empty($filters['type']) && isset($floorDefaults[$filters['type']])) $floor = $floorDefaults[$filters['type']];
+    if (isset($filters['picks_floor']) && is_array($filters['picks_floor'])) $floor = array_merge($floor, $filters['picks_floor']);
+    $floorConds = array();
+    if (!empty($floor['max_wr'])) {
+      $floorConds[] = '(' . $wrNum . ' IS NOT NULL AND ' . $wrNum . ' > 0 AND ' . $wrNum . ' <= ' . (float)$floor['max_wr'] . ')';
+    }
+    if (!empty($floor['min_cashout'])) {
+      $floorConds[] = '(' . $cashoutNum . ' IS NOT NULL AND (' . $cashoutNum . ' = 0 OR ' . $cashoutNum . ' >= ' . (float)$floor['min_cashout'] . '))';
+    }
+    $floorOrder = !empty($floorConds) ? 'CASE WHEN ' . implode(' AND ', $floorConds) . ' THEN 0 ELSE 1 END ASC' : '';
+
+    if ($cc !== '' && preg_match('/^[a-z]{2}$/', $cc)) {
+      $query->where($db->quoteName('b.jr_restrictedcountries') . ' NOT LIKE "%*'.$cc.'*%"');
+      $query->where('(' . $db->quoteName('a.country_no') . ' = "" OR '
+                       . $db->quoteName('a.country_no') . ' NOT LIKE "%*'.$cc.'*%")');
+      $query->where('(' . $db->quoteName('a.country_ok') . ' = "" OR '
+                       . $db->quoteName('a.country_ok') . ' LIKE "%*'.$cc.'*%")');
+    }
+
+    // Verified threshold
+    $query->where($totalExpr . ' >= 5');
+    $query->where('(' . $yesExpr . ' * 100) >= (80 * ' . $totalExpr . ')');
+
+    if (!empty($filters['type'])) {
+      $query->where($db->quoteName('a.type') . ' = ' . $db->quote($filters['type']));
+
+      if ($filters['type'] === 'fs' && !empty($filters['subtype'])) {
+        if ($filters['subtype'] === 'nd') {
+          $query->where('(' . $db->quoteName('a.min_dep') . ' = "" OR '
+                           . $db->quoteName('a.min_dep') . ' IS NULL)');
+        } elseif ($filters['subtype'] === 'dr') {
+          $query->where('CAST(' . $db->quoteName('a.min_dep') . ' AS DECIMAL(12,2)) > 0');
+        }
+      }
+    }
+
+    if ($floorOrder !== '') $query->order($floorOrder);
+    $query->order('fec_pick_score DESC');
+    $query->order($db->quoteName('a.added') . ' DESC');
+
+    return $query;
+  }
+
+// --- fec_editor_picks_family_key  (source lines 7002-7009; slices: bonuses)
+  /**
+   * lib v80 (2026-10-20): the operator family a pick belongs to, for the
+   * one-per-family rule. The effective owner the cluster pages group by -
+   * the commercial network when set (jr_network), else the legal owner
+   * (jr_owner) - normalized with fec_sister_owner_norm(); a casino with no
+   * owner on record is a family of its own (cid).
+   */
+  function fec_editor_picks_family_key($row) {
+    $net   = isset($row['jr_network']) ? trim((string)$row['jr_network']) : '';
+    $owner = isset($row['jr_owner'])   ? trim((string)$row['jr_owner'])   : '';
+    $eff   = ($net !== '') ? $net : $owner;
+    $norm  = function_exists('fec_sister_owner_norm') ? fec_sister_owner_norm($eff) : strtolower(preg_replace('/[^a-z0-9]/i', '', $eff));
+    if ($norm !== '') return 'own:' . $norm;
+    return 'cid:' . (isset($row['cid']) ? (int)$row['cid'] : 0);
+  }
+
+// --- fec_fetch_editor_picks  (source lines 7024-7053; slices: bonuses)
+  /**
+   * lib v80 (2026-10-20): one pick per operator family. The score alone put
+   * three sister sites of one operator in the three slots (the same codes,
+   * the same cap, the same wager - and the same family in the home hero):
+   * the votes concentrate where the players are, so the ranking did too.
+   * Now the query returns a window of candidates in score order and the
+   * first of each family (fec_editor_picks_family_key) is kept, up to the
+   * limit; a casino never takes two slots either. The window is a multiple
+   * of the limit (min 15, max 30); when the families run out, the slots
+   * stay empty rather than fall back to a sibling.
+   */
+  function fec_fetch_editor_picks($db, $countrycode, $limit = 3, $filters = array()) {
+    $limit = (int)$limit; if ($limit < 1) $limit = 1; if ($limit > 6) $limit = 6;
+
+    $window = max(15, min(30, $limit * 5));
+    $q = fec_build_editor_picks_query($db, $countrycode, $limit, $filters);
+    $db->setQuery($q, 0, $window);
+    $rows = (array)$db->loadAssocList();
+
+    if ($db->getErrorNum()) {
+      error_log('fec_fetch_editor_picks query failed: ' . $db->getErrorMsg());
+      return array();
+    }
+    if (!is_array($rows) || !$rows) return array();
+
+    $picked = array(); $seenFam = array(); $seenCid = array(); $seenBid = array();
+    foreach ($rows as $r) {
+      if (count($picked) >= $limit) break;
+      $bid = isset($r['bid']) ? (int)$r['bid'] : 0;
+      $cid = isset($r['cid']) ? (int)$r['cid'] : 0;
+      if ($bid <= 0 || isset($seenBid[$bid])) continue;   // the related join can repeat a bonus
+      $seenBid[$bid] = true;
+      $fam = fec_editor_picks_family_key($r);
+      if (isset($seenFam[$fam])) continue;
+      if ($cid > 0 && isset($seenCid[$cid])) continue;
+      $seenFam[$fam] = true;
+      if ($cid > 0) $seenCid[$cid] = true;
+      $picked[] = $r;
+    }
+    return $picked;
+  }
+
+// --- fec_editor_picks_extract_bids  (source lines 7057-7066; slices: bonuses)
+  function fec_editor_picks_extract_bids($rows) {
+    $bids = array();
+    if (empty($rows) || !is_array($rows)) return $bids;
+    foreach ($rows as $r) {
+      if (!is_array($r)) continue;
+      $bid = isset($r['bid']) ? (int)$r['bid'] : 0;
+      if ($bid > 0) $bids[] = $bid;
+    }
+    return $bids;
+  }
+
+// --- fec_render_faq_enhancer_assets  (source lines 7088-7147; slices: bonuses)
+  function fec_render_faq_enhancer_assets() {
+    return '<script>'
+      . '(function(){'
+        . 'if(window.__FEC_FAQ_ENHANCED)return;'
+        . 'window.__FEC_FAQ_ENHANCED=true;'
+
+        . 'function allOpen(items){for(var i=0;i<items.length;i++)if(!items[i].open)return false;return true;}'
+
+        . 'function updateBtn(btn,items){'
+          . 'if(allOpen(items)){btn.textContent="Close all";btn.setAttribute("data-state","all-open");}'
+          . 'else{btn.textContent="Open all";btn.setAttribute("data-state","mixed");}'
+        . '}'
+
+        . 'function init(){'
+          . 'var faqs=document.querySelectorAll(".fec-faq");'
+          . 'if(!faqs.length)return;'
+          . 'faqs.forEach(function(faq){'
+            . 'if(faq.hasAttribute("data-fec-faq-init"))return;'
+            . 'faq.setAttribute("data-fec-faq-init","1");'
+
+            . 'var items=faq.querySelectorAll(".fec-faq__item");'
+            . 'if(!items.length)return;'
+
+            // Open first 2 (or just 1 if fewer than 4 items total)
+            . 'var openCount=(items.length>=4)?2:1;'
+            . 'for(var i=0;i<openCount&&i<items.length;i++)items[i].open=true;'
+
+            // Bulk toggle button — only if 4+ items (below that, manual is fast enough)
+            . 'if(items.length<4)return;'
+
+            . 'var toolbar=document.createElement("div");'
+            . 'toolbar.className="fec-faq__toolbar";'
+
+            . 'var btn=document.createElement("button");'
+            . 'btn.type="button";'
+            . 'btn.className="fec-faq__bulk";'
+            . 'updateBtn(btn,items);'
+
+            . 'btn.addEventListener("click",function(){'
+              . 'var open=allOpen(items);'
+              . 'for(var i=0;i<items.length;i++)items[i].open=!open;'
+              . 'updateBtn(btn,items);'
+            . '});'
+
+            // Listen to user clicks on individual <details> to keep label in sync
+            . 'for(var j=0;j<items.length;j++){'
+              . 'items[j].addEventListener("toggle",function(){updateBtn(btn,items);});'
+            . '}'
+
+            . 'toolbar.appendChild(btn);'
+            . 'faq.insertBefore(toolbar,faq.firstChild);'
+          . '});'
+        . '}'
+
+        . 'if(document.readyState==="loading"){'
+          . 'document.addEventListener("DOMContentLoaded",init);'
+        . '}else{init();}'
+      . '})();'
+      . '</script>';
+  }
+
+// --- fec_render_detail_footer_nav  (source lines 7173-7282; slices: bonuses)
+  /**
+   * @param array  $result  Bonus row (must contain at least 'type', 'min_dep', 'brand')
+   * @param int    $cid     Casino id
+   * @return string HTML
+   */
+  function fec_render_detail_footer_nav($result, $cid) {
+    if (!is_array($result)) return '';
+
+    $cid = (int)$cid;
+    $type = isset($result['type']) ? strtolower(trim((string)$result['type'])) : '';
+    $brand = isset($result['brand']) ? trim((string)$result['brand']) : '';
+
+    $esc = function($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); };
+
+    /* ---------- Link 1: All [BonusType] hub ---------- */
+    // Map type → hub URL + human label
+    // Detect fs subtype (no-deposit vs deposit-required) from min_dep
+    $minDepRaw = '';
+    if (isset($result['min_dep']) && trim((string)$result['min_dep']) !== '') {
+      $minDepRaw = trim((string)$result['min_dep']);
+    } elseif (isset($result['min_deposit']) && trim((string)$result['min_deposit']) !== '') {
+      $minDepRaw = trim((string)$result['min_deposit']);
+    }
+    $hasDeposit = (is_numeric($minDepRaw) && (float)$minDepRaw > 0);
+
+    $typeUrl   = '';
+    $typeLabel = '';
+
+    switch ($type) {
+      case 'fs':
+        if ($hasDeposit) {
+          $typeUrl   = '/bonuses/free-spins/deposit-required/';
+          $typeLabel = 'All Free Spins (deposit)';
+        } else {
+          $typeUrl   = '/bonuses/free-spins/no-deposit/';
+          $typeLabel = 'All Free Spins No Deposit';
+        }
+        break;
+
+      case 'nd':
+        $typeUrl   = '/bonuses/no-deposit-casinos';
+        $typeLabel = 'All No Deposit Bonuses';
+        break;
+
+      case 'su':
+        $typeUrl   = '/bonuses/1st-deposit-match';
+        $typeLabel = 'All Deposit Match Bonuses';
+        break;
+
+      case 'crypto':
+        $typeUrl   = '/bonuses/crypto';
+        $typeLabel = 'All Crypto Bonuses';
+        break;
+
+      case 'hr':
+        $typeUrl   = '/bonuses/high-roller-bonuses';
+        $typeLabel = 'All High Roller Bonuses';
+        break;
+
+      default:
+        // Fallback: general bonuses hub
+        $typeUrl   = '/bonuses/';
+        $typeLabel = 'All Bonuses';
+    }
+
+    /* ---------- Link 2: More from [Casino] ---------- */
+    $casinoUrl = '';
+    $casinoLabel = '';
+    if ($cid > 0) {
+      $bonusesItemid = function_exists('fec_get_bonuses_menu_itemid')
+        ? fec_get_bonuses_menu_itemid() : 0;
+      $rawCasinoUrl = 'index.php?option=com_bonuses&cid=' . $cid . '&lang=en&view=casino';
+      if ($bonusesItemid > 0) $rawCasinoUrl .= '&Itemid=' . $bonusesItemid;
+      $casinoUrl = JRoute::_($rawCasinoUrl);
+      $casinoLabel = ($brand !== '')
+        ? 'More from ' . $brand
+        : 'More from this casino';
+    }
+
+    /* ---------- Render ---------- */
+    $html  = '';
+    $html .= '<div class="wrap"><nav class="bd-bottomnav" aria-label="Page footer navigation">';
+
+    // Link 1
+    if ($typeUrl !== '' && $typeLabel !== '') {
+      $html .= '  <a href="' . $esc($typeUrl) . '">&larr; ' . $esc($typeLabel) . '</a>';
+    }
+
+    // Link 2
+    if ($casinoUrl !== '' && $casinoLabel !== '') {
+      $html .= '  <a href="' . $esc($casinoUrl) . '">' . $esc($casinoLabel) . '</a>';
+    }
+
+    // Link 3 — back to top (anchor with JS smooth scroll fallback)
+    $html .= '  <a class="back-top" href="#top" data-fec-backtotop>Back to top &uarr;</a>';
+
+    $html .= '</nav></div>';
+
+    // Inline JS: smooth scroll for "Back to top" — only one tiny listener, idempotent
+    $html .= '<script>'
+      . '(function(){'
+        . 'if(window.__FEC_BACKTOTOP)return;'
+        . 'window.__FEC_BACKTOTOP=true;'
+        . 'document.addEventListener("click",function(e){'
+          . 'var a=e.target.closest("[data-fec-backtotop]");'
+          . 'if(!a)return;'
+          . 'e.preventDefault();'
+          . 'try{window.scrollTo({top:0,behavior:"smooth"});}'
+          . 'catch(err){window.scrollTo(0,0);}'
+        . '});'
+      . '})();'
+      . '</script>';
+
+    return $html;
+  }
+
+// --- fec_og_package_stamp  (source lines 7316-7341; slices: bonuses)
+  /**
+   * FXRate (lib v70, 2026-10-17): the welcome package a bonus row belongs to,
+   * as one string that changes whenever the package changes: its modified
+   * stamp, its leg count, how many legs are virtual, the highest leg bid and
+   * the latest change of any leg row. Folded into the OG card version so a
+   * package-only edit (a cap typed into a virtual leg, a leg added) busts the
+   * CDN and crawler caches like an edit of the row does. '' when the row is
+   * in no package or the tables are missing. One indexed query, memoised.
+   *
+   * @param  int    $bid
+   * @return string
+   */
+  function fec_og_package_stamp($bid) {
+    static $cache = array();
+    $bid = (int)$bid;
+    if ($bid <= 0) return '';
+    if (isset($cache[$bid])) return $cache[$bid];
+    $cache[$bid] = '';
+    try {
+      $db  = JFactory::getDbo();
+      $sep = $db->quote('|');
+      $sql = 'SELECT CONCAT(MAX(p.modified), ' . $sep . ', COUNT(x.leg_id), ' . $sep . ', IFNULL(SUM(x.bid IS NULL), 0), ' . $sep
+           . ', IFNULL(MAX(x.bid), 0), ' . $sep . ', IFNULL(MAX(b.modified), ' . $db->quote('') . '))'
+           . ' FROM ' . $db->quoteName('#__fec_bonus_package_legs') . ' l'
+           . ' INNER JOIN ' . $db->quoteName('#__fec_bonus_packages') . ' p ON p.pkg_id = l.pkg_id'
+           . ' INNER JOIN ' . $db->quoteName('#__fec_bonus_package_legs') . ' x ON x.pkg_id = p.pkg_id'
+           . ' LEFT JOIN ' . $db->quoteName('#__bonuses') . ' b ON b.bid = x.bid'
+           . ' WHERE l.bid = ' . $bid
+           . ' GROUP BY p.pkg_id ORDER BY p.pkg_id DESC LIMIT 1';
+      $db->setQuery($sql);
+      $v = $db->loadResult();
+      if ($db->getErrorNum()) return '';
+      $cache[$bid] = ($v === null) ? '' : (string)$v;
+    } catch (Exception $e) {
+      // no package tables yet: the card version follows the row alone
+    }
+    return $cache[$bid];
+  }
+
+// --- fec_emit_social_meta  (source lines 7350-7450; slices: bonuses)
+  /**
+   * @param array  $result          Bonus row (must contain at least 'brand', 'jr_logosmall')
+   * @param string $titletag        Already-built page title (used for og:title)
+   * @param string $descriptiontag  Already-built meta description (used for og:description)
+   */
+  function fec_emit_social_meta($result, $titletag, $descriptiontag) {
+    if (!is_array($result)) return;
+
+    $doc = JFactory::getDocument();
+    $uri = JUri::getInstance();
+
+    // Canonical absolute URL of the page (scheme + host + path, no query)
+    $pageUrl = $uri->toString(array('scheme', 'host', 'port', 'path'));
+    if (!$pageUrl) $pageUrl = rtrim(JUri::root(false), '/');
+
+    // Site root for resolving relative image paths to absolute URLs
+    $siteBase = $uri->toString(array('scheme', 'host', 'port'));
+    if (!$siteBase) $siteBase = rtrim(JUri::root(false), '/');
+    $siteBase = rtrim($siteBase, '/');
+
+    // ---------- Title (strip the " | FreeExtraChips" suffix for og:title) ----------
+    // The full page title is fine for <title> but feels redundant in social previews
+    // where "FreeExtraChips" appears in og:site_name anyway.
+    $ogTitle = (string)$titletag;
+    $ogTitle = preg_replace('/\s*\|\s*FreeExtraChips(?:\.com)?\s*$/i', '', $ogTitle);
+    $ogTitle = trim($ogTitle);
+    if ($ogTitle === '') {
+      // Fallback: build from brand + bonus
+      $brand = isset($result['brand']) ? trim((string)$result['brand']) : '';
+      $bonus = isset($result['bonus']) ? trim((string)$result['bonus']) : '';
+      $ogTitle = trim($brand . ' ' . $bonus . ' Bonus');
+      if ($ogTitle === ' Bonus') $ogTitle = 'Casino Bonus';
+    }
+    // OG title spec: ~95 chars optimal, hard ceiling for safety
+    if (strlen($ogTitle) > 110) $ogTitle = rtrim(substr($ogTitle, 0, 107)) . '...';
+
+    // ---------- Description ----------
+    $ogDesc = (string)$descriptiontag;
+    $ogDesc = trim($ogDesc);
+    if ($ogDesc === '') {
+      $ogDesc = 'Casino bonus details and verification on FreeExtraChips.';
+    }
+    // OG description spec: ~200 chars optimal, hard ceiling
+    if (strlen($ogDesc) > 200) $ogDesc = rtrim(substr($ogDesc, 0, 197)) . '...';
+
+    // ---------- Image: Level 1 (v68) — dynamic per-bonus OG card ----------
+    // og_image.php renders a 1200x630 branded card (brand, amount, code,
+    // EXCLUSIVE/EXPIRED state) with its own disk cache; `v` mirrors the
+    // endpoint's cache key, so editing a bonus busts CDN and crawler caches
+    // together. FEC_OG_DYNAMIC = false falls back to the Level 0 casino
+    // logo without touching this function.
+    if (!defined('FEC_OG_DYNAMIC'))  define('FEC_OG_DYNAMIC', true);
+    if (!defined('FEC_OG_ENDPOINT')) define('FEC_OG_ENDPOINT', '/og/og_image.php');
+
+    $ogImage  = '';
+    $ogIsCard = false;
+    $ogBid    = isset($result['bid']) ? (int)$result['bid'] : 0;
+    if (FEC_OG_DYNAMIC && $ogBid > 0) {
+      $ogStamp  = isset($result['modified']) ? (string)$result['modified']
+                : (isset($result['added']) ? (string)$result['added'] : '');
+      // FXRate (lib v70): the card carries the welcome-package strip, so its
+      // version follows the package too (fec_og_package_stamp), not the row alone.
+      $ogStamp .= '|' . fec_og_package_stamp($ogBid);
+      $ogVer    = substr(md5($ogStamp . '|' . (isset($result['status']) ? $result['status'] : '')), 0, 10);
+      $ogImage  = $siteBase . FEC_OG_ENDPOINT . '?bid=' . $ogBid . '&v=' . $ogVer;
+      $ogIsCard = true;
+    }
+    if ($ogImage === '') {
+      $logoFile = isset($result['jr_logosmall']) ? trim((string)$result['jr_logosmall']) : '';
+      if ($logoFile !== '') {
+        // Original logo file (not the cdn-cgi/image transform path): social
+        // crawlers cache aggressively and don't always follow CDN transforms.
+        $ogImage = $siteBase . '/images/casino-logos/' . $logoFile;
+      }
+    }
+
+    // ---------- Emit meta tags ----------
+    // og:* tags REQUIRE attribute='property' (not 'name') for Facebook's parser
+    $doc->setMetaData('og:type',        'article',                'property');
+    $doc->setMetaData('og:site_name',   'FreeExtraChips',         'property');
+    $doc->setMetaData('og:title',       $ogTitle,                 'property');
+    $doc->setMetaData('og:description', $ogDesc,                  'property');
+    $doc->setMetaData('og:url',         $pageUrl,                 'property');
+    $doc->setMetaData('og:locale',      'en_US',                  'property');
+
+    if ($ogImage !== '') {
+      $doc->setMetaData('og:image',     $ogImage,                 'property');
+      $doc->setMetaData('og:image:alt', $ogTitle,                 'property');
+      if ($ogIsCard) {
+        $doc->setMetaData('og:image:type',   'image/png', 'property');
+        $doc->setMetaData('og:image:width',  '1200',      'property');
+        $doc->setMetaData('og:image:height', '630',       'property');
+      }
+    }
+
+    // Twitter Card — uses 'name' not 'property' (different spec).
+    // summary_large_image for the 1200x630 dynamic card; plain 'summary'
+    // when falling back to the square-ish casino logo.
+    $doc->setMetaData('twitter:card',        $ogIsCard ? 'summary_large_image' : 'summary');
+    $doc->setMetaData('twitter:title',       $ogTitle);
+    $doc->setMetaData('twitter:description', $ogDesc);
+    if ($ogImage !== '') {
+      $doc->setMetaData('twitter:image',     $ogImage);
+      $doc->setMetaData('twitter:image:alt', $ogTitle);
+    }
+  }
+
+// --- fec_render_code_copy_assets  (source lines 7474-7562; slices: bonuses)
+  function fec_render_code_copy_assets() {
+    return '<script>'
+      . '(function(){'
+        . 'if(window.__FEC_CODE_COPY)return;'
+        . 'window.__FEC_CODE_COPY=true;'
+
+        // Copy a string to clipboard, returns Promise<boolean>
+        . 'function copyText(text){'
+          . 'if(navigator.clipboard&&window.isSecureContext){'
+            . 'return navigator.clipboard.writeText(text).then(function(){return true;}).catch(function(){return fallback(text);});'
+          . '}'
+          . 'return Promise.resolve(fallback(text));'
+        . '}'
+
+        // execCommand fallback (still widely supported even though deprecated)
+        . 'function fallback(text){'
+          . 'try{'
+            . 'var ta=document.createElement("textarea");'
+            . 'ta.value=text;'
+            . 'ta.setAttribute("readonly","");'
+            . 'ta.style.position="absolute";'
+            . 'ta.style.left="-9999px";'
+            . 'document.body.appendChild(ta);'
+            . 'ta.select();'
+            . 'var ok=document.execCommand("copy");'
+            . 'document.body.removeChild(ta);'
+            . 'return ok;'
+          . '}catch(e){return false;}'
+        . '}'
+
+        // Find the Code fact and turn its value into a copyable button
+        . 'function init(){'
+          . 'var facts=document.querySelectorAll("#key-facts .kv");'
+          . 'if(!facts.length)return;'
+
+          . 'facts.forEach(function(fact){'
+            . 'var k=fact.querySelector(".k");'
+            . 'var v=fact.querySelector(".v");'
+            . 'if(!k||!v)return;'
+            . 'if(k.textContent.trim().toLowerCase()!=="code")return;'
+
+            . 'var code=v.textContent.trim();'
+            . 'if(!code||code.toLowerCase()==="not required")return;'
+
+            // Build the button (replaces the plain text value)
+            . 'var btn=document.createElement("button");'
+            . 'btn.type="button";'
+            . 'btn.className="bt-code";'
+            . 'btn.setAttribute("data-code",code);'
+            . 'btn.setAttribute("aria-label","Copy bonus code "+code);'
+
+            . 'var label=document.createElement("span");'
+            . 'label.textContent=code;'
+
+            . 'var icon=document.createElement("span");'
+            . 'icon.setAttribute("aria-hidden","true");'
+            . 'icon.innerHTML='
+              . '\'<svg viewBox="0 0 16 16" width="14" height="14" focusable="false">\''
+              . '+\'<path d="M5 1h7a1 1 0 0 1 1 1v9h-1V2H5V1zM3 4h7a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zm0 1v9h7V5H3z" fill="currentColor"/>\''
+              . '+\'</svg>\';'
+
+            . 'btn.appendChild(label);'
+            . 'btn.appendChild(icon);'
+
+            . 'btn.addEventListener("click",function(){'
+              . 'if(btn.classList.contains("is-copied"))return;'
+              . 'copyText(code).then(function(ok){'
+                . 'if(!ok)return;'
+                . 'btn.classList.add("is-copied");'
+                . 'label.textContent="Copied!";'
+                . 'setTimeout(function(){'
+                  . 'btn.classList.remove("is-copied");'
+                  . 'label.textContent=code;'
+                . '},1500);'
+              . '});'
+            . '});'
+
+            // Replace the value content with the button
+            . 'v.textContent="";'
+            . 'v.appendChild(btn);'
+          . '});'
+        . '}'
+
+        . 'if(document.readyState==="loading"){'
+          . 'document.addEventListener("DOMContentLoaded",init);'
+        . '}else{init();}'
+      . '})();'
+      . '</script>';
+  }
+
+// --- fec_chip_hue  (source lines 8390-8399; slices: authors, bonuses)
     /**
      * Deterministic hue (0-359) from a casino name.
      *
@@ -734,7 +6887,7 @@ foreach ($cleanSegs as $i => $seg) {
         return $hue;
     }
 
-// --- fec_casino_chip  (source lines 8404-8424; slices: authors)
+// --- fec_casino_chip  (source lines 8404-8424; slices: authors, bonuses)
     function fec_casino_chip($name, $size = 36) {
         $name = trim((string) $name);
  
@@ -757,7 +6910,7 @@ foreach ($cleanSegs as $i => $seg) {
              . '</span>';
     }
 
-// --- fec_telegram_url  (source lines 10076-10090; slices: template)
+// --- fec_telegram_url  (source lines 10076-10090; slices: template, bonuses)
 /**
  * FEC Telegram — punto unico di verita' per il link al canale.
  *
@@ -802,7 +6955,7 @@ function fec_discord_url($source = '') {
     return $public;
 }
 
-// --- fec_render_email_capture_block  (source lines 10111-10206; slices: template)
+// --- fec_render_email_capture_block  (source lines 10111-10206; slices: template, bonuses)
 function fec_render_email_capture_block($source, $opts = array()) {
     static $instance = 0;
     static $script_emitted = false;
@@ -900,7 +7053,7 @@ function fec_render_email_capture_block($source, $opts = array()) {
     return $html;
 }
 
-// --- fec_render_email_capture_script  (source lines 10209-10315; slices: template)
+// --- fec_render_email_capture_script  (source lines 10209-10315; slices: template, bonuses)
 function fec_render_email_capture_script() {
     static $emitted = false;
     if ($emitted) return '';
@@ -1400,4 +7553,1572 @@ function close(asDismiss){
 
     return $html;
 }
+
+// --- fec_render_casino_chip  (source lines 12447-12476; slices: bonuses)
+  /**
+   * Circular brand initial chip. Bigger size = chip used in hero.
+   * Background derived from a stable hash of the name → deterministic color per casino.
+   */
+  function fec_render_casino_chip($name, $size = 56) {
+    $name = (string) $name;
+    $initial = '';
+    $name_trim = trim($name);
+    if ($name_trim !== '') {
+      if (function_exists('mb_substr')) {
+        $initial = mb_strtoupper(mb_substr($name_trim, 0, 1, 'UTF-8'), 'UTF-8');
+      } else {
+        $initial = strtoupper(substr($name_trim, 0, 1));
+      }
+    } else {
+      $initial = '?';
+    }
+
+    // Shared hue with the card chip (fec_casino_chip) so the hero and the
+    // bonus-card use the same color family for the same casino. Saturated
+    // dark variant here, pastel in the card.
+    $hue = fec_chip_hue($name_trim);
+
+    $fontSize = (int) round($size * 0.42);
+    $sizeEsc  = (int) $size;
+    $sizeAttr = $sizeEsc . 'px';
+    $initEsc  = htmlspecialchars($initial, ENT_QUOTES, 'UTF-8');
+
+    return '<span class="cr-chip" '
+         . 'style="width:' . $sizeAttr . ';height:' . $sizeAttr
+         . ';background:hsl(' . $hue . ',55%,38%)'
+         . ';font-size:' . $fontSize . 'px"'
+         . ' aria-hidden="true">' . $initEsc . '</span>';
+  }
+
+// --- fec_format_date_short  (source lines 12484-12493; slices: bonuses)
+  /**
+   * "Jan 8, 2016" from a SQL datetime. Empty / zero-date returns empty string.
+   */
+  function fec_format_date_short($sqlDate) {
+    $s = (string) $sqlDate;
+    if ($s === '' || $s === '0000-00-00' || $s === '0000-00-00 00:00:00') return '';
+    try {
+      $d = new DateTime($s);
+      return $d->format('M j, Y');
+    } catch (Exception $e) {
+      return '';
+    }
+  }
+
+// --- fec_render_casino_state_banner  (source lines 12649-12709; slices: bonuses)
+  /**
+   * Render the attention banner that sits ABOVE the hero card when a casino
+   * is in a non-ACTIVE state (closed / suspended / blacklisted). The geo-block
+   * case is handled inside the hero itself (not by this banner) because it's
+   * visitor-specific rather than a property of the casino.
+   *
+   * $stateData is the array returned by fec_decide_casino_state().
+   * Returns empty string for ACTIVE / GEO_BLOCKED.
+   *
+   * Tone variants emitted as class modifiers:
+   *   .cr-state-banner--danger    (BLACKLISTED)
+   *   .cr-state-banner--warn      (SUSPENDED)
+   *   .cr-state-banner--muted     (CLOSED)
+   */
+  function fec_render_casino_state_banner($stateData, $opts = array()) {
+    if (!is_array($stateData)) return '';
+    $state = isset($stateData['state']) ? $stateData['state'] : 'ACTIVE';
+    if ($state === 'ACTIVE' || $state === 'GEO_BLOCKED') return '';
+
+    $esc = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); };
+
+    $toneClass = '';
+    $icon      = '';
+    $title     = '';
+    $bodyHtml  = '';
+
+    if ($state === 'BLACKLISTED') {
+      $toneClass = 'cr-state-banner--danger';
+      $icon      = '&#9888;';  // ⚠
+      $title     = 'This casino has been blacklisted';
+    } elseif ($state === 'SUSPENDED') {
+      $toneClass = 'cr-state-banner--warn';
+      $icon      = '&#9209;';  // ⏹
+      $title     = 'This casino is currently suspended';
+    } elseif ($state === 'CLOSED') {
+      $toneClass = 'cr-state-banner--muted';
+      $icon      = '&#10005;'; // ✕
+      $title     = 'This casino has closed';
+      $date      = isset($stateData['date']) ? (string) $stateData['date'] : '';
+      if ($date !== '' && $date !== '0000-00-00' && $date !== '0000-00-00 00:00:00') {
+        $titleSuffix = function_exists('fec_format_date_short') ? fec_format_date_short($date) : $date;
+        if ($titleSuffix !== '') $title .= ' on ' . $esc($titleSuffix);
+      }
+      $bodyHtml = '<p>This review is preserved for archival reference. '
+                . 'Player accounts and bonuses are no longer available.</p>';
+    } else {
+      return '';
+    }
+
+    // Reason + explanation (suspended/blacklisted)
+    $reason = isset($stateData['reason']) ? trim((string) $stateData['reason']) : '';
+    $expl   = isset($stateData['explanation']) ? trim((string) $stateData['explanation']) : '';
+    if ($reason !== '') {
+      $bodyHtml .= '<p class="cr-state-banner__reason"><strong>Reason:</strong> ' . $esc($reason) . '</p>';
+    }
+    if ($expl !== '') {
+      // $expl may contain HTML from JReviews custom fields. Keep as-is but
+      // strip any <script> for safety.
+      $explClean = preg_replace('#<script[^>]*>.*?</script>#is', '', $expl);
+      $bodyHtml .= '<div class="cr-state-banner__expl">' . $explClean . '</div>';
+    }
+
+    $h  = '<div class="wrap">';
+    $h .=   '<section class="cr-state-banner ' . $toneClass . '" role="alert">';
+    $h .=     '<div class="cr-state-banner__inner">';
+    $h .=       '<span class="cr-state-banner__icon" aria-hidden="true">' . $icon . '</span>';
+    $h .=       '<div class="cr-state-banner__text">';
+    $h .=         '<h2 class="cr-state-banner__title">' . $title . '</h2>';
+    $h .=         $bodyHtml;
+    $h .=       '</div>';
+    $h .=     '</div>';
+    $h .=   '</section>';
+    $h .= '</div>';
+    return $h;
+  }
+
+// --- fec_sister_owner_norm  (source lines 13570-13574; slices: bonuses)
+  /** Normalize an owner string for grouping (mirror of the SQL expression). */
+  function fec_sister_owner_norm($s) {
+    $s = strtolower(trim((string)$s));
+    $s = str_replace(array(' ', '.', ',', '&', '-', '(', ')', '/'), '', $s);
+    return $s;
+  }
+
+// --- fec_sister_node_color  (source lines 13582-13592; slices: bonuses)
+  /**
+   * Node colour + status label from the jr_* flags. Returns array(hex, label).
+   * Neutral grey when FEC_SISTER_COLOR is defined false.
+   */
+  function fec_sister_node_color($row) {
+    if (defined('FEC_SISTER_COLOR') && !FEC_SISTER_COLOR) {
+      return array('#6b6b66', '');
+    }
+    $g = function ($row, $k) { return isset($row[$k]) ? trim((string)$row[$k]) : ''; };
+    if ($g($row, 'jr_blacklisted') !== '') return array('#9a2828', 'blacklisted');
+    if ($g($row, 'jr_closed')      !== '') return array('#6b6b66', 'closed');
+    if ($g($row, 'jr_suspended')   !== '') return array('#6b6b66', 'suspended');
+    if ($g($row, 'jr_warning')     !== '' || $g($row, 'jr_flag') !== '') return array('#a8631c', 'warning');
+    return array('#1c7a4a', 'ok');
+  }
+
+// --- fec_sister_status_rank  (source lines 13597-13605; slices: bonuses)
+  /** Sort rank: most concerning first. */
+  function fec_sister_status_rank($label) {
+    switch ($label) {
+      case 'blacklisted': return 0;
+      case 'warning':     return 1;
+      case 'suspended':   return 2;
+      case 'closed':      return 3;
+      default:            return 4; // ok / neutral
+    }
+  }
+
+// --- fec_render_casino_sister_map  (source lines 13609-13797; slices: bonuses)
+  function fec_render_casino_sister_map($vm) {
+    if (!is_array($vm)) return '';
+    $cid = isset($vm['id']) ? (int)$vm['id'] : 0;
+    if ($cid <= 0) return '';
+
+    $owner = isset($vm['jr_owner']) ? trim((string)$vm['jr_owner']) : '';
+    $norm  = fec_sister_owner_norm($owner);
+    if ($owner === '' || $norm === '' || $norm === 'na') return ''; // placeholder/empty
+
+    $esc = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); };
+
+    try {
+      $db = JFactory::getDbo();
+      // normalized owner match (network-aware: jr_network overrides jr_owner)
+      $effRaw = (function_exists('fec_jr_network_exists') && fec_jr_network_exists($db))
+        ? "COALESCE(NULLIF(TRIM(jc.jr_network),''), jc.jr_owner)"
+        : "jc.jr_owner";
+      if ($effRaw !== 'jc.jr_owner') {
+        // the CURRENT casino may belong to a network group: refresh owner/norm
+        $db->setQuery('SELECT ' . str_replace('jc.', '', $effRaw)
+                    . ' FROM ' . $db->quoteName('#__jreviews_content')
+                    . ' WHERE contentid = ' . (int) $cid);
+        $effOwn = trim((string) $db->loadResult());
+        if ($effOwn !== '') { $owner = $effOwn; $norm = fec_sister_owner_norm($owner); }
+        if ($norm === '' || $norm === 'na') return '';
+      }
+      $expr = "LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE("
+            . $effRaw . ",' ',''),'.',''),',',''),'&',''),'-',''),'(',''),')',''),'/',''))";
+      $q = $db->getQuery(true);
+      $q->select(array('c.id', 'c.title', 'c.alias', 'jc.jr_owner',
+                       'jc.jr_closed', 'jc.jr_suspended', 'jc.jr_blacklisted',
+                       'jc.jr_warning', 'jc.jr_flag'))
+        ->from($db->quoteName('#__content', 'c'))
+        ->join('INNER', $db->quoteName('#__jreviews_content', 'jc') . ' ON jc.contentid = c.id')
+        ->where('c.state = 1')
+        ->where($expr . ' = ' . $db->quote($norm));
+      $db->setQuery($q);
+      $rows = $db->loadAssocList('id');
+    } catch (Exception $e) {
+      return '';
+    }
+    if (empty($rows)) return '';
+    // Vertical group view (health strip + brand list), current casino highlighted.
+    if (function_exists('fec_render_owner_hierarchy')) {
+      if (count($rows) < 2) return '';
+      $out = fec_render_owner_hierarchy($owner, array_values($rows), array('highlight_id' => $cid, 'owner_heading' => true));
+      if (function_exists('fec_cluster_published_link')) { $out .= fec_cluster_published_link($db, $norm, $owner); }
+      return '<div class="cr-sisters-map" style="max-width:720px;margin:0 auto">' . $out . '</div>';
+    }
+    unset($rows[$cid]);          // sisters = everyone but the current casino
+    if (empty($rows)) return ''; // alone in its group -> no map
+
+    // build sister node objects
+    $sisters = array();
+    foreach ($rows as $id => $r) {
+      $cl = fec_sister_node_color($r);
+      $sisters[] = array(
+        'id'    => (int)$id,
+        'name'  => (string)$r['title'],
+        'alias' => (string)$r['alias'],
+        'color' => $cl[0],
+        'label' => $cl[1],
+      );
+    }
+    usort($sisters, function ($a, $b) {
+      $ra = fec_sister_status_rank($a['label']); $rb = fec_sister_status_rank($b['label']);
+      if ($ra !== $rb) return $ra - $rb;
+      return strcasecmp($a['name'], $b['name']);
+    });
+
+    // self node (from the VM)
+    $scl = fec_sister_node_color($vm);
+    $self = array('name' => (string)(isset($vm['title']) ? $vm['title'] : 'This casino'),
+                  'alias' => '', 'color' => $scl[0], 'label' => 'this casino');
+
+    // aggregate beyond 7
+    $aggregate = 0;
+    if (count($sisters) > 7) {
+      $aggregate = count($sisters) - 6;
+      $sisters = array_slice($sisters, 0, 6);
+    }
+    $totalSisters = count($sisters) + $aggregate;
+
+    // ---- geometry (validated radial) --------------------------------------
+    $n   = count($sisters) + ($aggregate ? 1 : 0);
+    $cx  = 340;
+    $big = ($n > 6);
+    $R   = $big ? 195 : 175;
+    $cy  = $big ? 320 : 305;
+    $H   = $cy + $R + 24 + 46;
+
+    $pts = array();
+    for ($i = 0; $i < $n; $i++) {
+      $t = (-90 + $i * (360.0 / $n)) * M_PI / 180.0;
+      $pts[] = array('x' => (int) round($cx + $R * cos($t)), 'y' => (int) round($cy + $R * sin($t)));
+    }
+
+    $box = function ($x, $y, $w, $hh, $nd, $center) use ($esc) {
+      $cxb = $x + $w / 2; $titleY = $y + $hh / 2 - 5; $subY = $y + $hh / 2 + 13;
+      $col = $nd['color']; $sw = $center ? 2.5 : 1;
+      $ring = $center
+        ? '<rect x="' . ($x - 6) . '" y="' . ($y - 6) . '" width="' . ($w + 12) . '" height="' . ($hh + 12)
+          . '" rx="12" fill="none" stroke="' . $col . '" stroke-width="1.5" opacity="0.5"/>'
+        : '';
+      $sub = $center ? 'this casino' : $nd['label'];
+      $inner = $ring
+        . '<rect class="cm-box" x="' . $x . '" y="' . $y . '" width="' . $w . '" height="' . $hh
+          . '" rx="8" fill="' . $col . '" fill-opacity="0.12" stroke="' . $col . '" stroke-width="' . $sw . '"/>'
+        . '<text x="' . $cxb . '" y="' . $titleY . '" text-anchor="middle" '
+          . 'font-family="ui-sans-serif,system-ui,-apple-system,&apos;Segoe UI&apos;,Roboto,sans-serif" '
+          . 'font-size="14" font-weight="500" fill="' . $col . '">' . $esc($nd['name']) . '</text>'
+        . ($sub !== '' ? '<text x="' . $cxb . '" y="' . $subY . '" text-anchor="middle" '
+          . 'font-family="ui-monospace,&apos;SF Mono&apos;,Menlo,Consolas,monospace" '
+          . 'font-size="11" fill="' . $col . '" opacity="0.85">' . $esc($sub) . '</text>' : '');
+      if ($center || $nd['alias'] === '') return '<g>' . $inner . '</g>';
+      return '<a class="cm-link" href="/online-casinos/' . $esc($nd['alias']) . '" target="_self">' . $inner . '</a>';
+    };
+
+    $style = '<style>.cm-link{cursor:pointer}.cm-link .cm-box{transition:stroke-width .12s ease}'
+           . '.cm-link:hover .cm-box{stroke-width:2}</style>';
+
+    $header =
+        '<text x="340" y="40" text-anchor="middle" '
+        . 'font-family="ui-sans-serif,system-ui,-apple-system,&apos;Segoe UI&apos;,Roboto,sans-serif" '
+        . 'font-size="14" font-weight="500" fill="#1a1c1a" opacity="0.85">' . $esc($owner) . '</text>';
+
+    // Stop each connector at the box borders (plus a small gap) so lines never
+    // run under or through the cards -- they live only in the empty space.
+    $edgept = function ($bx, $by, $hw, $hh, $ox, $oy, $gap) {
+      $dx = $ox - $bx; $dy = $oy - $by;
+      if ($dx == 0 && $dy == 0) return array($bx, $by);
+      $tx = ($dx != 0) ? $hw / abs($dx) : 1e9;
+      $ty = ($dy != 0) ? $hh / abs($dy) : 1e9;
+      $t  = min($tx, $ty);
+      $px = $bx + $dx * $t; $py = $by + $dy * $t;
+      $len = sqrt($dx * $dx + $dy * $dy);
+      if ($len > 0) { $px += ($dx / $len) * $gap; $py += ($dy / $len) * $gap; }
+      return array($px, $py);
+    };
+    $connector = function ($p, $dash) use ($edgept, $cx, $cy) {
+      $s1 = $edgept($cx, $cy, 85, 29, $p['x'], $p['y'], 3);   // leave the centre card
+      $s2 = $edgept($p['x'], $p['y'], 75, 24, $cx, $cy, 3);   // stop at the sister card
+      return '<line x1="' . round($s1[0], 1) . '" y1="' . round($s1[1], 1)
+           . '" x2="' . round($s2[0], 1) . '" y2="' . round($s2[1], 1)
+           . '" stroke="#cbcac3" stroke-width="1"' . $dash . '/>';
+    };
+
+    $edges = ''; $boxes = ''; $idx = 0;
+    foreach ($sisters as $s) {
+      $p = $pts[$idx];
+      $edges .= $connector($p, '');
+      $boxes .= $box($p['x'] - 75, $p['y'] - 24, 150, 48, $s, false);
+      $idx++;
+    }
+    if ($aggregate) {
+      $p = $pts[$idx];
+      $edges .= $connector($p, ' stroke-dasharray="4 4"');
+      $aggNode = array('name' => '+' . $aggregate . ' more', 'alias' => '', 'color' => '#6b6b66', 'label' => 'sisters');
+      $boxes .= $box($p['x'] - 75, $p['y'] - 24, 150, 48, $aggNode, false);
+    }
+
+    $centerBox = $box($cx - 85, $cy - 29, 170, 58, $self, true);
+
+    // legend (only when coloured)
+    $legend = '';
+    if (!(defined('FEC_SISTER_COLOR') && !FEC_SISTER_COLOR)) {
+      $ly = $H - 31;
+      $items = array(
+        array('#1c7a4a', 'ok'), array('#a8631c', 'warning'),
+        array('#9a2828', 'blacklisted'), array('#6b6b66', 'closed / suspended'),
+      );
+      $x = 60;
+      foreach ($items as $it) {
+        $legend .= '<rect x="' . $x . '" y="' . $ly . '" width="12" height="12" rx="3" fill="' . $it[0]
+                 . '" fill-opacity="0.12" stroke="' . $it[0] . '" stroke-width="1"/>'
+                 . '<text x="' . ($x + 18) . '" y="' . ($ly + 10) . '" '
+                 . 'font-family="ui-monospace,&apos;SF Mono&apos;,Menlo,Consolas,monospace" '
+                 . 'font-size="11" fill="#1a1c1a" opacity="0.75">' . $it[1] . '</text>';
+        $x += 18 + strlen($it[1]) * 7 + 22;
+      }
+    }
+
+    return '<div class="cr-sisters-map" style="max-width:600px;margin:0 auto;">'
+      . '<svg width="100%" viewBox="0 0 680 ' . $H . '" xmlns="http://www.w3.org/2000/svg" role="img" '
+        . 'aria-label="Sister casinos under ' . $esc($owner) . ', centred on ' . $esc($self['name']) . '">'
+      . $style . $header . $edges . $boxes . $centerBox . $legend
+      . '</svg>'
+      . '</div>';
+  }
+
+// --- fec_render_casino_sister_map_by_id  (source lines 13813-13833; slices: bonuses)
+  /**
+   * Standalone entry point: render the sister map for a casino by its content
+   * id, with no need for the full $vm in scope. Drop anywhere in a template:
+   *
+   *   if (function_exists('fec_render_casino_sister_map_by_id')) {
+   *     echo fec_render_casino_sister_map_by_id($contentid);
+   *   }
+   *
+   * Fetches the minimal row (owner + title + status flags) itself, then
+   * delegates to fec_render_casino_sister_map(). Returns '' on error / no
+   * sisters / placeholder owner.
+   */
+  function fec_render_casino_sister_map_by_id($cid) {
+    $cid = (int)$cid;
+    if ($cid <= 0) return '';
+    try {
+      $db = JFactory::getDbo();
+      $q = $db->getQuery(true);
+      $q->select(array('c.id', 'c.title', 'c.alias',
+                       'jc.jr_owner', 'jc.jr_closed', 'jc.jr_suspended',
+                       'jc.jr_blacklisted', 'jc.jr_warning', 'jc.jr_flag'))
+        ->from($db->quoteName('#__content', 'c'))
+        ->join('INNER', $db->quoteName('#__jreviews_content', 'jc') . ' ON jc.contentid = c.id')
+        ->where('c.id = ' . $cid)
+        ->where('c.state = 1');
+      $db->setQuery($q);
+      $vm = $db->loadAssoc();
+    } catch (Exception $e) {
+      return '';
+    }
+    if (!$vm) return '';
+    return fec_render_casino_sister_map($vm);
+  }
+
+// --- fec_jr_network_exists  (source lines 13875-13885; slices: bonuses)
+  /**
+   * TRUE once the jr_network column exists on #__jreviews_content.
+   * Deploy-order-safe: while the column is missing, everything degrades to
+   * plain jr_owner grouping. Result cached per request.
+   */
+  function fec_jr_network_exists($db) {
+    static $has = null;
+    if ($has !== null) return $has;
+    $has = false;
+    try {
+      $db->setQuery('SHOW COLUMNS FROM ' . $db->quoteName('#__jreviews_content')
+                  . ' LIKE ' . $db->quote('jr_network'));
+      $has = (bool) $db->loadResult();
+    } catch (Exception $e) { $has = false; }
+    return $has;
+  }
+
+// --- fec_atlas_entity_index  (source lines 14003-14020; slices: bonuses)
+  /** Published Atlas entities: normalized name -> slug. Cached per request. */
+  function fec_atlas_entity_index() {
+    static $map = null;
+    if ($map !== null) return $map;
+    $map = array();
+    if (!function_exists('fec_sister_owner_norm')) return $map;
+    try {
+      $db = JFactory::getDbo();
+      $db->setQuery("SELECT name, slug FROM #__atlas_entities WHERE published = 1");
+      $rows = $db->loadAssocList();
+      if (is_array($rows)) {
+        foreach ($rows as $r) {
+          $k = fec_sister_owner_norm($r['name']);
+          if ($k !== '') $map[$k] = $r['slug'];
+        }
+      }
+    } catch (Exception $e) { $map = array(); }
+    return $map;
+  }
+
+// --- fec_atlas_profile_url  (source lines 14025-14047; slices: bonuses)
+  /** Public Atlas profile URL for a display name, or empty string when unknown/unpublished. */
+  function fec_atlas_profile_url($name) {
+    $name = trim((string)$name);
+    if ($name === '' || !function_exists('fec_sister_owner_norm')) return '';
+    $map = fec_atlas_entity_index();
+    $k = fec_sister_owner_norm($name);
+    if ($k === '' || !isset($map[$k])) return '';
+    static $base = null;
+    if ($base === null) {
+      $base = '';
+      $app = JFactory::getApplication();
+      if (is_object($app) && method_exists($app, 'getMenu')) {
+        $menu = $app->getMenu();
+        if ($menu) {
+          $items = $menu->getItems('component', 'com_atlas');
+          if (is_array($items) && count($items)) {
+            $base = '/' . ltrim($items[0]->route, '/');
+          }
+        }
+      }
+      if ($base === '') $base = '/online-casinos/operators';
+    }
+    return $base . '/' . $map[$k];
+  }
+
+// --- fec_atlas_link_name  (source lines 14052-14059; slices: bonuses)
+  /** Entity/network name -> anchor to its Atlas profile when published, else escaped text. */
+  function fec_atlas_link_name($name) {
+    $escName = htmlspecialchars((string)$name, ENT_QUOTES, 'UTF-8');
+    $url = fec_atlas_profile_url($name);
+    if ($url === '') return $escName;
+    return '<a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8')
+         . '" style="color:inherit;text-decoration:underline;text-underline-offset:2px"'
+         . ' title="Operator profile in the Atlas">' . $escName . '</a>';
+  }
+
+// --- fec_render_owner_hierarchy  (source lines 14072-14169; slices: bonuses)
+  /**
+   * Vertical group view: a proportional health strip + a responsive list of
+   * brand cards (status dot + colour-coded left border, each linked to its
+   * review). Mobile-first: one column on narrow screens, a grid when wide.
+   * Shared by the cluster page and the review sister-map.
+   *
+   * $opts: 'highlight_id' (int) marks the current casino (rendered inert, not a
+   * link); 'owner_heading' (bool) prints an "Owned by {label}" eyebrow.
+   */
+  function fec_render_owner_hierarchy($label, $members, $opts = array()) {
+    if (!is_array($members) || count($members) < 1) return '';
+    $esc = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); };
+    $highlight    = isset($opts['highlight_id']) ? (int)$opts['highlight_id'] : 0;
+    $ownerHeading = !empty($opts['owner_heading']);
+
+    // Surface problems first: blacklisted, warning, suspended/closed, then active.
+    usort($members, function ($a, $b) {
+      $ca = fec_sister_node_color($a); $cb = fec_sister_node_color($b);
+      $ra = fec_sister_status_rank(isset($ca[1]) ? $ca[1] : '');
+      $rb = fec_sister_status_rank(isset($cb[1]) ? $cb[1] : '');
+      if ($ra !== $rb) return $ra - $rb;
+      return strcasecmp((string)$a['title'], (string)$b['title']);
+    });
+
+    $palette  = array('active'=>'#1c7a4a','warning'=>'#a8631c','blacklisted'=>'#9a2828','closed'=>'#6b6b66');
+    $bucketOf = function ($m) {
+      $cl = fec_sister_node_color($m);
+      $s  = isset($cl[1]) ? $cl[1] : '';
+      if ($s === 'blacklisted') return 'blacklisted';
+      if ($s === 'warning' || $s === 'flag') return 'warning';
+      if ($s === 'closed' || $s === 'suspended') return 'closed';
+      return 'active';
+    };
+    $counts = array('active'=>0,'warning'=>0,'blacklisted'=>0,'closed'=>0);
+    $isNetGroup = false;
+    $labelNorm  = function_exists('fec_sister_owner_norm') ? fec_sister_owner_norm($label) : '';
+    foreach ($members as $m) {
+      $counts[$bucketOf($m)]++;
+      if (!$isNetGroup && isset($m['jr_owner'])) {
+        $lg = trim((string)$m['jr_owner']);
+        if ($lg !== '' && fec_sister_owner_norm($lg) !== $labelNorm) $isNetGroup = true;
+      }
+    }
+    $total = count($members);
+
+    // Health strip: proportional segments (non-zero buckets only).
+    $seg = '';
+    foreach ($palette as $k => $col) {
+      if ($counts[$k] <= 0) continue;
+      $pct = round($counts[$k] / $total * 100, 3);
+      $seg .= '<span title="' . $counts[$k] . ' ' . $k . '" style="height:100%;width:'
+            . $pct . '%;background:' . $col . '"></span>';
+    }
+    $strip = '<div style="display:flex;height:9px;border-radius:999px;overflow:hidden;'
+           . 'background:var(--rule);margin:0 0 9px">' . $seg . '</div>';
+
+    // Counts caption (exact numbers, dot-coded).
+    $order = array('active'=>'active','closed'=>'closed','warning'=>'warning','blacklisted'=>'blacklisted');
+    $cap = '';
+    foreach ($order as $k => $lab) {
+      if ($counts[$k] > 0) {
+        $cap .= '<span><span style="color:' . $palette[$k] . '">&#9679;</span> '
+              . '<strong style="font-weight:600">' . $counts[$k] . '</strong> ' . $lab . '</span>';
+      }
+    }
+    $headEyebrow = $ownerHeading
+      ? '<div style="font-family:var(--mono);font-size:11px;letter-spacing:.05em;'
+        . 'text-transform:uppercase;color:var(--ink-3);margin-bottom:8px">'
+        . ($isNetGroup ? 'Part of the ' . fec_atlas_link_name($label) . ' network' : 'Owned by ' . fec_atlas_link_name($label)) . '</div>'
+      : '';
+    $caption = '<div style="font-family:var(--mono);font-size:11.5px;color:var(--ink-3);'
+             . 'margin-bottom:16px;display:flex;flex-wrap:wrap;gap:4px 14px">'
+             . '<span>' . (int)$total . ' brands</span>' . $cap . '</div>';
+
+    // Brand cards.
+    $cards = '';
+    foreach ($members as $m) {
+      $cl   = fec_sister_node_color($m);
+      $col  = $cl[0];
+      $isHi = ($highlight > 0 && isset($m['id']) && (int)$m['id'] === $highlight);
+      $dot  = '<span style="width:8px;height:8px;border-radius:999px;background:' . $col . ';flex:none"></span>';
+      $legal = isset($m['jr_owner']) ? trim((string)$m['jr_owner']) : '';
+      $sub   = '';
+      if ($legal !== '' && function_exists('fec_sister_owner_norm')
+          && fec_sister_owner_norm($legal) !== fec_sister_owner_norm($label)) {
+        $sub = '<span style="display:block;font-family:var(--mono);font-size:10.5px;'
+             . 'color:var(--ink-3);margin-top:1px">' . $esc($legal) . '</span>';
+      }
+      $name = '<span style="min-width:0"><span style="font-weight:' . ($isHi ? '700' : '600') . '">'
+            . $esc($m['title']) . '</span>' . $sub . '</span>';
+      $tag  = $isHi ? '<span style="margin-left:auto;font-family:var(--mono);font-size:10px;'
+                    . 'letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3)">this casino</span>' : '';
+      $style = 'display:flex;align-items:center;gap:9px;border:1px solid var(--rule);'
+             . 'border-left:3px solid ' . $col . ';border-radius:8px;padding:10px 12px;'
+             . 'text-decoration:none;color:var(--ink)' . ($isHi ? ';background:var(--rule)' : '');
+      if ($isHi) {
+        $cards .= '<div style="' . $style . '">' . $dot . $name . $tag . '</div>';
+      } else {
+        $cards .= '<a href="/online-casinos/' . $esc($m['alias']) . '" style="' . $style . '">' . $dot . $name . '</a>';
+      }
+    }
+    $grid = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px">'
+          . $cards . '</div>';
+
+    return '<div class="fec-owner-tree" style="max-width:720px;margin:0 auto">'
+         . $headEyebrow . $strip . $caption . $grid . '</div>';
+  }
+
+// --- fec_cluster_published_link  (source lines 14350-14378; slices: bonuses)
+  /**
+   * If the owner group (by normalized key) has a PUBLISHED cluster page
+   * (featured + active row AND a published article at alias=slug in the
+   * clusters category), return a small HTML link to it. Otherwise ''.
+   * Used by the review sister-map infographic.
+   */
+  function fec_cluster_published_link($db, $norm, $owner = '') {
+    if (!defined('FEC_CLUSTERS_CATID') || FEC_CLUSTERS_CATID <= 0) return '';
+    $norm = trim((string) $norm);
+    if ($norm === '') return '';
+    try {
+      $cq = $db->getQuery(true);
+      $cq->select(array('g.slug', 'g.label'))
+         ->from($db->quoteName('#__fec_owner_groups', 'g'))
+         ->join('INNER', $db->quoteName('#__content', 'a')
+                . ' ON a.alias = g.slug AND a.catid = ' . (int) FEC_CLUSTERS_CATID . ' AND a.state = 1')
+         ->where('g.norm_key = ' . $db->quote($norm))
+         ->where('g.featured = 1')
+         ->where($db->quoteName('g.status') . ' = ' . $db->quote('active'));
+      $db->setQuery($cq);
+      $row = $db->loadAssoc();
+    } catch (Exception $e) {
+      return '';
+    }
+    if (!$row || empty($row['slug'])) return '';
+    $esc   = function ($s) { return htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8'); };
+    $label = ((string) $row['label'] !== '') ? (string) $row['label'] : (string) $owner;
+    return '<div style="text-align:center;margin-top:8px">'
+         . '<a href="/online-casinos/clusters/' . $esc($row['slug']) . '" '
+         . 'style="font-family:ui-monospace,&apos;SF Mono&apos;,Menlo,Consolas,monospace;'
+         . 'font-size:12px;letter-spacing:.04em;text-transform:uppercase;'
+         . 'color:#0b6b62;text-decoration:none;'
+         . 'border-bottom:1px solid rgba(11,107,98,.35);padding-bottom:1px">'
+         . 'See all ' . $esc($label) . ' casinos &#8594;</a></div>';
+  }
+
+// --- fec_render_author_card  (source lines 16845-16901; slices: bonuses)
+  /**
+   * Render the author trust card (reuses the .bd-author style already shipped
+   * for bonus detail pages). Returns '' when author missing.
+   */
+  function fec_render_author_card($author, $opts = array()) {
+    if (!is_array($author) || empty($author['name'])) return '';
+    $esc = function ($s) { return htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8'); };
+    $name = $esc($author['name']);
+    $role = isset($author['role']) ? $esc($author['role']) : '';
+    $bio  = isset($author['short_bio']) ? $esc($author['short_bio']) : '';
+
+    $authorUrl = '';
+    if (!empty($author['slug'])) {
+      $authorUrl = JRoute::_('index.php?option=com_authors&view=author&slug=' . urlencode($author['slug']));
+    }
+    $avatar = isset($author['avatar_url']) ? trim((string) $author['avatar_url']) : '';
+    if ($avatar !== '') {
+      $photoHtml = '<img src="' . $esc($avatar) . '" alt="" loading="lazy">';
+    } else {
+      $initial = function_exists('mb_substr') ? mb_substr($author['name'], 0, 1, 'UTF-8') : substr($author['name'], 0, 1);
+      $photoHtml = '<span aria-hidden="true">' . $esc($initial) . '</span>';
+    }
+    $nameHtml = ($authorUrl !== '')
+      ? '<a href="' . $esc($authorUrl) . '" rel="author">' . $name . '</a>'
+      : $name;
+
+    // lib v94 (2026-10-21): optional meta line, so the review byline can say
+    // what the bonus byline says - who reviewed it and when it was published
+    // and last updated. opts: 'reviewer' (author array: name, slug, role),
+    // 'published' and 'updated' (SQL datetimes). Updated prints only when it
+    // is more than a day after published. Callers that pass nothing see the
+    // card exactly as before.
+    $metaBits = array();
+    $reviewer = (isset($opts['reviewer']) && is_array($opts['reviewer']) && !empty($opts['reviewer']['name'])) ? $opts['reviewer'] : null;
+    if ($reviewer) {
+      $rName = $esc($reviewer['name']);
+      $rUrl  = '';
+      if (!empty($reviewer['slug']) && class_exists('JRoute')) {
+        $rUrl = JRoute::_('index.php?option=com_authors&view=author&slug=' . urlencode((string)$reviewer['slug']));
+      }
+      $metaBits[] = 'Reviewed by ' . ($rUrl !== '' ? '<a href="' . $esc($rUrl) . '">' . $rName . '</a>' : $rName)
+                  . (!empty($reviewer['role']) ? ', ' . $esc($reviewer['role']) : '');
+    }
+    $pubSql = isset($opts['published']) ? (string)$opts['published'] : '';
+    $updSql = isset($opts['updated'])   ? (string)$opts['updated']   : '';
+    $pubTs  = ($pubSql !== '' && $pubSql !== '0000-00-00 00:00:00') ? strtotime($pubSql) : false;
+    $updTs  = ($updSql !== '' && $updSql !== '0000-00-00 00:00:00') ? strtotime($updSql) : false;
+    if ($pubTs) $metaBits[] = 'Published ' . $esc(date('M j, Y', $pubTs));
+    if ($updTs && (!$pubTs || $updTs - $pubTs > 86400)) $metaBits[] = 'Updated ' . $esc(date('M j, Y', $updTs));
+
+    $out  = '<div class="wrap">';
+    $out .= '<aside class="bd-author" aria-label="Author information">';
+    $out .= '<div class="avatar">' . $photoHtml . '</div>';
+    $out .= '<div><div class="who">Written by</div>';
+    $out .= '<div class="name">' . $nameHtml . '</div>';
+    if ($role !== '') $out .= '<div class="role">' . $role . '</div>';
+    if ($bio !== '')  $out .= '<div class="bio">' . $bio . '</div>';
+    if (!empty($metaBits)) $out .= '<div class="role bd-author-meta">' . implode(' &middot; ', $metaBits) . '</div>';
+    $out .= '</div></aside></div>';
+    return $out;
+  }
+
+// --- fec_render_casino_head_meta  (source lines 17083-17233; slices: bonuses)
+  /**
+   * Returns an associative array of meta entries for the casino review page.
+   * Caller is responsible for echoing them into <head> via JDocument
+   * (in Joomla context) or as raw HTML (in standalone preview).
+   *
+   * Structure:
+   *   [
+   *     'title'       => '7Bit Casino Review 2026: Payouts Tested & Real Terms | FreeExtraChips',
+   *     'description' => 'first 160 chars of metadesc fallback to introtext...',
+   *     'canonical'   => 'https://www.freeextrachips.com/online-casinos/7bit-casino',
+   *     'og' => [
+   *        'og:title' => ..., 'og:description' => ..., 'og:type' => 'article',
+   *        'og:url' => ..., 'og:image' => ..., 'og:site_name' => 'FreeExtraChips',
+   *     ],
+   *     'twitter' => [
+   *        'twitter:card' => 'summary_large_image', 'twitter:title' => ...,
+   *        'twitter:description' => ..., 'twitter:image' => ...,
+   *     ],
+   *   ]
+   */
+  function fec_render_casino_head_meta($vm, $opts = array()) {
+    if (!is_array($vm) || empty($vm['cid'])) return array();
+
+    // Caller-supplied templates are captured BEFORE the defaults merge so we
+    // can tell "caller explicitly passed a template" (legacy behaviour, wins
+    // over auto branching) apart from "use the state-aware defaults below".
+    $callerTitleTpl = (is_array($opts) && isset($opts['titleTemplate'])) ? (string) $opts['titleTemplate'] : '';
+    $callerDescTpl  = (is_array($opts) && isset($opts['descTemplate']))  ? (string) $opts['descTemplate']  : '';
+
+    $defaults = array(
+      'siteName'      => 'FreeExtraChips',
+      'siteUrl'       => 'https://www.freeextrachips.com',
+      'logoBasePath'  => '/images/casino-logos/',  // 200x200 casino logos (jr_logosmall / jr_logowebp filenames)
+    );
+    $opts = array_merge($defaults, is_array($opts) ? $opts : array());
+
+    $cid     = (int) $vm['cid'];
+    $alias   = (string) $vm['alias'];
+    $title   = (string) $vm['title'];
+
+    // ------------------------------------------------------------------
+    // Page title + description -- SERP-facing, state-branched (v54).
+    //
+    // Priority:
+    //   1) Manual per-article override: metadata JSON key "page_title"
+    //      (same convention as cluster pages) -- editorial surgery wins.
+    //      Tokens are substituted in manual titles too, so an override
+    //      may embed %year% and stay fresh.
+    //   2) Caller-supplied $opts['titleTemplate'] / $opts['descTemplate']
+    //      (legacy behaviour, kept for external callers).
+    //   3) Auto branch on casino state:
+    //        closed                    -> archival title, no year
+    //        flagged/blacklist/susp.   -> warning intent ("Read Before
+    //                                     You Deposit"). Closed/blacklist/
+    //                                     suspended pages are noindexed
+    //                                     anyway, so this branch is SERP-
+    //                                     relevant only for *flagged*
+    //                                     (still indexed); the others get
+    //                                     it for tab/social consistency.
+    //        payout test documented    -> "Payouts Tested" (fx_prg is
+    //                                     non-null ONLY after a completed
+    //                                     staff withdrawal test; the PRG
+    //                                     value itself is never published)
+    //        default                   -> terms + player reports
+    //
+    // Freshness token %year% is the current year (annual, not monthly:
+    // review rankings stay stable, no monthly re-crawl churn).
+    // Tokens available in all templates: %title% %site% %year%.
+    // ------------------------------------------------------------------
+    $year = date('Y');
+
+    $manualTitle = '';
+    if (!empty($vm['metadata'])) {
+      $mdj = json_decode((string) $vm['metadata'], true);
+      if (is_array($mdj) && !empty($mdj['page_title'])) {
+        $manualTitle = trim((string) $mdj['page_title']);
+      }
+    }
+
+    $isClosed  = !empty($vm['is_closed']);
+    $isWarning = !empty($vm['flagged']) || !empty($vm['is_blacklisted']) || !empty($vm['is_suspended']);
+    $isTested  = (isset($vm['fx_prg']) && $vm['fx_prg'] !== null && $vm['fx_prg'] !== '');
+
+    $tokens = array('%title%', '%site%', '%year%');
+    $values = array($title, $opts['siteName'], $year);
+
+    if ($manualTitle !== '') {
+      $titleTpl = $manualTitle;
+    } elseif ($callerTitleTpl !== '') {
+      $titleTpl = $callerTitleTpl;
+    } elseif ($isClosed) {
+      $titleTpl = '%title% Review | %site%';
+    } elseif ($isWarning) {
+      $titleTpl = '%title% Review %year%: Read Before You Deposit | %site%';
+    } elseif ($isTested) {
+      $titleTpl = '%title% Review %year%: Payouts Tested & Real Terms | %site%';
+    } else {
+      $titleTpl = '%title% Review %year%: Terms & Player Reports | %site%';
+    }
+    $pageTitle = str_replace($tokens, $values, $titleTpl);
+
+    // Description: deterministic SEO template, no body parsing.
+    // Avoids fragile first-<p> extraction that can pick up kickers,
+    // headings, or empty paragraphs depending on the article structure.
+    // Branch mirrors the title; caller override via $opts['descTemplate'].
+    if ($callerDescTpl !== '') {
+      $descTemplate = $callerDescTpl;
+    } elseif ($isClosed) {
+      $descTemplate = '%title% has closed. Archived review kept for reference: licence history, terms, and player reports on %site%.';
+    } elseif ($isWarning) {
+      $descTemplate = 'Independent review of %title%: licence checks, withdrawal terms, and documented player issues. Read the full findings before you deposit.';
+    } elseif ($isTested) {
+      $descTemplate = 'Independent review of %title% with a staff-tested withdrawal: real payout terms, wagering rules, and verified player feedback.';
+    } else {
+      $descTemplate = 'Independent review of %title%: bonuses, payouts, software providers, country availability, and verified player feedback on %site%.';
+    }
+    $desc = str_replace($tokens, $values, $descTemplate);
+
+    if (function_exists('mb_strlen') && mb_strlen($desc, 'UTF-8') > 160) {
+      $desc = mb_substr($desc, 0, 157, 'UTF-8') . '...';
+    } elseif (strlen($desc) > 160) {
+      $desc = substr($desc, 0, 157) . '...';
+    }
+
+    // Canonical — uses Itemid=26 + catid=8 (the /online-casinos/ menu item)
+    // so Joomla's SEF router produces /online-casinos/<alias> rather than
+    // /component/content/article?id=...
+    $canonical = '';
+    if (class_exists('JRoute')) {
+      $canonical = rtrim($opts['siteUrl'], '/')
+                . JRoute::_('index.php?option=com_content&Itemid=26&catid=8&id=' . $cid . ':' . $alias . '&lang=en&view=article', false);
+    } else {
+      $canonical = rtrim($opts['siteUrl'], '/') . '/online-casinos/' . $alias;
+    }
+
+    // Image (OG / Twitter): logo_small (PNG 200x200) preferred for maximum
+    // social compatibility — Facebook/Twitter/LinkedIn handle PNG cleanly,
+    // WebP support is still inconsistent across crawlers. logo_webp is fallback.
+    $image = '';
+    $logoSmall = isset($vm['logo_small']) ? trim((string) $vm['logo_small']) : '';
+    $logoWebp  = isset($vm['logo_webp'])  ? trim((string) $vm['logo_webp'])  : '';
+    if ($logoSmall !== '') {
+      $image = rtrim($opts['siteUrl'], '/') . $opts['logoBasePath'] . $logoSmall;
+    } elseif ($logoWebp !== '') {
+      $image = rtrim($opts['siteUrl'], '/') . $opts['logoBasePath'] . $logoWebp;
+    }
+
+    $meta = array(
+      'title'       => $pageTitle,
+      'description' => $desc,
+      'canonical'   => $canonical,
+      'og' => array(
+        'og:title'       => $pageTitle,
+        'og:description' => $desc,
+        'og:type'        => 'article',
+        'og:url'         => $canonical,
+        'og:site_name'   => $opts['siteName'],
+      ),
+      'twitter' => array(
+        'twitter:card'        => 'summary_large_image',
+        'twitter:title'       => $pageTitle,
+        'twitter:description' => $desc,
+      ),
+    );
+    if ($image !== '') {
+      $meta['og']['og:image']        = $image;
+      $meta['twitter']['twitter:image'] = $image;
+    }
+
+    return $meta;
+  }
+
+// --- fec_hub_longform_iife  (source lines 18842-18898; slices: bonuses)
+  /**
+   * Returns a <script> tag with a self-contained IIFE that handles the
+   * .hub-longform interactive behaviour:
+   *
+   *   1. hub-toc scrollspy: as the user scrolls, the TOC link pointing
+   *      to the current section gets class="active" (and others lose it).
+   *   2. fec-faqctrl bulk controls: clicking [data-faq-action="open"] or
+   *      "close" opens/closes all <details> in the next .faq-list.
+   *
+   * Scoped to the first .hub-longform in the page - won't double-bind
+   * if multiple are present (rare; would need a refactor). All listeners
+   * are passive where possible (scroll uses requestAnimationFrame).
+   *
+   * Emitted inline (rather than living in fec_listing.js) so the script
+   * survives Joomla onContentPrepare filtering and ships together with
+   * the article body that needs it - works on any caller that renders
+   * the hub-longform structure.
+   */
+  function fec_hub_longform_iife() {
+    return '<script>(function(){'
+      .   'var root=document.querySelector(".hub-longform");if(!root)return;'
+
+      // === Scrollspy ===
+      .   'var tocLinks=root.querySelectorAll(".hub-toc a[href^=\"#\"]");'
+      .   'var pairs=[];'
+      .   'for(var i=0;i<tocLinks.length;i++){'
+      .     'var id=tocLinks[i].getAttribute("href").slice(1);'
+      .     'var sec=document.getElementById(id);'
+      .     'if(sec)pairs.push({link:tocLinks[i],sec:sec});'
+      .   '}'
+      .   'function updateActive(){'
+      .     'var y=window.pageYOffset+140;'  // sticky-bar offset
+      .     'var idx=0;'
+      .     'for(var i=0;i<pairs.length;i++){'
+      .       'if(pairs[i].sec.offsetTop<=y)idx=i;'
+      .     '}'
+      .     'for(var i=0;i<pairs.length;i++){'
+      .       'if(i===idx)pairs[i].link.classList.add("active");'
+      .       'else pairs[i].link.classList.remove("active");'
+      .     '}'
+      .   '}'
+      .   'if(pairs.length>0){'
+      .     'var ticking=false;'
+      .     'window.addEventListener("scroll",function(){'
+      .       'if(!ticking){'
+      .         'window.requestAnimationFrame(function(){updateActive();ticking=false;});'
+      .         'ticking=true;'
+      .       '}'
+      .     '},{passive:true});'
+      .     'updateActive();'  // initial highlight
+      .   '}'
+
+      // === FAQ open/close all ===
+      .   'var faqCtrl=root.querySelector(".fec-faqctrl");'
+      .   'if(faqCtrl){'
+      .     'var faqBtns=faqCtrl.querySelectorAll("[data-faq-action]");'
+      .     'var faqList=root.querySelector(".faq-list");'
+      .     'if(faqList){'
+      .       'for(var j=0;j<faqBtns.length;j++){'
+      .         '(function(btn){'
+      .           'btn.addEventListener("click",function(){'
+      .             'var action=btn.getAttribute("data-faq-action");'
+      .             'var dets=faqList.querySelectorAll("details");'
+      .             'for(var k=0;k<dets.length;k++){'
+      .               'if(action==="open")dets[k].open=true;'
+      .               'else if(action==="close")dets[k].open=false;'
+      .             '}'
+      .           '});'
+      .         '})(faqBtns[j]);'
+      .       '}'
+      .     '}'
+      .   '}'
+
+      . '})();</script>';
+  }
+
+// --- fec_render_casino_intro  (source lines 18933-18971; slices: bonuses)
+  /**
+   * Render the single review page introtext (the body of the article
+   * sitting between the bonus strip and the sidebar / withdrawal block).
+   *
+   * Two rendering modes, auto-detected from the article body itself:
+   *
+   *   PLAIN PROSE (default)
+   *     Body is just <h1>/<h2>/<h3>/<p>/<ul>/<ol> content. Wrap it in
+   *     <article class="cr-content"> with an optional <h1> emitted at the
+   *     top from the casino title (so editors don't need to write the H1
+   *     themselves on legacy content).
+   *
+   *   HUB-LONGFORM (auto-detected)
+   *     Body contains <aside class="hub-toc"> or class="hub-longform" -
+   *     the editor wrote a structured longform with TOC + sections +
+   *     FAQ. Emit the body as-is (its own .hub-longform wrapper carries
+   *     the layout) and append the scrollspy + FAQ-controls IIFE via
+   *     fec_hub_longform_iife(). NO outer .cr-content wrapping (would
+   *     break the TOC sticky), NO lib-emitted <h1> (the body brings its
+   *     own headline).
+   *
+   * Detection is string-based and cheap; the function is called once per
+   * page render. Keeps editors free to upgrade individual reviews from
+   * plain prose to hub-longform without any lib/template changes.
+   *
+   * @param string $html   The introtext / article body HTML (already cleaned)
+   * @param string $title  The casino title, used to build the H1 in plain mode
+   * @param array  $opts   titleSuffix (default ' Review'), emitTitle (default true)
+   * @return string
+   */
+  function fec_render_casino_intro($html, $title = '', $opts = array()) {
+    if (!is_string($html) || trim($html) === '') return '';
+
+    $defaults = array(
+      'titleSuffix' => ' Review',
+      'emitTitle'   => true,
+    );
+    $opts = array_merge($defaults, is_array($opts) ? $opts : array());
+    $esc  = function ($s) { return htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8'); };
+
+    // Hub-longform detection: the body brings its own layout (TOC,
+    // sections with ids, FAQ details, optional kickers + lf-* helpers).
+    // We emit it raw and attach the behaviour IIFE for scrollspy +
+    // FAQ open/close-all controls.
+    $isHubLongform = (strpos($html, 'hub-longform') !== false)
+                  || (strpos($html, 'hub-toc')      !== false);
+
+    if ($isHubLongform) {
+      $out = $html;
+      // Attach IIFE only if the scoped behaviours are actually present.
+      // (Avoids dead JS when an editor uses .hub-longform without a TOC
+      // or vice-versa.)
+      $needsHubJs = (strpos($html, 'hub-toc')     !== false)
+                 || (strpos($html, 'fec-faqctrl') !== false);
+      if ($needsHubJs && function_exists('fec_hub_longform_iife')) {
+        $out .= fec_hub_longform_iife();
+      }
+      return $out;
+    }
+
+    // Plain prose mode: wrap in .cr-content and optionally emit the H1.
+    $out  = '<article class="cr-content">';
+    if (!empty($opts['emitTitle']) && $title !== '') {
+      $out .= '<h1>' . $esc($title) . $esc((string)$opts['titleSuffix']) . '</h1>';
+    }
+    $out .= $html;
+    $out .= '</article>';
+    return $out;
+  }
+
+// --- fec_canonical_page_guard  (source lines 20108-20198; slices: bonuses)
+  /**
+   * v2 (2026-07): extended for the /online-casinos listing case.
+   *
+   * Handles TWO deep-link parameters, independently switchable:
+   *   ?page=N   legacy pattern from the pre-V2 templates. On views
+   *             that no longer paginate with it (allow_page=false,
+   *             i.e. every current listing), any N>1 is stale and
+   *             301s to the clean base. GSC evidence: ?page=22 on
+   *             /online-casinos renders ranks #1-#50 (page-1
+   *             content) while self-canonicalising with the query.
+   *   ?start=N  the live V2 pattern emitted by
+   *             fec_render_listing_pagination(). Valid when
+   *             allow_start=true, 0 < N < total_items, and N is a
+   *             multiple of per_page (when per_page is given).
+   *             Valid deep starts get a SELF-canonical
+   *             (?start=N), per Google's pagination guidance.
+   *             ?start=0 and out-of-range values 301 to base.
+   *   Joomla's own limitstart is deliberately left untouched
+   *   (JPagination on the hub expired archive), those views are
+   *   noindexed anyway.
+   *
+   * Path enforcement: when opts['base_path'] is given and the
+   * request path differs (legacy aliases like /casino-reviews
+   * still resolving 200 for the same listing), the guard 301s to
+   * base_path directly — kept params survive, deep params do not.
+   *
+   * Both deep params present at once = ambiguous = 301 to base.
+   */
+  function fec_canonical_page_guard($opts = array()) {
+    $app   = JFactory::getApplication();
+    $input = $app->input;
+    $doc   = JFactory::getDocument();
+    $uri   = JUri::getInstance();
+
+    $totalPages = isset($opts['total_pages']) ? max(1, (int)$opts['total_pages']) : 1;
+    $allowPage  = !empty($opts['allow_page']);
+    $allowStart = !empty($opts['allow_start']);
+    $perPage    = isset($opts['per_page'])    ? max(0, (int)$opts['per_page'])    : 0;
+    $totalItems = isset($opts['total_items']) ? max(0, (int)$opts['total_items']) : 0;
+    $noindex    = !empty($opts['noindex']);
+    $keep       = isset($opts['keep_params']) ? (array)$opts['keep_params'] : array();
+
+    $curPath  = $uri->toString(array('path'));
+    $basePath = (isset($opts['base_path']) && (string)$opts['base_path'] !== '')
+      ? (string)$opts['base_path']
+      : $curPath;
+
+    $hostBase = rtrim($uri->toString(array('scheme', 'host', 'port')), '/');
+
+    // Query params allowed to survive in the redirect target / canonical
+    $q    = $uri->getQuery(true);
+    $kept = array();
+    foreach ($keep as $k) {
+      if (isset($q[$k]) && (string)$q[$k] !== '') $kept[$k] = (string)$q[$k];
+    }
+
+    // Convenience: the clean 301 target (base path + kept params only)
+    $cleanTarget = $hostBase . $basePath;
+    if (count($kept)) $cleanTarget .= '?' . http_build_query($kept);
+
+    // --- 0) Path enforcement (legacy aliases of the same view) ---
+    if (isset($opts['base_path']) && (string)$opts['base_path'] !== ''
+        && rtrim($curPath, '/') !== rtrim($basePath, '/')) {
+      $app->redirect($cleanTarget, '', 'message', true); // 301
+      return;
+    }
+
+    $page     = (int)$input->getInt('page', 1);
+    if ($page < 1) $page = 1;
+    $hasStart = array_key_exists('start', $q);
+    $start    = $hasStart ? (int)$q['start'] : 0;
+
+    // --- 1a) both deep params at once: ambiguous, collapse ------
+    if ($page > 1 && $hasStart) {
+      $app->redirect($cleanTarget, '', 'message', true);
+      return;
+    }
+
+    // --- 1b) 301 stale / out-of-range ?page= --------------------
+    if ($page > 1 && (!$allowPage || $page > $totalPages)) {
+      $app->redirect($cleanTarget, '', 'message', true);
+      return;
+    }
+
+    // --- 1c) ?start=N validation --------------------------------
+    if ($hasStart) {
+      $startValid = $allowStart
+        && $start > 0
+        && ($totalItems <= 0 || $start < $totalItems)
+        && ($perPage <= 0 || ($start % $perPage) === 0);
+      if (!$startValid) {
+        // covers start=0 (duplicate of base), negatives, beyond-catalog,
+        // off-grid values, and any start on views that never emit it
+        $app->redirect($cleanTarget, '', 'message', true);
+        return;
+      }
+    }
+
+    // --- 2) robots ----------------------------------------------
+    if ($noindex) {
+      $doc->setMetaData('robots', 'noindex, follow');
+      return; // noindexed utility views: skip the canonical entirely
+    }
+
+    // --- 3) canonical -------------------------------------------
+    if (isset($doc->_links) && is_array($doc->_links)) {
+      foreach (array_keys($doc->_links) as $href) {
+        $rel = isset($doc->_links[$href]['relation'])
+          ? strtolower((string)$doc->_links[$href]['relation']) : '';
+        if ($rel === 'canonical') unset($doc->_links[$href]);
+      }
+    }
+
+    if ($allowPage && $page > 1)   $kept['page']  = $page;  // valid deep page
+    if ($hasStart && $start > 0)   $kept['start'] = $start; // valid deep start
+    $canonical = $hostBase . $basePath;
+    if (count($kept)) $canonical .= '?' . http_build_query($kept);
+    $doc->addHeadLink($canonical, 'canonical');
+  }
+
+// --- fec_file_cache_dir  (source lines 20275-20287; slices: bonuses)
+  /**
+   * Writable dir for the lib micro file-cache. Prefers Joomla cache
+   * (predictable perms, cleared with site cache) then system tmp.
+   * @return string dir path WITHOUT trailing slash, '' when nothing writable
+   */
+  function fec_file_cache_dir() {
+    static $dir = null;
+    if ($dir !== null) return $dir;
+    $dir = '';
+    $cand = array();
+    if (defined('JPATH_CACHE')) $cand[] = rtrim(JPATH_CACHE, '/') . '/fec_lib';
+    $cand[] = rtrim(sys_get_temp_dir(), '/') . '/fec_lib';
+    foreach ($cand as $d) {
+      if (!is_dir($d)) @mkdir($d, 0755, true);
+      if (is_dir($d) && is_writable($d)) { $dir = $d; break; }
+    }
+    return $dir;
+  }
+
+// --- fec_file_cache_get  (source lines 20298-20309; slices: bonuses)
+  /**
+   * Read a cached value. Returns NULL on miss/expiry/error, so a
+   * value of null is indistinguishable from a miss — never cache null.
+   * @param  string $key
+   * @param  int    $maxAgeSec
+   * @return mixed|null
+   */
+  function fec_file_cache_get($key, $maxAgeSec) {
+    $dir = fec_file_cache_dir();
+    if ($dir === '') return null;
+    $f = $dir . '/' . preg_replace('/[^a-z0-9_-]/i', '', (string)$key) . '_' . md5((string)$key) . '.json';
+    if (!is_file($f)) return null;
+    $raw = @file_get_contents($f);
+    if (!is_string($raw) || $raw === '') return null;
+    $row = json_decode($raw, true);
+    if (!is_array($row) || !isset($row['t']) || !array_key_exists('v', $row)) return null;
+    if ((time() - (int)$row['t']) > (int)$maxAgeSec) return null;
+    return $row['v'];
+  }
+
+// --- fec_file_cache_put  (source lines 20317-20327; slices: bonuses)
+  /**
+   * Atomic write (tmp + rename, same dir = same filesystem) so
+   * concurrent readers under LiteSpeed never see a half file.
+   */
+  function fec_file_cache_put($key, $value) {
+    $dir = fec_file_cache_dir();
+    if ($dir === '') return false;
+    $f   = $dir . '/' . preg_replace('/[^a-z0-9_-]/i', '', (string)$key) . '_' . md5((string)$key) . '.json';
+    $tmp = $f . '.' . getmypid() . '.tmp';
+    $payload = json_encode(array('t' => time(), 'v' => $value));
+    if (!is_string($payload)) return false;
+    if (@file_put_contents($tmp, $payload) === false) return false;
+    if (!@rename($tmp, $f)) { @unlink($tmp); return false; }
+    return true;
+  }
+
+// --- fec_clicks_map  (source lines 20339-20387; slices: bonuses)
+  /**
+   * bid => non-bot outbound clicks in the last $days days.
+   * One GROUP BY, file-cached $ttl seconds + per-request memo,
+   * shared by the pulse chip and the Trending band.
+   * goto.php rows logged with bid=0 (slug-only) are invisible here
+   * by design: per-bonus proof needs a bid.
+   * @return array int bid => int clicks (empty on error/no data)
+   */
+  function fec_clicks_map($db, $days = 7, $ttl = 1200) {
+    $days = (int)$days;
+    if ($days < 1)  $days = 1;
+    if ($days > 60) $days = 60;
+
+    static $memo = array();
+    if (isset($memo[$days])) return $memo[$days];
+
+    $ck  = 'clicksmap_' . $days . 'd';
+    $hit = fec_file_cache_get($ck, (int)$ttl);
+    if (is_array($hit)) {
+      $out = array();
+      foreach ($hit as $b => $c) $out[(int)$b] = (int)$c;
+      $memo[$days] = $out;
+      return $out;
+    }
+
+    $out = array();
+    try {
+      if (!is_object($db) || !method_exists($db, 'getQuery')) {
+        if (!class_exists('JFactory')) return $out;
+        $db = JFactory::getDbo();
+      }
+      // created_at is written via JFactory::getDate()->toSql() => UTC
+      $cutoff = gmdate('Y-m-d H:i:s', time() - $days * 86400);
+      $q = $db->getQuery(true)
+        ->select($db->qn('bid') . ', COUNT(*) AS ' . $db->qn('c'))
+        ->from($db->qn('#__bonus_clicks'))
+        ->where($db->qn('is_bot') . ' = 0')
+        ->where($db->qn('bid') . ' > 0')
+        ->where($db->qn('created_at') . ' >= ' . $db->q($cutoff))
+        ->group($db->qn('bid'));
+      $db->setQuery($q);
+      $rows = (array)$db->loadAssocList();
+      if ($db->getErrorNum()) {
+        error_log('fec_clicks_map query failed: ' . $db->getErrorMsg());
+        return $out; // do not cache failures
+      }
+      foreach ($rows as $r) {
+        $b = isset($r['bid']) ? (int)$r['bid'] : 0;
+        if ($b > 0) $out[$b] = isset($r['c']) ? (int)$r['c'] : 0;
+      }
+      fec_file_cache_put($ck, $out);
+    } catch (Exception $e) {
+      error_log('fec_clicks_map: ' . $e->getMessage());
+    }
+    $memo[$days] = $out;
+    return $out;
+  }
+
+// --- fec_trend_row_subtype  (source lines 20459-20466; slices: bonuses)
+  /**
+   * Mirror of the subtype rule that lives inside fec_build_query(): subtype
+   * is NOT a column, it is derived from min_dep on free-spins rows.
+   *   fs + empty/NULL min_dep -> 'nd'  (no deposit)
+   *   fs + min_dep > 0        -> 'dr'  (deposit required)
+   *   anything else (incl. fs with min_dep = '0') -> ''
+   * KEEP IN SYNC with fec_build_query() if that rule ever changes.
+   * @param  array  $row listing row (needs 'type' and 'min_dep')
+   * @return string '', 'nd' or 'dr'
+   */
+  function fec_trend_row_subtype($row) {
+    $type = isset($row['type']) ? (string)$row['type'] : '';
+    if ($type !== 'fs') return '';
+    $md = isset($row['min_dep']) ? $row['min_dep'] : null;
+    if ($md === null || trim((string)$md) === '') return 'nd';
+    if ((float)$md > 0) return 'dr';
+    return '';
+  }
+
+// --- fec_render_trending_section  (source lines 20518-20735; slices: bonuses)
+  /**
+   * "Trending" band — bonuses ranked by real outbound clicks (last N days,
+   * bots excluded). Reuses the Editor's Picks band shell so it inherits the
+   * fecx look with no new layout CSS.
+   *
+   * SCOPE RESOLUTION (v59). Click volume is heavily concentrated on No
+   * Deposit, so a hard type filter would delete the band from most listing
+   * pages. Three passes, best first, ALL served by ONE query — rows are
+   * partitioned in PHP, never re-queried:
+   *   A. exact type + subtype, floor_clicks   -> "Trending in Free Spins No Deposit"
+   *   B. type only,            floor_clicks   -> "Trending in Free Spins"
+   *   C. site-wide,            min_clicks     -> "Trending this week"
+   * A pass fires only when it yields $limit geo-eligible cards, so the
+   * heading never promises a category the cards don't deliver.
+   *
+   * v60: pass C runs ONLY on untyped listings (hub / all bonuses). On a
+   * category page a site-wide band answers a question the visitor did not
+   * ask — /1st-deposit-match/ has no bonus above the floor, so the honest
+   * output there is no band at all. opts['global_fallback'] = true restores
+   * the old behaviour per page.
+   *
+   * v63: opts['shell'] — 'auto' (default) keeps the fec_is_fecx_bonus()
+   * path gate; 'band' forces the bordered hub-picks-band shell on .fecx
+   * pages whose path sits outside that allowlist (the homepage: the whole
+   * template is .fecx and fec-edition.css is global, but the root path is
+   * not in the /bonuses/ list); 'plain' forces the flat section.
+   *
+   * v64: shell and CARDS travel together. Outside the path gates the card
+   * dispatcher used to return '' (its documented fallback), so a forced
+   * band shell came out empty and self-hid. When $useBand is true this
+   * renderer now raises $GLOBALS['fec_v2card_force_hub'] for the duration
+   * of its own card loop — and only then.
+   *
+   * Two floors on purpose: the site-wide band holds the higher bar
+   * (min_clicks), type-scoped pools are thinner and use floor_clicks.
+   * Since the pool is click-sorted, a rich category still shows its
+   * biggest numbers first — the lower floor only rescues thin ones.
+   *
+   * Honesty contract (unchanged): counts are raw non-bot outbound clicks;
+   * the logger stores no IP, so copy says "opens", never "players". No
+   * seeding, rounding-up or decay anywhere. Popularity only — this must
+   * never feed FRank, FXShield or Editor's Picks, and nothing commercial
+   * may feed the ranking.
+   *
+   * @param array $opts min_clicks (30), floor_clicks (15), days (7), type,
+   *                    subtype, type_label, heading, pool_cap (80),
+   *                    global_fallback (false), shell ('auto'|'band'|'plain')
+   */
+  function fec_render_trending_section($db, $countrycode, $countryname, $bonustype, $currency, $limit = 3, $opts = array()) {
+    $defaults = array(
+      'min_clicks'   => 30,
+      'floor_clicks' => 15,
+      'days'         => 7,
+      'type'         => '',
+      'subtype'      => '',
+      'type_label'   => '',
+      'heading'         => 'Trending this week',
+      'pool_cap'        => 80,
+      'global_fallback' => false, // allow pass C on a typed page
+      'shell'           => 'auto', // 'auto' | 'band' | 'plain' (see v63 note)
+    );
+    $opts = array_merge($defaults, is_array($opts) ? $opts : array());
+
+    $countrycode = strtolower(trim((string)$countrycode));
+    if (strlen($countrycode) !== 2) $countrycode = '';
+
+    $limit = (int)$limit;
+    if ($limit < 1) $limit = 1;
+    if ($limit > 6) $limit = 6;
+
+    $minClicks   = (int)$opts['min_clicks'];
+    $floorClicks = (int)$opts['floor_clicks'];
+    if ($floorClicks < 1) $floorClicks = 1;
+    if ($floorClicks > $minClicks) $floorClicks = $minClicks;
+
+    $map = fec_clicks_map($db, (int)$opts['days']);
+    if (empty($map)) return '';
+
+    // Pool = everything above the LOWEST floor, click-desc, capped.
+    arsort($map);
+    $pool = array();
+    $cap  = (int)$opts['pool_cap'];
+    if ($cap < $limit) $cap = $limit;
+    if ($cap > 200)    $cap = 200;
+    foreach ($map as $b => $c) {
+      if ((int)$c < $floorClicks) break; // sorted desc — done
+      $pool[(int)$b] = (int)$c;
+      if (count($pool) >= $cap) break;
+    }
+    if (count($pool) < $limit) return '';
+
+    // Standard listing query (same filter set as the big board), restricted
+    // to the pool. NO type filter here: scope is decided in PHP so all three
+    // passes share this single result set.
+    $filters = array(
+      'fx' => 'any', 'wr_max' => 0, 'cashable' => '', 'cashout' => '',
+      'code' => '', 'crypto' => '', 'hide_na' => ($countrycode !== '') ? 1 : 0,
+      'exclusive' => '', 'sort' => 'newest', 'type' => '', 'subtype' => '',
+      'view' => '', 'cid' => 0,
+    );
+    $w = array();
+    $q = fec_build_query($db, $filters, $countrycode, $w);
+    $q->where($db->qn('a.bid') . ' IN (' . implode(',', array_keys($pool)) . ')');
+
+    $db->setQuery($q);
+    $rows = (array)$db->loadAssocList();
+    if ($db->getErrorNum()) {
+      error_log('fec_render_trending_section query failed: ' . $db->getErrorMsg());
+      return '';
+    }
+    if (empty($rows)) return '';
+
+    $byBid = array();
+    foreach ($rows as $set) {
+      $b = isset($set['bid']) ? (int)$set['bid'] : 0;
+      if ($b > 0) $byBid[$b] = $set;
+    }
+
+    // Eligible bids in click-desc order (geo/state decided once).
+    $eligible = array();
+    foreach ($pool as $b => $clicks) {
+      if (!isset($byBid[$b])) continue;
+      $decision = fec_decide_state($byBid[$b], $countrycode);
+      if ($decision['state'] === 'SKIP') continue;
+      $eligible[] = (int)$b;
+    }
+    if (count($eligible) < $limit) return '';
+
+    $pageType = strtolower(trim((string)$opts['type']));
+    $pageSub  = strtolower(trim((string)$opts['subtype']));
+
+    // Category label: view passes the canonical one from $labels; fall back
+    // to the $bonustype map already handed to this renderer. Never a third
+    // hard-coded copy of the label list.
+    $typeLabel = trim((string)$opts['type_label']);
+    if ($typeLabel === '' && $pageType !== '' && is_array($bonustype) && isset($bonustype[$pageType])) {
+      $typeLabel = (string)$bonustype[$pageType];
+    }
+
+    // --- pass selection ---------------------------------------------------
+    $pick    = array();
+    $heading = (string)$opts['heading'];
+
+    $collect = function ($eligible, $byBid, $pool, $type, $sub, $floor, $limit) {
+      $out = array();
+      foreach ($eligible as $b) {
+        if ((int)$pool[$b] < $floor) continue;
+        $row = $byBid[$b];
+        if ($type !== '' && (string)$row['type'] !== $type) continue;
+        if ($sub !== '' && fec_trend_row_subtype($row) !== $sub) continue;
+        $out[] = $b;
+        if (count($out) >= $limit) break;
+      }
+      return (count($out) >= $limit) ? $out : array();
+    };
+
+    // A. exact type + subtype. A missing label is not a blocker: the cards
+    // are a subset of the page, so the generic heading stays truthful.
+    if ($pageType !== '' && $pageSub !== '') {
+      $try = $collect($eligible, $byBid, $pool, $pageType, $pageSub, $floorClicks, $limit);
+      if (!empty($try)) {
+        $pick = $try;
+        if ($typeLabel !== '') {
+          $subLabel = ($pageSub === 'nd') ? ' No Deposit'
+                    : (($pageSub === 'dr') ? ' (deposit required)' : '');
+          $heading = 'Trending in ' . $typeLabel . $subLabel;
+        }
+      }
+    }
+
+    // B. type only
+    if (empty($pick) && $pageType !== '') {
+      $try = $collect($eligible, $byBid, $pool, $pageType, '', $floorClicks, $limit);
+      if (!empty($try)) {
+        $pick = $try;
+        if ($typeLabel !== '') $heading = 'Trending in ' . $typeLabel;
+      }
+    }
+
+    // C. site-wide, higher bar — untyped listings only (see v60 note above).
+    if (empty($pick) && ($pageType === '' || !empty($opts['global_fallback']))) {
+      $try = $collect($eligible, $byBid, $pool, '', '', $minClicks, $limit);
+      if (!empty($try)) {
+        $pick    = $try;
+        $heading = (string)$opts['heading'];
+      }
+    }
+
+    if (empty($pick)) return '';
+
+    // --- render -----------------------------------------------------------
+    // Shell resolved BEFORE the card loop (v64): a forced band must force
+    // the hub card branch for the same cards, or the dispatcher returns ''
+    // outside the path gates and the band silently self-hides.
+    $shellOpt = strtolower(trim((string)$opts['shell']));
+    $useBand  = ($shellOpt === 'band')
+      || ($shellOpt !== 'plain' && function_exists('fec_is_fecx_bonus') && fec_is_fecx_bonus());
+
+    $esc = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); };
+
+    $cards = '';
+    $rank  = 0;
+    if ($useBand) $GLOBALS['fec_v2card_force_hub'] = true;
+    try {
+      foreach ($pick as $b) {
+        $cardHtml = fec_render_v2_list_card_html($byBid[$b], $countrycode, $countryname, $bonustype, $currency);
+        if ($cardHtml === '') continue;
+        $rank++;
+        $cards .= '<div class="fec-trend__card">'
+          . '<div class="fec-trend__tag">#' . $rank . ' &middot; ' . number_format((int)$pool[$b]) . ' opens</div>'
+          . $cardHtml
+          . '</div>';
+      }
+    } catch (Exception $e) {
+      unset($GLOBALS['fec_v2card_force_hub']);
+      error_log('fec_render_trending_section card render failed: ' . $e->getMessage());
+      return '';
+    }
+    unset($GLOBALS['fec_v2card_force_hub']);
+    if ($rank < $limit) return '';
+
+    static $cssDone = false;
+    $css = '';
+    if (!$cssDone) {
+      $cssDone = true;
+      $css = '<style>'
+        . '.fecx .fec-trend__card{position:relative}'
+        . '.fecx .fec-trend__tag{position:absolute;top:-10px;left:12px;z-index:2;display:inline-flex;'
+        . 'align-items:center;gap:5px;padding:2px 10px;border-radius:999px;background:#141414;color:#fff;'
+        . 'font-size:11px;font-weight:700;letter-spacing:.02em}'
+        . '.fecx .fec-trend-note{margin:6px 0 18px;font-size:12px;opacity:.75}'
+        . '.fecx.is-home .fec-trend-band{margin-top:56px}'
+        . '</style>';
+    }
+
+    $icon = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+          . ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+          . '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>';
+
+    $note = 'Ranked by real outbound clicks in the last ' . (int)$opts['days']
+          . ' days &middot; bots excluded &middot; no IP addresses stored &middot; updates every 20 minutes';
+
+    if ($useBand) {
+      return $css . '
+<div class="wrap">
+  <div class="hub-picks-band fec-trend-band">
+    <div class="hub-picks-band-head">
+      <div class="hub-picks-band-title">
+        <span class="star" aria-hidden="true">' . $icon . '</span>
+        <h3>' . $esc($heading) . '</h3>
+        <span class="stamp">Real click data</span>
+      </div>
+    </div>
+    <p class="fec-trend-note">' . $note . '</p>
+    <div class="hub-picks-grid">' . $cards . '</div>
+  </div>
+</div>';
+    }
+
+    return $css
+      . '<section class="fec-trend" aria-label="Trending bonuses">'
+      . '<div class="wrap"><div class="top"><h2>' . $esc($heading) . '</h2></div>'
+      . '<p class="fec-trend-note">' . $note . '</p>'
+      . '<div class="hub-grid">' . $cards . '</div>'
+      . '</div></section>';
+  }
+
+// --- fec_render_tg_alert_cta  (source lines 20758-20793; slices: bonuses)
+  /**
+   * Neutral pill link: [send icon] Get Telegram alerts for <brand>.
+   * Returns '' when cid is missing or the bot username is blank, so the
+   * view hook is always safe to leave in place.
+   * Suggested hook (details view):
+   *   echo fec_render_tg_alert_cta((int)$cid, isset($vm['brand']) ? $vm['brand'] : '');
+   */
+  function fec_render_tg_alert_cta($cid, $brand = '', $opts = array()) {
+    $cid = (int)$cid;
+    if ($cid <= 0 || FEC_TG_BOT_USERNAME === '') return '';
+    $brand = trim((string)$brand);
+
+    static $cssDone = false;
+    $css = '';
+    if (!$cssDone) {
+      $cssDone = true;
+      $css = '<style>'
+        . '.fecx .fec-tgcta{display:inline-flex;align-items:center;gap:7px;padding:6px 14px;'
+        . 'border:1px solid rgba(0,0,0,.18);border-radius:999px;background:transparent;'
+        . 'color:inherit;font-size:13px;font-weight:600;line-height:1.4;text-decoration:none;'
+        . 'white-space:nowrap}'
+        . '.fecx .fec-tgcta:hover{border-color:rgba(0,0,0,.34)}'
+        . '.fecx .fec-tgcta svg{flex:0 0 auto}'
+        . '.fecx .fec-tgcta-row{margin:18px 0 0}'
+        . '</style>';
+    }
+
+    $svg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+         . ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+         . '<line x1="22" y1="2" x2="11" y2="13"/>'
+         . '<polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
+
+    $esc   = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); };
+    $label = ($brand !== '') ? ('Get Telegram alerts for ' . $brand) : 'Get Telegram alerts';
+    $url   = 'https://t.me/' . FEC_TG_BOT_USERNAME . '?start=alert_' . $cid;
+    $title = 'One tap on Telegram: a message when a new '
+           . ($brand !== '' ? $brand : 'FEC') . ' bonus lands. /stop anytime.';
+
+    return $css
+      . '<a class="fec-tgcta" href="' . $esc($url) . '" target="_blank" rel="noopener nofollow"'
+      . ' title="' . $esc($title) . '">'
+      . $svg . ' ' . $esc($label) . '</a>';
+  }
 

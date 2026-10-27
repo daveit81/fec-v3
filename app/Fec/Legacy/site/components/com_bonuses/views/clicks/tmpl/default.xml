@@ -1,0 +1,16 @@
+<?php
+/**
+ * com_bonuses :: views/clicks/tmpl/default.xml
+ *
+ * Lets the click report be added from Joomla's menu manager as a menu
+ * item type ("Bonuses » Click report"). Drop this in next to default.php.
+ */
+defined('_JEXEC') or die('Restricted access');
+?>
+<metadata>
+	<layout title="Click report">
+		<message>
+			<![CDATA[Per-brand click volume over a time window (7/14/30/90 days), bots excluded. The click side of click-to-FTD reconciliation. Restricted to the dashboard user.]]>
+		</message>
+	</layout>
+</metadata>

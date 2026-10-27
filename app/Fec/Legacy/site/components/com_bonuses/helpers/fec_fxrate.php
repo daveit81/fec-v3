@@ -9,7 +9,7 @@
 // File-scope constants of the source file.
 define('FEC_FXRATE_VERSION', '0.5.1');
 
-// --- fec_fxrate_casino_excluded  (source lines 102-111; slices: authors)
+// --- fec_fxrate_casino_excluded  (source lines 102-111; slices: authors, bonuses)
 /**
  * Casino-level exclusion from the jReviews flags, the rule of the site's
  * listings (jr_closed = '' AND jr_suspended = '' AND jr_blacklisted = ''):
@@ -28,13 +28,13 @@ function fec_fxrate_casino_excluded($closed, $blacklisted, $suspended) {
 	return false;
 }
 
-// --- fec_fxrate_opener_types  (source lines 114-116; slices: authors)
+// --- fec_fxrate_opener_types  (source lines 114-116; slices: authors, bonuses)
 /** Types that open a package: the first-deposit match of the standard, high-roller and crypto tracks. */
 function fec_fxrate_opener_types() {
 	return array('su', 'hr', 'crypto');
 }
 
-// --- fec_fxrate_position  (source lines 119-124; slices: authors)
+// --- fec_fxrate_position  (source lines 119-124; slices: authors, bonuses)
 /** Ladder position of a type: su / hr / crypto = 1, 2d = 2 … 10d = 10, anything else = 0. */
 function fec_fxrate_position($type) {
 	$type = strtolower(trim((string)$type));
@@ -43,7 +43,7 @@ function fec_fxrate_position($type) {
 	return 0;
 }
 
-// --- fec_fxrate_num  (source lines 140-147; slices: authors)
+// --- fec_fxrate_num  (source lines 140-147; slices: authors, bonuses)
 /**
  * Numeric reading of a DB value. Returns null for NULL/''/non-numeric.
  * Accepts "1,000" and "1000.00"; does NOT accept "no", "yes", "n/a".
@@ -57,7 +57,7 @@ function fec_fxrate_num($v) {
 	return (float)$s;
 }
 
-// --- fec_fxrate_leg  (source lines 174-290; slices: authors)
+// --- fec_fxrate_leg  (source lines 174-290; slices: authors, bonuses)
 /**
  * Normalise one jos_bonuses row into a leg with its own economics.
  *
@@ -201,7 +201,20 @@ function fec_fxrate_leg(array $row, array $currencyMap = array()) {
 	return fec_fxrate_leg_cashout($leg);
 }
 
-// --- fec_fxrate_leg_cashout  (source lines 310-321; slices: authors)
+// --- fec_fxrate_spins_wr_label  (source lines 297-302; slices: bonuses)
+/**
+ * The wagering on a leg's spins, worded: "no wagering" / "40× winnings" /
+ * "WR not stated"; '' when the leg has no spins. Never priced: the spins are
+ * outside the four numbers, so is their wagering.
+ */
+function fec_fxrate_spins_wr_label(array $leg) {
+	if (empty($leg['spins'])) return '';
+	if (!isset($leg['spins_wr']) || $leg['spins_wr'] === null) return 'WR not stated';
+	if ($leg['spins_wr'] == 0) return 'no wagering';
+	return rtrim(rtrim(number_format($leg['spins_wr'], 2, '.', ''), '0'), '.') . "\xC3\x97" . ' winnings';
+}
+
+// --- fec_fxrate_leg_cashout  (source lines 310-321; slices: authors, bonuses)
 /**
  * The leg's withdrawal cap in money, at the deposit and bonus the leg is
  * priced at: 'abs' as stated, 'x_dep' × deposit, 'x_bonus' × bonus. Null when
@@ -221,7 +234,22 @@ function fec_fxrate_leg_cashout(array $leg) {
 	return $leg;
 }
 
-// --- fec_fxrate_package  (source lines 372-514; slices: authors)
+// --- fec_fxrate_cashout_label  (source lines 327-335; slices: bonuses)
+/**
+ * "5x deposit" / "5x bonus" / "€500" / "5" — the cap as the operator states
+ * it (same reading as the site's cards: no unit asserted when none is stated).
+ */
+function fec_fxrate_cashout_label(array $leg, $sym) {
+	if ($leg['max_cashout'] === null) return '';
+	$n = (float)$leg['max_cashout'];
+	$nTxt = (abs($n - round($n)) < 0.00001) ? (string)round($n) : rtrim(rtrim(number_format($n, 2, '.', ''), '0'), '.');
+	if ($leg['max_cashout_kind'] === 'x_dep')   return $nTxt . "\xC3\x97 deposit";
+	if ($leg['max_cashout_kind'] === 'x_bonus') return $nTxt . "\xC3\x97 bonus";
+	if ($leg['max_cashout_kind'] === 'abs')     return fec_fxrate_money($n, (isset($leg['symbol']) && $leg['symbol'] !== '') ? $leg['symbol'] : $sym);
+	return $nTxt;
+}
+
+// --- fec_fxrate_package  (source lines 372-514; slices: authors, bonuses)
 /**
  * Aggregate ordered legs into package economics.
  *
@@ -401,13 +429,13 @@ function fec_fxrate_package(array $legs, array $opts = array()) {
 	return $pkg;
 }
 
-// --- fec_fxrate_sort_legs  (source lines 516-519; slices: authors)
+// --- fec_fxrate_sort_legs  (source lines 516-519; slices: authors, bonuses)
 function fec_fxrate_sort_legs($a, $b) {
 	if ($a['position'] === $b['position']) return $a['bid'] - $b['bid'];
 	return $a['position'] - $b['position'];
 }
 
-// --- fec_fxrate_money  (source lines 530-548; slices: authors)
+// --- fec_fxrate_money  (source lines 530-548; slices: authors, bonuses)
 /**
  * "$1,500" / "€2,467" / "BTC 0.005". Deposits round UP (you cannot deposit
  * less). Amounts below one unit keep up to 8 decimals (crypto minimums), those
@@ -433,14 +461,14 @@ function fec_fxrate_money($n, $sym, $ceil = false) {
 	return $sym . $glue . $s;
 }
 
-// --- fec_fxrate_pct  (source lines 551-554; slices: authors)
+// --- fec_fxrate_pct  (source lines 551-554; slices: authors, bonuses)
 /** "75%" — whole percent. */
 function fec_fxrate_pct($n) {
 	if ($n === null) return 'not stated';
 	return number_format(round($n)) . '%';
 }
 
-// --- fec_fxrate_symbol  (source lines 561-571; slices: authors)
+// --- fec_fxrate_symbol  (source lines 561-571; slices: authors, bonuses)
 /**
  * Currency symbol from the site map (helpers/currenciesarray.php, $currency),
  * same rule as the cards: '' or unknown → '$'. The built-in table only covers
@@ -456,5 +484,61 @@ function fec_fxrate_symbol($code, array $currencyMap = array()) {
 		'btc' => 'BTC', 'mbtc' => 'mBTC', 'eth' => 'ETH', 'ltc' => 'LTC', 'usdt' => 'USDT', 'inr' => '₹', 'brl' => 'R$',
 	);
 	return isset($known[$code]) ? $known[$code] : strtoupper($code);
+}
+
+// --- fec_fxrate_summary_line  (source lines 578-589; slices: bonuses)
+/**
+ * The four-number line.
+ *   Advertised 250% up to $1,500 (+ 75 FS) · You deposit $2,000 · Effective 75% · Turnover $122,500
+ * Missing pieces print "not stated"; nothing is estimated.
+ */
+function fec_fxrate_summary_line(array $pkg, $sym) {
+	$adv = fec_fxrate_pct($pkg['advertised_pct']);
+	if ($pkg['advertised_cap'] !== null) $adv .= ' up to ' . fec_fxrate_money($pkg['advertised_cap'], $sym);
+	if ($pkg['spins'] > 0) $adv .= ' + ' . number_format($pkg['spins']) . ' FS';
+	$parts = array(
+		'Advertised ' . $adv,
+		'You deposit ' . fec_fxrate_money($pkg['deposit'], $sym, true),
+		'Effective ' . fec_fxrate_pct($pkg['effective_pct']),
+		'Turnover ' . fec_fxrate_money($pkg['turnover'], $sym),
+	);
+	return implode(' · ', $parts);
+}
+
+// --- fec_fxrate_leg_line  (source lines 592-625; slices: bonuses)
+/** One line per leg, for reports and the ladder (uses the leg's own symbol). */
+function fec_fxrate_leg_line(array $leg, $sym) {
+	if (isset($leg['symbol']) && $leg['symbol'] !== '') $sym = $leg['symbol'];
+	$pos = $leg['position'] === 1 ? '1st' : ($leg['position'] . 'th');
+	if ($leg['position'] === 2) $pos = '2nd';
+	if ($leg['position'] === 3) $pos = '3rd';
+	if (isset($leg['kind']) && $leg['kind'] === 'spins') {
+		$s = $pos . ' deposit: ' . number_format((int)$leg['spins']) . ' free spins';
+		$s .= ($leg['min_dep'] !== null) ? ' (min deposit ' . fec_fxrate_money($leg['min_dep'], $sym) . ')' : ' (min deposit not stated)';
+		$s .= ', spins ' . fec_fxrate_spins_wr_label($leg);
+		$s .= ' → counted, not priced';
+		if ($leg['max_cashout'] !== null) $s .= ', max cashout ' . fec_fxrate_cashout_label($leg, $sym);
+		if ($leg['code'] !== '') $s .= ', code ' . $leg['code'];
+		return $s;
+	}
+	$s = $pos . ' deposit: ' . fec_fxrate_pct($leg['pct']);
+	$s .= ($leg['cap'] !== null) ? ' up to ' . fec_fxrate_money($leg['cap'], $sym) : ' (cap not stated)';
+	$s .= ' → deposit ' . fec_fxrate_money($leg['deposit'], $sym, true)
+		. ', bonus ' . fec_fxrate_money($leg['bonus'], $sym);
+	if ($leg['wr'] !== null) {
+		$s .= ', WR ' . rtrim(rtrim(number_format($leg['wr'], 2, '.', ''), '0'), '.') . 'x';
+		$s .= ($leg['wr_meth'] === 'bd') ? ' on D+B' : (($leg['wr_meth'] === 'b') ? ' on bonus' : ' (method not stated)');
+	} else {
+		$s .= ', WR not stated';
+	}
+	if ($leg['spins'] > 0) $s .= ', ' . number_format((int)$leg['spins']) . ' spins ' . fec_fxrate_spins_wr_label($leg);
+	$s .= ', turnover ' . fec_fxrate_money($leg['turnover'], $sym);
+	if ($leg['max_cashout'] !== null) {
+		$s .= ', max cashout ' . fec_fxrate_cashout_label($leg, $sym);
+		if ($leg['cashout_at_cap'] !== null && $leg['max_cashout_kind'] !== 'abs') $s .= ' (' . fec_fxrate_money($leg['cashout_at_cap'], $sym) . ')';
+	}
+	if ($leg['code'] !== '') $s .= ', code ' . $leg['code'];
+	if ($leg['flags']) $s .= ' [' . implode(',', $leg['flags']) . ']';
+	return $s;
 }
 

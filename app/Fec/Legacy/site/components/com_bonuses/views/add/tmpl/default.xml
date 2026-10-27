@@ -1,0 +1,17 @@
+<?php
+/**
+ * com_bonuses :: views/manage/tmpl/default.xml
+ *
+ * Lets the bonus dashboard be added from Joomla's menu manager as a
+ * menu item type ("Bonuses » Bonus dashboard"). Drop this file in
+ * next to default.php; no other registration is needed.
+ */
+defined('_JEXEC') or die('Restricted access');
+?>
+<metadata>
+	<layout title="Bonus dashboard">
+		<message>
+			<![CDATA[Filterable list of all bonuses with add / edit / publish / expire / delete actions. Restricted to the single dashboard user.]]>
+		</message>
+	</layout>
+</metadata>
