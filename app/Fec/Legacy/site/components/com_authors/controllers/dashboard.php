@@ -40,7 +40,7 @@ class AuthorsControllerDashboard extends JController
     protected function gateAndJson($checkToken = true)
     {
         // Force JSON output
-        while (ob_get_level() > 0) { @ob_end_clean(); }
+        while (ob_get_level() > (defined('FEC_OB_BASE') ? FEC_OB_BASE : 0)) { @ob_end_clean(); } // PORT: keep the runner's buffer
         header('Content-Type: application/json; charset=utf-8');
         header('Cache-Control: no-store, must-revalidate');
 

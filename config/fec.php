@@ -93,6 +93,11 @@ return [
         // Virtual docroot of the ported Joomla-era code (JPATH_SITE for the compatibility layer).
         'site_path' => env('FEC_LEGACY_SITE_PATH', app_path('Fec/Legacy/site')),
 
+        // The real legacy docroot (JPATH_ROOT): where the desks store the files
+        // they upload (images/rtp, images/blog), served by the live hostname.
+        // Code is included from site_path, files are read and written here.
+        'docroot' => env('FEC_LEGACY_DOCROOT', '/home/freeextr/public_html'),
+
         // Joomla configuration values the ported code reads through JFactory::getConfig().
         // "secret" signs the newsletter forms (HMAC) on the live site: same value = same signatures.
         'secret' => env('FEC_LEGACY_SECRET', ''),
@@ -112,8 +117,22 @@ return [
         'not_found_article_id' => (int) env('FEC_LEGACY_NOT_FOUND_ARTICLE', 273),
         'not_found_title' => env('FEC_LEGACY_NOT_FOUND_TITLE', '404'),
 
-        // Desk (non-public) views: skipped by fec:parity --option, ported with the redazione login.
+        // Desk (non-public) views: need a logged-in member of the redazione, run on the
+        // writing connection, skipped by fec:parity --option.
         'desk_views' => ['com_authors.dashboard', 'com_authors.blogdesk', 'com_authors.deskadd', 'com_authors.fxshieldadmin', 'com_authors.methodologyadmin', 'com_authors.verification'],
+
+        // SEF paths of the desks (registry URLs): explicit routes in the web group, CSRF handled by the legacy token.
+        'desk_paths' => ['methodology-admin', 'fxshield-admin', 'fxshield-verify'],
+
+        // The /desk home page: what the redazione can open on v3.
+        'desks' => [
+            ['title' => 'Methodology admin', 'url' => '/methodology-admin', 'note' => 'Topic, pagine e metadati di /methodology e delle pagine editoriali'],
+            ['title' => 'FXShield cockpit', 'url' => '/fxshield-admin', 'note' => 'Stato FXShield dei casino, ricalcolo, export markdown'],
+            ['title' => 'FXShield verification', 'url' => '/fxshield-verify', 'note' => 'Wizard di verifica first-party con evidenze'],
+            ['title' => 'Desk add (baseline)', 'url' => '/index.php?option=com_authors&view=deskadd', 'note' => 'Inserimento baseline FXShield'],
+            ['title' => 'RTP dashboard', 'url' => '/index.php?option=com_authors&view=dashboard', 'note' => 'Database slot e RTP (utente 42)'],
+            ['title' => 'Blog desk', 'url' => '/index.php?option=com_authors&view=blogdesk', 'note' => 'Editor del Casino Bonus Blog (salvataggio ancora su Joomla: JTable Content da portare)'],
+        ],
     ],
 
     'parity' => [

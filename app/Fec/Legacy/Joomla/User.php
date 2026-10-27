@@ -25,7 +25,7 @@ class User
         $user = new static;
         $authenticated = auth()->check() ? auth()->user() : null;
         if ($authenticated !== null) {
-            $user->id = (int) config('fec.legacy.desk_user_id', 42);
+            $user->id = (int) ($authenticated->joomla_user_id ?? config('fec.legacy.desk_user_id', 42));
             $user->guest = 0;
             $user->name = (string) ($authenticated->name ?? '');
             $user->username = (string) ($authenticated->email ?? '');

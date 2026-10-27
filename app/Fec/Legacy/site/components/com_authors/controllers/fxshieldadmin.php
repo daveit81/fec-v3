@@ -215,7 +215,7 @@ class AuthorsControllerFxshieldadmin extends JController
 
         // Stream as a download, bypassing the Joomla template. Use native
         // header() so this works regardless of the Joomla version's app API.
-        while (ob_get_level()) { ob_end_clean(); }
+        while (ob_get_level() > (defined('FEC_OB_BASE') ? FEC_OB_BASE : 0)) { ob_end_clean(); } // PORT: keep the runner's buffer
         header('Content-Type: text/markdown; charset=utf-8');
         header('Content-Disposition: attachment; filename="' . $fname . '"');
         header('Content-Length: ' . strlen($md));
@@ -252,7 +252,7 @@ class AuthorsControllerFxshieldadmin extends JController
         $slug = $this->slugify($data['title']);
         $fname = 'fxshield-dossier-' . $slug . '-' . $casinoId . '.md';
 
-        while (ob_get_level()) { ob_end_clean(); }
+        while (ob_get_level() > (defined('FEC_OB_BASE') ? FEC_OB_BASE : 0)) { ob_end_clean(); } // PORT: keep the runner's buffer
         header('Content-Type: text/markdown; charset=utf-8');
         header('Content-Disposition: attachment; filename="' . $fname . '"');
         header('Content-Length: ' . strlen($md));

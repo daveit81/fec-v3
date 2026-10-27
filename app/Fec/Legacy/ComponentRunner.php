@@ -38,15 +38,25 @@ final class ComponentRunner implements PageHandler
             abort(404);
         }
 
-        // A task (snapshot crons, desk saves) on a public view: not ours yet. The
-        // legacy .htaccess keeps task= requests on Joomla; this is the second lock.
-        $task = trim((string) $request->query('task', ''));
-        if ($task !== '' && ! $this->needsWrites($url)) {
+        // Desk views and their tasks exist only for a logged-in member of the
+        // redazione (the explicit desk routes carry the session; the public
+        // fallback never does, so a desk reached that way is refused). A task on
+        // a public view is not ours: the legacy .htaccess keeps task= requests on
+        // Joomla, this is the second lock.
+        $desk = $this->isDesk($url);
+        $task = trim((string) $request->input('task', ''));
+        if ($desk && ! auth()->check()) {
+            abort(404);
+        }
+        if ($task !== '' && ! $desk) {
             abort(404, 'Task not available on this view');
         }
 
         Runtime::boot($option);
-        Factory::useRwConnection($this->needsWrites($url));
+        Factory::useRwConnection($desk || $this->needsWrites($url));
+        if (! defined('FEC_OB_BASE')) {
+            define('FEC_OB_BASE', ob_get_level() + 1);
+        }
         Uri::reset();
         Joomla\Route::reset();
 
@@ -131,12 +141,44 @@ final class ComponentRunner implements PageHandler
 
     private function raw(string $body, Request $request): Response
     {
-        $headers = Factory::getApplication()->getHeaders();
+        $headers = Factory::getApplication()->getHeaders() + $this->phpHeaders();
         if (! isset($headers['Content-Type']) && json_decode($body) !== null) {
             $headers['Content-Type'] = 'application/json; charset=utf-8';
         }
 
         return response($body, 200, $headers);
+    }
+
+    /**
+     * Headers the legacy code set with header() (JSON tasks, markdown
+     * downloads): copied into the response and removed from PHP's own list.
+     *
+     * @return array<string, string>
+     */
+    private function phpHeaders(): array
+    {
+        $out = [];
+        if (! function_exists('headers_list')) {
+            return $out;
+        }
+        foreach (headers_list() as $line) {
+            if (! str_contains($line, ':')) {
+                continue;
+            }
+            [$name, $value] = explode(':', $line, 2);
+            $name = trim($name);
+            if (in_array(strtolower($name), ['content-type', 'content-disposition', 'content-length', 'cache-control', 'pragma', 'x-robots-tag', 'expires'], true)) {
+                $out[$name] = trim($value);
+                header_remove($name);
+            }
+        }
+
+        return $out;
+    }
+
+    private function isDesk(ResolvedUrl $url): bool
+    {
+        return in_array($url->routeKey(), (array) config('fec.legacy.desk_views', []), true);
     }
 
     private function discard(int $level): void

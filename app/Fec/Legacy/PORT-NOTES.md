@@ -21,7 +21,11 @@ edited by hand; add a seed and regenerate.
   `JPATH_BASE` and re-included the Joomla framework at file scope (notices under Joomla, fatal
   here); only the `$currency` array is kept.
 - `components/com_authors/`: verbatim copy of the site component (`index.html` placeholders
-  dropped). No edits yet.
+  dropped), with one edit in three places: the JSON/download tasks flushed every output buffer
+  (`while (ob_get_level()) ob_end_clean()`), which would also discard the runner's capture
+  buffer; they now stop at `FEC_OB_BASE`, the level the runner defines before including the
+  component (`controllers/dashboard.php` gateAndJson, `controllers/fxshieldadmin.php` exportmd and
+  exportdossier). Headers they set with `header()` are copied into the response by the runner.
 
 ## Known legacy behaviour reproduced on purpose (parity)
 

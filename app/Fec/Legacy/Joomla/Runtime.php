@@ -21,6 +21,9 @@ use App\Fec\Legacy\Joomla\Mvc\View;
  * JPATH_SITE points at app/Fec/Legacy/site: a virtual docroot that holds
  * only the ported components and the lib slices, so every legacy
  * require_once JPATH_SITE . '/components/...' resolves to ported code.
+ * JPATH_ROOT is the real legacy docroot instead (fec.legacy.docroot): our
+ * code uses it only for files (images/rtp, images/blog), which must land
+ * where the live hostname serves them, not inside the repository.
  */
 final class Runtime
 {
@@ -48,6 +51,7 @@ final class Runtime
         'JComponentHelper' => ComponentHelper::class,
         'JFilterOutput' => FilterOutput::class,
         'JString' => Str::class,
+        'JTable' => Table::class,
         'JController' => Controller::class,
         'JControllerLegacy' => Controller::class,
         'JView' => View::class,
@@ -76,6 +80,14 @@ final class Runtime
         return rtrim((string) config('fec.legacy.site_path', app_path('Fec/Legacy/site')), '/');
     }
 
+    /** The real legacy docroot: uploaded files live there (JPATH_ROOT). */
+    public static function docroot(): string
+    {
+        $root = rtrim((string) config('fec.legacy.docroot', ''), '/');
+
+        return $root !== '' ? $root : self::sitePath();
+    }
+
     /**
      * Prepare the process for including legacy component files and reset the
      * per-request state (document head, request vars, menu, errors).
@@ -88,7 +100,7 @@ final class Runtime
         if (! self::$booted) {
             self::constant('_JEXEC', 1);
             self::constant('DS', DIRECTORY_SEPARATOR);
-            self::constant('JPATH_ROOT', $site);
+            self::constant('JPATH_ROOT', self::docroot());
             self::constant('JPATH_SITE', $site);
             self::constant('JPATH_BASE', $site);
             self::constant('JPATH_ADMINISTRATOR', $site.'/administrator');
