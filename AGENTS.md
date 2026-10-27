@@ -85,3 +85,6 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
 - Redirect targets (`index.php?...`) resolve to a SEF path exactly, then tolerantly (parameter
   order, `lang`, `Itemid` ignored); `fec:urls:stats --redirects` audits the 3.8k rules.
 - Stateless endpoints (no cookies) go in `routes/stateless.php`, never in the `web` group.
+- The closures in `bootstrap/app.php` run while the kernel is resolved, before the configuration is
+  loaded: never call `config()` there (it kills every request and every artisan command); anything
+  that depends on config goes in `AppServiceProvider::boot()`.

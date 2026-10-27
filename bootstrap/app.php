@@ -17,13 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // The ported desks post Joomla-style forms: the token travels as the
-        // field NAME (JHtml form.token) and the legacy controllers verify it
-        // through JRequest::checkToken(), so Laravel's own check is skipped there.
-        $middleware->validateCsrfTokens(except: array_merge(
-            ['index.php'],
-            array_map(fn ($p) => trim((string) $p, '/'), (array) config('fec.legacy.desk_paths', [])),
-        ));
+        // Nothing here may read config(): this closure runs while the kernel is
+        // resolved, before the configuration is loaded (the CSRF exceptions of
+        // the ported desks are registered in AppServiceProvider::boot()).
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
