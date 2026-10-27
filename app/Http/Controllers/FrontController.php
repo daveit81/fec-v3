@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Fec\Url\PageHandler;
-use App\Models\Fec\Article;
 use App\Fec\Url\Redirects;
 use App\Fec\Url\Router;
+use App\Models\Fec\Article;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -37,10 +37,15 @@ class FrontController extends Controller
     {
         // getPathInfo() keeps the trailing slash (path() trims it): the registry stores
         // "bonuses/" and "bonuses" apart, and sh404SEF redirected between the two.
-        $decision = $router->route($request->getPathInfo());
+        $decision = $router->route($request->getPathInfo(), $request->getQueryString());
 
         if ($decision->isRedirect()) {
             $to = (string) $decision->location;
+            // An sh404SEF alias: the Location exactly as the live site sends it (relative
+            // when the alias says so, the query string already dealt with).
+            if (! empty($decision->url->meta['raw_location'])) {
+                return response('', $decision->status, ['Location' => $to]);
+            }
             // Keep the visitor's query string on same-site redirects (sh404SEF does).
             if (! preg_match('#^https?://#i', $to) && ($qs = $request->getQueryString()) !== null && $qs !== '') {
                 $to .= (str_contains($to, '?') ? '&' : '?').$qs;

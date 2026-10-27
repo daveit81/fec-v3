@@ -41,6 +41,9 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   component with thousands of URLs, `--headers-only` for the tc/ads redirects, `--bust` past the
   live cache). `fec:urls:htaccess --option=com_x --served=com_authors` ignores the URLs of the
   components already on v3 when it chooses the prefixes.
+- sh404SEF's per-page "title and metas" (`jos_sh404sef_metas`, 49 rows for com_bonuses) are applied
+  by the runner after the component, keyed on the page's own non-SEF URL (`Sh404sefMetas`), as the
+  live site applies them last.
 - Public pages are stateless (routes/stateless.php fallback, no cookies). Desks need the redazione
   login (`/desk/login`: password + emailed code; accounts via `fec:user:create`), run on `fec_rw`,
   see `JFactory::getUser()` as the account's `joomla_user_id`, and keep Joomla's own token check
@@ -120,7 +123,10 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
 - `App\Fec\Url\Router::route($path)` decides every GET that no explicit route claims
   (`Route::fallback` → `FrontController`): the legacy `.htaccess` redirect lines under our paths
   first (`fec.legacy.htaccess_redirects`, `HtaccessRedirects`: the web server answered them before
-  Joomla), then `jos_sh404sef_urls` (a known URL is served, or redirected to its stored spelling;
+  Joomla), then sh404SEF's aliases (`jos_sh404sef_aliases`, `Sh404sefAliases`: checked before its own
+  URLs, the Location as sh404SEF wrote it, relative when the alias is a path, the stored SEF URL of
+  any rank when it is a query, the home when none is stored), then `jos_sh404sef_urls` (a known URL
+  is served, or redirected to its stored spelling;
   the request's own slash spelling wins when both are stored), then the run-time patterns
   (`app/Fec/Url/Patterns`, e.g. `/bonuses/<casino>/<slug>-id<bid>`), then `jos_redirection` —
   Joomla's redirect plugin only ever fired on a 404, so its rules apply to paths nobody else knows.

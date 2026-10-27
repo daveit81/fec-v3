@@ -8,7 +8,8 @@ use App\Fec\Url\Patterns\BonusDetails;
  * The v3 router of the convivenza: one public path in, one Decision out.
  *
  *   0. .htaccess redirects  the legacy "Redirect 301" lines under our paths (Apache answered first)
- *   1. jos_sh404sef_urls    canonical page, alias of a page, slash spelling, recorded 404
+ *   0b. jos_sh404sef_aliases sh404SEF's aliases, before its own URLs, Location as written
+ *   1. jos_sh404sef_urls    canonical page, duplicate of a page, slash spelling, recorded 404
  *   2. run-time patterns    URL families sh404SEF never stored (bonus details)
  *   3. jos_redirection      the desk's 301s: Joomla's redirect plugin only fired on a 404
  *
@@ -28,7 +29,7 @@ final class Router
         private readonly Dispatcher $dispatcher,
     ) {}
 
-    public function route(string $path): Decision
+    public function route(string $path, ?string $query = null): Decision
     {
         $path = UrlRegistry::normalize($path);
 
@@ -36,6 +37,12 @@ final class Router
         // them before Joomla saw the request, so they come before everything here.
         if ($rule = HtaccessRedirects::match($path)) {
             return new Decision('redirect', 301, $rule, $rule->target);
+        }
+
+        // sh404SEF's aliases: checked before its own URLs (a path with an alias redirects
+        // even when the registry holds it as a page), the Location as sh404SEF wrote it.
+        if ($alias = Sh404sefAliases::match($path, $query)) {
+            return new Decision('redirect', 301, $alias, $alias->target);
         }
 
         // The SEF registry first: a URL sh404SEF knows is served (or redirected to its

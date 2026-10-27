@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Fec\Url\Dispatcher;
 use App\Fec\Url\Router;
 use Illuminate\Console\Command;
 
@@ -25,7 +26,7 @@ class UrlResolve extends Command
         if ($this->option('json')) {
             $out = [];
             foreach ($paths as $path) {
-                $out['/'.ltrim($path, '/')] = $router->route($path)->toArray();
+                $out['/'.ltrim($path, '/')] = $router->route($path, parse_url($path, PHP_URL_QUERY) ?: null)->toArray();
             }
             $this->line(json_encode(count($out) === 1 ? reset($out) : $out, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 
@@ -34,7 +35,7 @@ class UrlResolve extends Command
 
         $rows = [];
         foreach ($paths as $path) {
-            $d = $router->route($path);
+            $d = $router->route($path, parse_url($path, PHP_URL_QUERY) ?: null);
             $u = $d->url;
             $ids = array_filter([
                 'id' => $u->id(),
@@ -56,7 +57,7 @@ class UrlResolve extends Command
         }
 
         $this->table(['path', 'status', 'action', 'kind (source)', 'option.view', 'ids', 'location / handler', 'notes'], $rows);
-        $this->line('Patterns: '.implode(', ', $router->patterns()).'. Ported views: '.(count(app(\App\Fec\Url\Dispatcher::class)->portedKeys()) ?: 'none yet').'.');
+        $this->line('Patterns: '.implode(', ', $router->patterns()).'. Ported views: '.(count(app(Dispatcher::class)->portedKeys()) ?: 'none yet').'.');
 
         return self::SUCCESS;
     }

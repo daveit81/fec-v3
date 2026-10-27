@@ -97,6 +97,20 @@ but au and nz). With the v3 switch block at the top of that file those requests 
 (`fec.legacy.htaccess_redirects`, file order, targets as written). When a line is added to the live
 file under a prefix v3 serves, it is added there too.
 
+## sh404SEF's other tables
+
+- `jos_sh404sef_aliases` (721 rows, 27 under our paths): `App\Fec\Url\Sh404sefAliases`, checked by the
+  router after the `.htaccess` rules and before the URL registry, with sh404SEF's behaviour read off
+  the live site (a path target is the Location as written, relative, the request's query string
+  appended; an `index.php` target is the SEF URL stored for that exact newurl of any rank, absolute,
+  no query, the home when none is stored; an alias of the requested page itself serves the page).
+- `jos_sh404sef_metas` (810 rows, 49 for com_bonuses): `App\Fec\Legacy\Sh404sefMetas`, applied by
+  the runner after the component on the page's own non-SEF URL (title, description, keywords,
+  robots, canonical when non-empty; Open Graph fields left to the lib).
+- `jos_redirection` has the schema of sh404SEF 1.x's URL table (cpt, rank, dateadd): it is that
+  old table, not a list of the desk's redirects; the router still consults it last, as the Joomla
+  redirect plugin did on a 404 (to be re-read in phase 4).
+
 ## Known legacy behaviour reproduced on purpose (parity)
 
 - Only the `authors` and `author` views load the lib themselves; the other views call `fec_*`
