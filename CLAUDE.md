@@ -104,8 +104,10 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
 ## Router (phase 1 kernel)
 
 - `App\Fec\Url\Router::route($path)` decides every GET that no explicit route claims
-  (`Route::fallback` → `FrontController`): `jos_redirection` first, then the run-time patterns
-  (`app/Fec/Url/Patterns`, e.g. `/bonuses/<casino>/<slug>-id<bid>`), then `jos_sh404sef_urls`.
+  (`Route::fallback` → `FrontController`): `jos_sh404sef_urls` first (a known URL is served, or
+  redirected to its stored spelling), then the run-time patterns (`app/Fec/Url/Patterns`, e.g.
+  `/bonuses/<casino>/<slug>-id<bid>`), then `jos_redirection` — Joomla's redirect plugin only ever
+  fired on a 404, so its rules apply to paths nobody else knows.
 - A ported view = one `PageHandler` class registered in `Dispatcher::HANDLERS` under `option.view`.
   Unregistered views answer 404 (with the decision shown on the dev hostname only).
 - Probes: `php artisan fec:urls:resolve <path>...` (`--json`) and `GET /__registry?path=` on `v3.`.

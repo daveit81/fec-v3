@@ -53,10 +53,15 @@ class Database
     }
 
     /** @param  string|Query|\Stringable  $query */
+    /**
+     * As Joomla 2.5's driver did: with a limit the query gets " LIMIT offset, limit"
+     * appended, always (a "LIMIT" inside a subquery is no reason to skip it: the
+     * list pages rendered every row instead of a page of 24).
+     */
     public function setQuery($query, int $offset = 0, int $limit = 0): static
     {
         $sql = (string) $query;
-        if ($limit > 0 && ! preg_match('/\bLIMIT\b/i', $sql)) {
+        if ($limit > 0) {
             $sql .= ' LIMIT '.($offset > 0 ? (int) $offset.', ' : '').(int) $limit;
         }
         $this->sql = $sql;

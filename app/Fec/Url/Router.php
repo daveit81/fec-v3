@@ -32,8 +32,12 @@ final class Router
     {
         $path = UrlRegistry::normalize($path);
 
-        if ($rule = $this->registry->redirectFor($path)) {
-            return new Decision('redirect', 301, $rule, $rule->target);
+        // The SEF registry first: a URL sh404SEF knows is served (or redirected to its
+        // stored spelling). Joomla's redirect plugin only ever fired on a 404, so the
+        // jos_redirection rules apply to paths the registry and the patterns do not know.
+        $url = $this->registry->lookup($path);
+        if (in_array($url->kind, ['page', 'alias', 'redirect'], true)) {
+            return $this->decide($url);
         }
 
         foreach (self::PATTERNS as $class) {
@@ -44,7 +48,11 @@ final class Router
             }
         }
 
-        return $this->decide($this->registry->lookup($path));
+        if ($rule = $this->registry->redirectFor($path)) {
+            return new Decision('redirect', 301, $rule, $rule->target);
+        }
+
+        return $this->decide($url);
     }
 
     private function decide(ResolvedUrl $url): Decision

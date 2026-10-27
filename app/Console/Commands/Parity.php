@@ -30,7 +30,8 @@ class Parity extends Command
                             {--save : Write the normalised documents to storage/app/parity/}
                             {--in-process : Render v3 in this process instead of one process per path (debugging)}
                             {--context=3 : Diff context lines}
-                            {--main : Compare only the <main> element (default: whole <body>)}';
+                            {--main : Compare only the <main> element (default: whole <body>)}
+                            {--bust : Add a unique query variable to both requests, past Joomla\'s page cache (the live page may be stale)}';
 
     protected $description = 'Compare the live Joomla page and the v3 rendering of the same path';
 
@@ -49,6 +50,9 @@ class Parity extends Command
 
         $failed = 0;
         foreach ($paths as $path) {
+            if ($this->option('bust')) {
+                $path .= (str_contains($path, '?') ? '&' : '?').'fecparity='.substr(md5((string) microtime(true)), 0, 8);
+            }
             $path = '/'.ltrim((string) $path, '/');
             $this->line('');
             $this->info("== $path");
