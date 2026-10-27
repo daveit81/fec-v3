@@ -49,6 +49,9 @@ final class Router
 
     private function decide(ResolvedUrl $url): Decision
     {
+        if ($url->kind === 'redirect' && $url->target !== null) {
+            return new Decision('redirect', 301, $url, $url->target);
+        }
         if ($url->kind === 'alias') {
             if ($url->canonical !== null && (bool) config('fec.router.alias_redirect', true)) {
                 return new Decision('redirect', 301, $url, $url->canonical);

@@ -92,6 +92,13 @@ final class UrlRegistry
 
         $query = self::parseQuery($newurl);
 
+        // sh404SEF answers a request that differs from the stored spelling only by the
+        // trailing slash (/bonuses for the stored "bonuses/") with a 301 to the stored one.
+        $stored = ltrim((string) $row->oldurl, '/');
+        if ($stored !== $path && rtrim($stored, '/') === rtrim($path, '/')) {
+            return new ResolvedUrl('redirect', $path, $query, null, '/'.$stored, (int) $row->id, (int) $row->rank, $newurl);
+        }
+
         if ((int) $row->rank > 0) {
             $canonical = $this->db()->table('sh404sef_urls')
                 ->where('newurl', $newurl)
@@ -101,7 +108,8 @@ final class UrlRegistry
             return new ResolvedUrl('alias', $path, $query, $canonical !== null ? '/'.ltrim((string) $canonical, '/') : null, null, (int) $row->id, (int) $row->rank, $newurl);
         }
 
-        return new ResolvedUrl('page', $path, $query, '/'.$path, null, (int) $row->id, 0, $newurl);
+        // the canonical is the registry's own spelling (a trailing slash included: /bonuses/<casino>/)
+        return new ResolvedUrl('page', $path, $query, '/'.ltrim((string) $row->oldurl, '/'), null, (int) $row->id, 0, $newurl);
     }
 
     /**
@@ -128,16 +136,20 @@ final class UrlRegistry
             return null;
         }
 
+        // Candidates share every variable of the wanted query (decorations apart), so the
+        // first pass sees the right row even for a component with thousands of URLs: with
+        // option alone, com_bonuses has 17k rows and the first 500 never held the one.
         $q = $this->db()->table('sh404sef_urls')
             ->where('rank', 0)
             ->where('newurl', 'like', '%option='.$want['option'].'%');
-        foreach (['id', 'bid', 'cid', 'slug', 'topic'] as $key) {
-            if (isset($want[$key]) && $want[$key] !== '') {
-                $q->where('newurl', 'like', '%'.$key.'='.$want[$key].'%');
+        foreach ($want as $key => $value) {
+            if ($key === 'option' || $value === '' || in_array($key, self::DECORATION_KEYS, true) || in_array($key, self::LEFTOVER_KEYS, true) || ! preg_match('/^[A-Za-z0-9_.:-]+$/', (string) $value)) {
+                continue;
             }
+            $q->where('newurl', 'like', '%'.$key.'='.$value.'%');
         }
 
-        $candidates = $q->orderBy('id')->limit(500)->get(['oldurl', 'newurl']);
+        $candidates = $q->orderBy('id')->limit(2000)->get(['oldurl', 'newurl']);
         foreach ($candidates as $row) {
             if (self::significant(self::parseQuery((string) $row->newurl)) === $want) {
                 return '/'.ltrim((string) $row->oldurl, '/');
@@ -176,6 +188,9 @@ final class UrlRegistry
 
     /** Variables a link may carry that never reach the SEF URL (Joomla routes an article by id). */
     private const DECORATION_KEYS = ['catid'];
+
+    /** Variables sh404SEF never stored in newurl: they ride on as the query string of the SEF path. */
+    private const LEFTOVER_KEYS = ['limitstart', 'start', 'limit', 'page', 'tmpl', 'format', 'layout', 'preview', 'edit', 'q', 'return', 'n', 'v3test'];
 
     /**
      * The query variables that identify a page: everything but "lang" and

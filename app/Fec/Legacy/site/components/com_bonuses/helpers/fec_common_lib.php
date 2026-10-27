@@ -16,6 +16,24 @@ if (!defined('FEC_GATE_CAP_RANK'))        define('FEC_GATE_CAP_RANK', 50);
 if (!defined('FEC_GATE_CAP_CONFIDENCES')) define('FEC_GATE_CAP_CONFIDENCES', 'ABC');
 define('FEC_TG_BOT_USERNAME', 'fecbonusbot'); // no @; '' disables the CTA
 
+// File-scope statements of the source file (verbatim, in order): what the lib did when included.
+// --- source lines 2
+defined('_JEXEC') or die('Restricted access');
+// --- source lines 14-16
+if (isset($countries_array) && is_array($countries_array)) $GLOBALS['countries_array'] = $countries_array;
+if (isset($currency) && is_array($currency)) $GLOBALS['currency'] = $currency;
+if (isset($bonustype) && is_array($bonustype)) $GLOBALS['bonustype'] = $bonustype;
+// --- source lines 23-29
+if (defined('JPATH_SITE')) {
+  $_fecReviewCfg = JPATH_SITE . '/components/com_bonuses/fec_review_config.php';
+  if (file_exists($_fecReviewCfg)) {
+    require_once $_fecReviewCfg;
+  }
+  unset($_fecReviewCfg);
+}
+// --- source lines 7599
+defined('_JEXEC') or die('Restricted access');
+
 // --- fec_country_display_name  (source lines 36-72; slices: authors, bonuses)
   function fec_country_display_name($name) {
     $name = trim((string)$name);

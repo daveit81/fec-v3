@@ -23,6 +23,10 @@ if (!defined('FEC_BLOG_PROVIDER_LINKS')) define('FEC_BLOG_PROVIDER_LINKS', false
 if (!defined('FEC_BLOG_REAPPLY_META'))   define('FEC_BLOG_REAPPLY_META', true);    // needs plg_system_fecclustermeta >= 1.1
 if (!defined('FEC_BLOG_SLOTS_PATH'))     define('FEC_BLOG_SLOTS_PATH', '/slots');   // com_authors slot pages, /slots/{slug}
 
+// File-scope statements of the source file (verbatim, in order): what the lib did when included.
+// --- source lines 60
+defined('_JEXEC') or die;
+
 // --- fec_blog_esc  (source lines 85-85; slices: bonuses)
   function fec_blog_esc($s) { return htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8'); }
 

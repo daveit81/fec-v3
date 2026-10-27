@@ -176,6 +176,142 @@ foreach ($sources as $file) {
     }
 }
 
+// File-scope statements of each source (code outside every function and outside the
+// `if (!function_exists('x')) { function x() {...} }` wrappers, define() lines apart):
+// the lib publishes the arrays it was included with ($countries_array, $currency,
+// $bonustype) into $GLOBALS for its functions. They are copied verbatim, in order.
+/** @var array<string, list<array{start: int, end: int}>> file => line ranges */
+$fileScope = [];
+foreach ($sources as $file) {
+    $src = $lines[$file];
+    $total = count($src);
+    $inFunction = array_fill(1, $total, false);
+    foreach ($defs as $d) {
+        if ($d['file'] !== $file) {
+            continue;
+        }
+        for ($l = $d['docStart'] ?? $d['start']; $l <= $d['end']; $l++) {
+            $inFunction[$l] = true;
+        }
+        // the function_exists wrapper around it (blank and comment lines may sit in between)
+        $p = ($d['docStart'] ?? $d['start']) - 1;
+        $inComment = false;
+        while ($p >= 1) {
+            $line = trim($src[$p - 1]);
+            if ($line === '' || str_starts_with($line, '//') || str_starts_with($line, '*') || str_starts_with($line, '/*') || str_ends_with($line, '*/')) {
+                if (str_starts_with($line, '/*')) {
+                    $inComment = false;
+                } elseif (str_ends_with($line, '*/') && ! str_starts_with($line, '/*')) {
+                    $inComment = true;
+                }
+                $p--;
+
+                continue;
+            }
+            if ($inComment) {
+                $p--;
+
+                continue;
+            }
+            break;
+        }
+        if ($p >= 1 && preg_match('/^\s*if\s*\(\s*!\s*function_exists\s*\(/', $src[$p - 1])) {
+            for ($l = $p; $l < ($d['docStart'] ?? $d['start']); $l++) {
+                $inFunction[$l] = true;
+            }
+            $q = $d['end'] + 1;
+            while ($q <= $total && trim($src[$q - 1]) === '') {
+                $q++;
+            }
+            if ($q <= $total && trim($src[$q - 1]) === '}') {
+                $inFunction[$q] = true;
+            }
+        }
+    }
+    // `if (!defined('X')) { define(...); }` and `if (!function_exists('x')) { function ... }`
+    // blocks (the latter may wrap several functions): the defines are emitted as constants and
+    // the functions on their own, the wrapper is not a statement of its own
+    $toks = token_get_all((string) file_get_contents($file));
+    $tn = count($toks);
+    for ($i = 0; $i < $tn; $i++) {
+        if (! is_array($toks[$i]) || $toks[$i][0] !== T_IF) {
+            continue;
+        }
+        $look = '';
+        for ($j = $i + 1; $j < min($tn, $i + 8); $j++) {
+            $look .= is_array($toks[$j]) ? $toks[$j][1] : $toks[$j];
+        }
+        if (! preg_match('/^\s*\(\s*!\s*(defined|function_exists)\s*\(/', $look)) {
+            continue;
+        }
+        $startLine = $toks[$i][2];
+        $depth = 0;
+        $opened = false;
+        for ($j = $i + 1; $j < $tn; $j++) {
+            $sj = is_array($toks[$j]) ? $toks[$j][1] : $toks[$j];
+            if ($sj === '{') {
+                $depth++;
+                $opened = true;
+            } elseif ($sj === '}') {
+                $depth--;
+                if ($opened && $depth === 0) {
+                    for ($l = $startLine; $l <= lineOf($toks, $j); $l++) {
+                        $inFunction[$l] = true;
+                    }
+                    break;
+                }
+            } elseif (! $opened && $sj === ';') {
+                // single-statement form: if (!defined(...)) define(...);
+                for ($l = $startLine; $l <= lineOf($toks, $j); $l++) {
+                    $inFunction[$l] = true;
+                }
+                break;
+            }
+        }
+    }
+    // lines that carry code (a token other than whitespace, comment, open tag)
+    $hasCode = array_fill(1, $total, false);
+    $cur = 1;
+    foreach (token_get_all((string) file_get_contents($file)) as $t) {
+        if (! is_array($t)) {
+            // a one-character token ('{', '}', ';', ...) sits on the current line
+            $hasCode[$cur] = true;
+
+            continue;
+        }
+        $cur = $t[2] + substr_count($t[1], "\n");
+        if (in_array($t[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT, T_OPEN_TAG, T_CLOSE_TAG, T_INLINE_HTML], true)) {
+            continue;
+        }
+        $hasCode[$t[2]] = true;
+        for ($l = $t[2]; $l <= $cur; $l++) {
+            $hasCode[$l] = true;
+        }
+    }
+    // tokens are per line start; a multi-line statement's continuation lines also carry code
+    $range = null;
+    for ($l = 1; $l <= $total; $l++) {
+        $isScope = $hasCode[$l] && ! $inFunction[$l] && ! isset($constants[$file][$l]);
+        if ($isScope) {
+            if ($range === null) {
+                $range = ['start' => $l, 'end' => $l];
+            } else {
+                $range['end'] = $l;
+            }
+        } elseif ($range !== null && (! $hasCode[$l] || $inFunction[$l] || isset($constants[$file][$l]))) {
+            // a blank/comment line inside a statement keeps the range open only if the statement continues
+            if (! $hasCode[$l] && $l < $total && $hasCode[$l + 1] && ! $inFunction[$l + 1] && ! isset($constants[$file][$l + 1])) {
+                continue;
+            }
+            $fileScope[$file][] = $range;
+            $range = null;
+        }
+    }
+    if ($range !== null) {
+        $fileScope[$file][] = $range;
+    }
+}
+
 function lineOf(array $tokens, int $k): int
 {
     for ($x = $k; $x >= 0; $x--) {
@@ -248,6 +384,12 @@ foreach ($byFile as $file => $fns) {
     $totalLines += $fileLines;
     printf("%-22s %3d functions %5d lines\n", basename($file), count($fns), $fileLines);
 }
+foreach ($fileScope as $file => $ranges) {
+    $n = array_sum(array_map(fn ($r) => $r['end'] - $r['start'] + 1, $ranges));
+    if ($n > 0) {
+        printf("%-22s file-scope statements: %d lines (%s)\n", basename($file), $n, implode(', ', array_map(fn ($r) => $r['start'].($r['end'] > $r['start'] ? '-'.$r['end'] : ''), $ranges)));
+    }
+}
 printf("Total: %d functions, %d lines. Joomla calls inside: %s\n", count($needed), $totalLines,
     $japiAll ? implode(', ', array_map(fn ($k, $v) => "$k x$v", array_keys($japiAll), $japiAll)) : 'none');
 foreach ($missing as $slice => $fns) {
@@ -276,6 +418,16 @@ foreach ($byFile as $file => $fns) {
         ksort($constants[$file]);
         foreach ($constants[$file] as $c) {
             $out[] = trim($c['text']);
+        }
+        $out[] = '';
+    }
+    if (! empty($fileScope[$file])) {
+        $out[] = '// File-scope statements of the source file (verbatim, in order): what the lib did when included.';
+        foreach ($fileScope[$file] as $r) {
+            $out[] = '// --- source lines '.$r['start'].($r['end'] > $r['start'] ? '-'.$r['end'] : '');
+            for ($l = $r['start']; $l <= $r['end']; $l++) {
+                $out[] = $src[$l - 1] ?? '';
+            }
         }
         $out[] = '';
     }

@@ -34,7 +34,11 @@ class ParityRender extends Command
         ]);
         $kernel = app(Kernel::class);
         $response = $kernel->handle($request);
-        $this->output->write('STATUS:'.$response->getStatusCode()."\n".(string) $response->getContent(), false);
+        $head = 'STATUS:'.$response->getStatusCode()."\n";
+        if ($response->headers->has('Location')) {
+            $head .= 'LOCATION:'.$response->headers->get('Location')."\n";
+        }
+        $this->output->write($head.(string) $response->getContent(), false);
         $kernel->terminate($request, $response);
 
         return self::SUCCESS;

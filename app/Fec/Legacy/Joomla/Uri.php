@@ -41,7 +41,9 @@ class Uri
             if (self::$current === null) {
                 $site = self::site();
                 $request = request();
-                self::$current = new Uri($site.'/'.ltrim($request->path(), '/').($request->getQueryString() !== null && $request->getQueryString() !== '' ? '?'.$request->getQueryString() : ''));
+                // getPathInfo() keeps a trailing slash (Laravel's path() trims it): sh404SEF
+                // URLs such as /bonuses/<casino>/ end with one and the pages echo it.
+                self::$current = new Uri($site.'/'.ltrim($request->getPathInfo(), '/').($request->getQueryString() !== null && $request->getQueryString() !== '' ? '?'.$request->getQueryString() : ''));
             }
 
             return self::$current;

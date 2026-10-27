@@ -119,7 +119,7 @@ class Parity extends Command
             ->withHeaders(['User-Agent' => 'FEC-parity/1.0', 'Accept' => 'text/html'])
             ->get(rtrim((string) config('fec.site_url'), '/').$path);
 
-        return ['status' => $response->status(), 'html' => $response->body()];
+        return ['status' => $response->status(), 'html' => $response->body(), 'location' => (string) $response->header('Location')];
     }
 
     /**
@@ -142,11 +142,11 @@ class Parity extends Command
         fclose($pipes[1]);
         fclose($pipes[2]);
         $code = proc_close($process);
-        if (! preg_match('/^STATUS:(\d+)\n/', $out, $m)) {
+        if (! preg_match('/^STATUS:(\d+)\n(?:LOCATION:([^\n]*)\n)?/', $out, $m)) {
             throw new \RuntimeException('render process failed (exit '.$code.'): '.mb_strimwidth(trim($err.$out), 0, 400, '...'));
         }
 
-        return ['status' => (int) $m[1], 'html' => substr($out, strlen($m[0]))];
+        return ['status' => (int) $m[1], 'html' => substr($out, strlen($m[0])), 'location' => $m[2] ?? ''];
     }
 
     /** @return array{status: int, html: string} */
@@ -163,14 +163,29 @@ class Parity extends Command
         $html = (string) $response->getContent();
         $kernel->terminate($request, $response);
 
-        return ['status' => $response->getStatusCode(), 'html' => $html];
+        return ['status' => $response->getStatusCode(), 'html' => $html, 'location' => (string) $response->headers->get('Location', '')];
     }
 
-    /** @param  array{status: int, html: string}  $live @param  array{status: int, html: string}  $v3 */
+    /** @param  array{status: int, html: string, location?: string}  $live @param  array{status: int, html: string, location?: string}  $v3 */
     private function compare(string $path, array $live, array $v3): bool
     {
         $ok = true;
         $ok = $this->check('status', (string) $live['status'], (string) $v3['status']) && $ok;
+
+        // A redirect is compared by its target (path and query: the host differs by design
+        // between the live site and v3.); its body is not a page.
+        if (($live['status'] >= 300 && $live['status'] < 400) || ($v3['status'] >= 300 && $v3['status'] < 400)) {
+            $strip = function (string $url): string {
+                $parts = parse_url($url);
+                if ($parts === false || ! isset($parts['path'])) {
+                    return $url;
+                }
+
+                return $parts['path'].(isset($parts['query']) ? '?'.$parts['query'] : '');
+            };
+
+            return $this->check('location', $strip((string) ($live['location'] ?? '')), $strip((string) ($v3['location'] ?? ''))) && $ok;
+        }
 
         $a = $this->parse($live['html']);
         $b = $this->parse($v3['html']);

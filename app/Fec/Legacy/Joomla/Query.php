@@ -135,6 +135,24 @@ class Query implements Stringable
         return $this;
     }
 
+    /** JDatabase::q(): alias of quote(). */
+    public function q(mixed $text, bool $escape = true): string
+    {
+        return $this->quote($text, $escape);
+    }
+
+    /** JDatabase::qn(): alias of quoteName(). */
+    public function qn(string|array $name, string|array|null $as = null): string|array
+    {
+        return $this->quoteName($name, $as);
+    }
+
+    /** JDatabase::e(): alias of escape(). */
+    public function e(string $text, bool $extra = false): string
+    {
+        return $this->escape($text, $extra);
+    }
+
     public function quote(mixed $text, bool $escape = true): string
     {
         return $this->db->quote($text, $escape);
