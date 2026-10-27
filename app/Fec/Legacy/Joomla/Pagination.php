@@ -173,10 +173,12 @@ class Pagination
     }
 
     /**
-     * Links as sh404SEF rewrote them on the live site: the SEF path plus
-     * "lang=en&limit=<limit>&start=<N>" (limitstart renamed to start, the
-     * limit made explicit, the language first), other query variables kept
-     * in between. The runner maps an incoming "start" back to limitstart.
+     * Links as sh404SEF rewrote them on the live site: the SEF path plus the
+     * non-SEF variables "lang=en", "limit=<limit>", "start=<N>" (limitstart
+     * renamed, the limit made explicit) and whatever else the request carried,
+     * sorted by name as sh404SEF sorts every query (shSortUrl: "fecparity"
+     * before "lang", "tab" after "start"). The runner maps an incoming "start"
+     * back to limitstart.
      */
     private function link(int $limitstart): string
     {
@@ -189,6 +191,7 @@ class Pagination
         // sh404SEF renames limitstart to start only when it is not zero: page 1 links keep "limitstart=0".
         $offsetKey = $limitstart > 0 ? $this->prefix.'start' : $this->prefix.'limitstart';
         $ordered = ['lang' => 'en', 'limit' => (string) $this->limit] + $vars + [$offsetKey => (string) max(0, $limitstart)];
+        uksort($ordered, 'strcmp');
         $query = http_build_query($ordered);
         $path = $uri->getPath();
 

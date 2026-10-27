@@ -142,6 +142,21 @@ final class ComponentRunner implements PageHandler
         $format = strtolower((string) JRequest::getCmd('format', 'html'));
         $tmpl = strtolower((string) JRequest::getCmd('tmpl', ''));
 
+        // A view that redirected with a bare header("Location: ...") (the tc and ads
+        // views of com_bonuses) and went on rendering: PHP answered 302 with that
+        // header and the body behind it. Same here, the header as set (an empty
+        // tc link gave an empty Location on the live site too).
+        $location = $this->locationHeader();
+        if ($location !== null) {
+            $status = http_response_code();
+            $status = is_int($status) && $status >= 300 && $status < 400 ? $status : 302;
+            if (http_response_code() !== 200 && http_response_code() !== false) {
+                http_response_code(200);
+            }
+
+            return response($body, $status, ['Location' => $location] + Factory::getApplication()->getHeaders());
+        }
+
         if ($format !== 'html' && $format !== '') {
             return $this->raw($body, $request);
         }
@@ -191,8 +206,41 @@ final class ComponentRunner implements PageHandler
         if ($status !== 200) {
             http_response_code(200);
         }
+        // header("Location: ...") then close() (the ads view): PHP made that a 302.
+        $location = $this->locationHeader();
+        if ($location !== null) {
+            $headers['Location'] = $location;
+            if ($status < 300 || $status >= 400) {
+                $status = 302;
+            }
+        }
 
         return response($body, $status, $headers);
+    }
+
+    /**
+     * The Location header the component set, with JResponse::setHeader() or a
+     * bare header(): removed from PHP's own list (it must not be sent twice) and
+     * returned as set, '' included; null when there is none.
+     */
+    private function locationHeader(): ?string
+    {
+        $location = null;
+        foreach (Factory::getApplication()->getHeaders() as $name => $value) {
+            if (strcasecmp($name, 'Location') === 0) {
+                $location = (string) $value;
+            }
+        }
+        if (function_exists('headers_list')) {
+            foreach (headers_list() as $line) {
+                if (stripos($line, 'Location:') === 0) {
+                    $location = trim(substr($line, strlen('Location:')));
+                    header_remove('Location');
+                }
+            }
+        }
+
+        return $location;
     }
 
     /**
