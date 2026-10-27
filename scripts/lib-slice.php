@@ -5,6 +5,7 @@
  *
  *   php scripts/lib-slice.php            regenerate every slice from app/Fec/Legacy/lib-slices.json
  *   php scripts/lib-slice.php --report   only print the closure (functions, lines, Joomla calls)
+ *   php scripts/lib-slice.php --report --manifest=/tmp/trial.json   measure a trial manifest
  *
  * Reads the functions named as seeds in lib-slices.json, follows every call
  * they make into the legacy helper files (legacy/components/com_bonuses/
@@ -25,6 +26,12 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 $manifestFile = $root.'/app/Fec/Legacy/lib-slices.json';
+// --manifest=<file>: measure a trial manifest (with --report) without touching the real one.
+foreach ($argv as $arg) {
+    if (str_starts_with($arg, '--manifest=')) {
+        $manifestFile = substr($arg, strlen('--manifest='));
+    }
+}
 $legacyHelpers = $root.'/legacy/components/com_bonuses/helpers';
 $outDir = $root.'/app/Fec/Legacy/site/components/com_bonuses/helpers';
 $reportOnly = in_array('--report', $argv, true);
