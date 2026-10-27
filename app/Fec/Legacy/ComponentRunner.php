@@ -43,7 +43,7 @@ final class ComponentRunner implements PageHandler
         // fallback never does, so a desk reached that way is refused). A task on
         // a public view is not ours: the legacy .htaccess keeps task= requests on
         // Joomla, this is the second lock.
-        $desk = $this->isDesk($url);
+        $desk = self::isDeskUrl($url);
         $task = trim((string) $request->input('task', ''));
         if ($desk && ! auth()->check()) {
             abort(404);
@@ -85,6 +85,13 @@ final class ComponentRunner implements PageHandler
             $body = (string) ob_get_clean();
         } catch (RedirectException $e) {
             $this->discard($level);
+            // Joomla kept the enqueued messages ("Topic saved.") in the session
+            // and showed them on the page after the redirect: same here, when
+            // the request has a session (desks); public pages never enqueue.
+            $queue = Factory::getApplication()->getMessageQueue();
+            if ($queue !== [] && $request->hasSession()) {
+                $request->session()->flash('legacy.messages', $queue);
+            }
 
             return redirect()->to($e->url, $e->status);
         } catch (ExitException $e) {
@@ -120,11 +127,17 @@ final class ComponentRunner implements PageHandler
             $canonical = Uri::site().$url->canonical;
         }
 
+        $messages = Factory::getApplication()->getMessageQueue();
+        if ($request->hasSession()) {
+            $messages = array_merge((array) $request->session()->get('legacy.messages', []), $messages);
+        }
+
         $response = response()->view('legacy.component', [
             'doc' => $doc,
             'body' => $body,
             'canonical' => $canonical,
             'bodyClass' => '',
+            'messages' => $messages,
         ]);
         foreach (Factory::getApplication()->getHeaders() as $name => $value) {
             $response->headers->set($name, $value);
@@ -176,9 +189,23 @@ final class ComponentRunner implements PageHandler
         return $out;
     }
 
-    private function isDesk(ResolvedUrl $url): bool
+    /**
+     * A desk (non-public) URL: its view is in fec.legacy.desk_views, or, when
+     * the URL carries a task and no view (index.php?option=com_authors&task=
+     * methodologyadmin.save, the desks' save and JSON calls), the controller
+     * named by the task is a desk view.
+     */
+    public static function isDeskUrl(ResolvedUrl $url): bool
     {
-        return in_array($url->routeKey(), (array) config('fec.legacy.desk_views', []), true);
+        $option = (string) $url->option();
+        $view = (string) ($url->view() ?? '');
+        $task = (string) ($url->query['task'] ?? '');
+        if ($view === '' && str_contains($task, '.')) {
+            $view = strtolower((string) strstr($task, '.', true));
+        }
+
+        return $option !== '' && $view !== ''
+            && in_array($option.'.'.$view, (array) config('fec.legacy.desk_views', []), true);
     }
 
     private function discard(int $level): void

@@ -1,14 +1,27 @@
 <?php
 
+use App\Fec\Legacy\ComponentRunner;
 use App\Http\Controllers\Desk\HomeController;
 use App\Http\Controllers\Desk\LoginController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\LegacyDeskController;
 use App\Http\Controllers\RegistryController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // Phase 0c: status page and JSON health check (both behind Cloudflare Access).
-Route::get('/', function (HealthController $health) {
+// The root also receives Joomla's non-SEF entry: a request to
+// /index.php?option=... reaches Laravel with the path "/" (the front
+// controller is stripped from the URI), and Joomla itself treated
+// /?option=... the same way. With option= the request goes to the desks.
+Route::match(['GET', 'POST'], '/', function (Request $request, HealthController $health, LegacyDeskController $desk, ComponentRunner $runner) {
+    if ($request->filled('option')) {
+        return $desk->index($request, $runner);
+    }
+    if ($request->isMethod('POST')) {
+        abort(405);
+    }
+
     return view('status', ['report' => $health->report()]);
 })->name('status');
 
@@ -31,10 +44,9 @@ Route::middleware('throttle:10,1')->group(function (): void {
 Route::post('/desk/logout', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
 Route::get('/desk', HomeController::class)->middleware('auth')->name('desk.home');
 
-// Ported desks: their SEF paths (fec.legacy.desk_paths) and Joomla's non-SEF
-// entry, which the desk forms and scripts call (GET and POST, task= included).
+// Ported desks: their SEF paths (fec.legacy.desk_paths); the non-SEF entry
+// (/index.php?option=..., GET and POST, task= included) is the root route above.
 // LegacyDeskController sends guests to the login and runs the component.
 foreach ((array) config('fec.legacy.desk_paths', []) as $path) {
     Route::match(['GET', 'POST'], '/'.trim((string) $path, '/'), [LegacyDeskController::class, 'sef']);
 }
-Route::match(['GET', 'POST'], '/index.php', [LegacyDeskController::class, 'index'])->name('legacy.index');

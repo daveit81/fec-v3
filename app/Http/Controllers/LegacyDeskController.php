@@ -17,7 +17,9 @@ use Symfony\Component\HttpFoundation\Response;
  *     the desks' forms and JavaScript call (JRoute builds it when the registry
  *     has no SEF spelling), GET and POST.
  * A desk view or a task needs a logged-in user; the rest is served as the
- * public fallback would (fxreport and other non-SEF public views).
+ * public fallback would (fxreport and other non-SEF public views). The
+ * non-SEF entry is reached through the root route (routes/web.php): Laravel
+ * sees /index.php?option=... as the path "/".
  */
 class LegacyDeskController extends Controller
 {
@@ -27,7 +29,7 @@ class LegacyDeskController extends Controller
         if (! $decision->url->isPage() || $decision->url->option() === null) {
             abort(404);
         }
-        if ($this->isDesk($decision->url) && ! auth()->check()) {
+        if (ComponentRunner::isDeskUrl($decision->url) && ! auth()->check()) {
             return redirect()->guest(route('login'));
         }
 
@@ -50,7 +52,7 @@ class LegacyDeskController extends Controller
         }
         $url = new ResolvedUrl('page', 'index.php', $query, null, null, null, null, 'index.php?'.http_build_query($query), 'index.php');
 
-        if (($this->isDesk($url) || ($query['task'] ?? '') !== '') && ! auth()->check()) {
+        if ((ComponentRunner::isDeskUrl($url) || ($query['task'] ?? '') !== '') && ! auth()->check()) {
             if ($request->expectsJson() || ($query['format'] ?? '') === 'json') {
                 return response()->json(['ok' => false, 'error' => 'login required'], 401);
             }
@@ -59,10 +61,5 @@ class LegacyDeskController extends Controller
         }
 
         return $runner->handle($request, $url);
-    }
-
-    private function isDesk(ResolvedUrl $url): bool
-    {
-        return in_array($url->routeKey(), (array) config('fec.legacy.desk_views', []), true);
     }
 }

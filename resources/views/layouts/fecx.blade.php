@@ -139,8 +139,7 @@ function do_nothing() { return; }
     </header>
 
     <main class="fec-main{{ $mainClass !== '' ? ' '.$mainClass : '' }}" role="main">
-        <div id="system-message-container">
-        </div>
+@include('partials.system-message', ['messages' => $messages ?? []])
 @yield('content')
     </main>
   </div>

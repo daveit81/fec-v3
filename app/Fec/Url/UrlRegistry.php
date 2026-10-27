@@ -147,6 +147,9 @@ final class UrlRegistry
         // Second pass: same option, view and identifiers; a catid or another
         // decoration the desk wrote differently does not make another page
         // (Joomla routes an article by id, whatever catid the link carries).
+        // Variables the stored URL does not encode (edit=, q=, a filter) travel
+        // on as the query string, the way sh404SEF appended non-SEF variables
+        // ("/methodology-admin?edit=fxcheck"); limitstart is spelled "start".
         $identity = array_intersect_key($want, array_flip(self::IDENTITY_KEYS));
         if (count($identity) < 2) {
             return null;
@@ -154,7 +157,14 @@ final class UrlRegistry
         foreach ($candidates as $row) {
             $have = self::significant(self::parseQuery((string) $row->newurl));
             if (array_intersect_key($have, array_flip(self::IDENTITY_KEYS)) === $identity) {
-                return '/'.ltrim((string) $row->oldurl, '/');
+                $path = '/'.ltrim((string) $row->oldurl, '/');
+                $extra = array_diff_key($want, $have, array_flip(self::DECORATION_KEYS));
+                if (isset($extra['limitstart'])) {
+                    $extra = ['start' => $extra['limitstart']] + $extra;
+                    unset($extra['limitstart']);
+                }
+
+                return $extra === [] ? $path : $path.'?'.http_build_query($extra);
             }
         }
 
@@ -163,6 +173,9 @@ final class UrlRegistry
 
     /** Query variables that identify a page on their own (with option and view). */
     private const IDENTITY_KEYS = ['option', 'view', 'task', 'id', 'bid', 'cid', 'slug', 'topic', 'provider', 'edition', 'kind'];
+
+    /** Variables a link may carry that never reach the SEF URL (Joomla routes an article by id). */
+    private const DECORATION_KEYS = ['catid'];
 
     /**
      * The query variables that identify a page: everything but "lang" and

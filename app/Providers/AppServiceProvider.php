@@ -24,9 +24,10 @@ class AppServiceProvider extends ServiceProvider
         // field NAME (JHtml form.token) and the legacy controllers verify it
         // through JRequest::checkToken(), so Laravel's own check is skipped on
         // their paths. Registered here, not in bootstrap/app.php, because the
-        // configuration is loaded by the time the providers boot.
+        // configuration is loaded by the time the providers boot. "/" is where
+        // /index.php?option=... lands (routes/web.php): the only POST it takes.
         PreventRequestForgery::except(array_merge(
-            ['index.php'],
+            ['/', 'index.php'],
             array_map(fn ($p) => trim((string) $p, '/'), (array) config('fec.legacy.desk_paths', [])),
         ));
     }

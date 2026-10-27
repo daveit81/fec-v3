@@ -39,6 +39,12 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   login (`/desk/login`: password + emailed code; accounts via `fec:user:create`), run on `fec_rw`,
   see `JFactory::getUser()` as the account's `joomla_user_id`, and keep Joomla's own token check
   (`JRequest::checkToken`), so their paths are excluded from Laravel's CSRF middleware.
+- Joomla's non-SEF entry `/index.php?option=...` reaches Laravel as the path `/` (the front controller
+  is stripped from the URI): the root route hands every request with `option=` to `LegacyDeskController`,
+  GET and POST, so a `Route::match(..., '/index.php')` never matches. `JRoute::_()` appends to the SEF
+  path the variables the registry URL does not encode (`/methodology-admin?edit=fxcheck`, `start=`), as
+  sh404SEF did; messages enqueued before a redirect are flashed in the session and rendered as Joomla's
+  `#system-message` block (empty container on public pages).
 - `JPATH_SITE` is the virtual docroot (code); `JPATH_ROOT` is the real `public_html`
   (`fec.legacy.docroot`): the desks' uploads (`images/rtp`, `images/blog`) land where the live site serves them.
 
