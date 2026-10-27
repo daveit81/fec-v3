@@ -1009,6 +1009,110 @@ JS;
     return "<script>\n" . $js . "\n</script>";
 }
 
+// --- fec_resend_config  (source lines 10323-10336; slices: editions)
+/**
+ * Carica la config Resend dal file fuori webroot (cached static).
+ *
+ * @return array  Config array (api_key, from, reply_to, webhook_secret)
+ * @throws RuntimeException  se il config file non esiste/illeggibile
+ */
+function fec_resend_config() {
+    static $config = null;
+    if ($config === null) {
+        $path = '/home/freeextr/conf/fec_resend.php';
+        if (!is_readable($path)) {
+            throw new RuntimeException('Resend config non trovata: ' . $path);
+        }
+        $config = require $path;
+        if (!is_array($config) || empty($config['api_key'])) {
+            throw new RuntimeException('Resend config malformata');
+        }
+    }
+    return $config;
+}
+
+// --- fec_resend_send  (source lines 10360-10418; slices: editions)
+/**
+ * Manda un'email via API Resend.
+ *
+ * @param string|array $to       email singola o array di email
+ * @param string       $subject
+ * @param string       $html     body HTML
+ * @param string       $plain    body plain-text (richiesto da Resend)
+ * @param array        $opts     {
+ *     'from'     => override del default,
+ *     'reply_to' => override del default,
+ *     'headers'  => assoc array di custom headers (es. List-Unsubscribe),
+ *     'tags'     => array di tag per analytics ([{name, value}, ...]),
+ * }
+ * @return array {
+ *     'ok'         => bool,
+ *     'message_id' => string (se ok),
+ *     'error'      => string (se !ok),
+ *     'code'       => int HTTP code,
+ *     'raw'        => string risposta raw (se !ok, per debug),
+ * }
+ */
+function fec_resend_send($to, $subject, $html, $plain, $opts = array()) {
+    $cfg = fec_resend_config();
+
+    $payload = array(
+        'from'    => isset($opts['from']) ? $opts['from'] : $cfg['from'],
+        'to'      => is_array($to) ? $to : array($to),
+        'subject' => $subject,
+        'html'    => $html,
+        'text'    => $plain,
+    );
+
+    $reply_to = isset($opts['reply_to']) ? $opts['reply_to'] : (!empty($cfg['reply_to']) ? $cfg['reply_to'] : null);
+    if ($reply_to) {
+        $payload['reply_to'] = $reply_to;
+    }
+    if (!empty($opts['headers']) && is_array($opts['headers'])) {
+        $payload['headers'] = $opts['headers'];
+    }
+    if (!empty($opts['tags']) && is_array($opts['tags'])) {
+        $payload['tags'] = $opts['tags'];
+    }
+
+    $ch = curl_init('https://api.resend.com/emails');
+    curl_setopt_array($ch, array(
+        CURLOPT_POST           => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER     => array(
+            'Authorization: Bearer ' . $cfg['api_key'],
+            'Content-Type: application/json',
+        ),
+        CURLOPT_POSTFIELDS     => json_encode($payload),
+        CURLOPT_TIMEOUT        => 30,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_SSL_VERIFYHOST => 2,
+    ));
+
+    $body = curl_exec($ch);
+    $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err  = curl_error($ch);
+    curl_close($ch);
+
+    if ($body === false) {
+        return array('ok' => false, 'error' => 'curl: ' . $err, 'code' => 0);
+    }
+
+    $data = json_decode($body, true);
+
+    if ($code >= 200 && $code < 300 && isset($data['id'])) {
+        return array('ok' => true, 'message_id' => $data['id'], 'code' => $code);
+    }
+
+    return array(
+        'ok'    => false,
+        'error' => isset($data['message']) ? $data['message'] : ('HTTP ' . $code),
+        'code'  => $code,
+        'raw'   => $body,
+    );
+}
+
 // --- fec_render_email_capture_popup  (source lines 11040-11300; slices: template)
 /**
  * Render the exit-intent / scroll-triggered popup for email capture.

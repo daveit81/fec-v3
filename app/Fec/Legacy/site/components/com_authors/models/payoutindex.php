@@ -1168,7 +1168,7 @@ class AuthorsModelPayoutindex extends JModel
         imagettftext($im, 16, 0, $x0, $H - 26, $teal, $fSansB, $url);
 
         // Output
-        $dir = JPATH_SITE . self::CARD_DIR;
+        $dir = JPATH_ROOT . self::CARD_DIR; // PORT: files live in the real docroot (JPATH_SITE is the code)
         if (!is_dir($dir)) @mkdir($dir, 0755, true);
         if (!is_dir($dir) || !is_writable($dir)) {
             imagedestroy($im);

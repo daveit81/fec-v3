@@ -106,6 +106,14 @@ return [
         // The Joomla user id the desk runs as once the redazione logs in on v3 (DESK_USER_ID on the live site).
         'desk_user_id' => (int) env('FEC_LEGACY_DESK_USER_ID', 42),
 
+        // The editions config outside the docroot (FEC_PI_CRON_KEY, FEC_PI_NOTIFY_TO): the snapshot
+        // tasks of com_authors read it, and so do fec:payout-index:snapshot / fec:licence-watch:snapshot.
+        'editions_config' => env('FEC_LEGACY_EDITIONS_CONFIG', '/home/freeextr/conf/fec_payout_index.php'),
+
+        // Run the two snapshot tasks from the v3 scheduler (routes/console.php). Off until the
+        // crontab lines that call them on Joomla are removed: never both.
+        'schedule_snapshots' => filter_var(env('FEC_LEGACY_SCHEDULE_SNAPSHOTS', false), FILTER_VALIDATE_BOOL),
+
         // Component options (JComponentHelper::getParams): none set on the live site.
         'params' => [],
 

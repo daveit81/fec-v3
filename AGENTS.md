@@ -50,6 +50,11 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   created/modified and keeps the article's node in `jos_assets` under the category's asset (nested set:
   insert as last child, leaf move). `JFactory::getCache($group)->clean()` deletes Joomla's file cache
   of that group in `public_html/cache/` so www shows what a v3 desk saved.
+- The snapshot crons of com_authors run as `fec:payout-index:snapshot` and `fec:licence-watch:snapshot`
+  (`ComponentRunner::runTask()`: the cron's request rebuilt in the console, key from
+  `fec.legacy.editions_config`, the task's JSON and HTTP status as output and exit code). Their
+  schedule in `routes/console.php` is gated by `FEC_LEGACY_SCHEDULE_SNAPSHOTS`: on only once the
+  crontab lines that call them on Joomla are removed, never both.
 - `JPATH_SITE` is the virtual docroot (code); `JPATH_ROOT` is the real `public_html`
   (`fec.legacy.docroot`): the desks' uploads (`images/rtp`, `images/blog`) land where the live site serves them.
 

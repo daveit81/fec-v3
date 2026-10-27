@@ -52,8 +52,30 @@ final class ComponentRunner implements PageHandler
             abort(404, 'Task not available on this view');
         }
 
+        return $this->run($request, $url, $entry, $desk || $this->needsWrites($url));
+    }
+
+    /**
+     * A component task run from the console (the snapshot crons): the request
+     * is the one the cron's curl made, built by the command; no session, no
+     * desk lock (the task checks its own key), writing connection.
+     */
+    public function runTask(Request $request, ResolvedUrl $url): Response
+    {
+        $option = (string) $url->option();
+        $entry = Runtime::sitePath().'/components/'.$option.'/'.substr($option, 4).'.php';
+        if (! preg_match('/^com_[a-z0-9_]+$/', $option) || ! is_file($entry)) {
+            abort(404);
+        }
+
+        return $this->run($request, $url, $entry, true);
+    }
+
+    private function run(Request $request, ResolvedUrl $url, string $entry, bool $rw): Response
+    {
+        $option = (string) $url->option();
         Runtime::boot($option);
-        Factory::useRwConnection($desk || $this->needsWrites($url));
+        Factory::useRwConnection($rw);
         if (! defined('FEC_OB_BASE')) {
             define('FEC_OB_BASE', ob_get_level() + 1);
         }
@@ -158,8 +180,14 @@ final class ComponentRunner implements PageHandler
         if (! isset($headers['Content-Type']) && json_decode($body) !== null) {
             $headers['Content-Type'] = 'application/json; charset=utf-8';
         }
+        // The status the legacy code set with http_response_code() (403 bad key, 500 failure).
+        $status = http_response_code();
+        $status = is_int($status) && $status >= 100 && $status < 600 ? $status : 200;
+        if ($status !== 200) {
+            http_response_code(200);
+        }
 
-        return response($body, 200, $headers);
+        return response($body, $status, $headers);
     }
 
     /**

@@ -26,6 +26,9 @@ edited by hand; add a seed and regenerate.
   buffer; they now stop at `FEC_OB_BASE`, the level the runner defines before including the
   component (`controllers/dashboard.php` gateAndJson, `controllers/fxshieldadmin.php` exportmd and
   exportdossier). Headers they set with `header()` are copied into the response by the runner.
+- `components/com_authors/models/payoutindex.php` renderCard: the edition card is written under
+  `JPATH_ROOT . CARD_DIR` instead of `JPATH_SITE` (same path on Joomla, where the two are one
+  directory; here `JPATH_SITE` is the code and `JPATH_ROOT` the real `public_html`).
 
 ## Known legacy behaviour reproduced on purpose (parity)
 

@@ -1,5 +1,5 @@
 {
-  "_comment": "Seeds per ported section: the legacy lib functions its views and the template call. scripts/lib-slice.php follows their calls and writes the closure into app/Fec/Legacy/site/components/com_bonuses/helpers/.",
+  "_comment": "Seeds per ported section: the legacy lib functions its views and the template call. scripts/lib-slice.php follows their calls and writes the closure into app/Fec/Legacy/site/components/com_bonuses/helpers/. \"editions\": the snapshot tasks of com_authors (Payout Index, Licence Watch) mail the desk through the lib.",
   "slices": {
     "authors": [
       "fec_initials_from_name",
@@ -30,6 +30,9 @@
       "fec_render_email_capture_popup",
       "fec_telegram_url",
       "fec_discord_url"
+    ],
+    "editions": [
+      "fec_resend_send"
     ]
   }
 }
