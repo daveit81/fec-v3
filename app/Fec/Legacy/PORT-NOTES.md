@@ -37,7 +37,9 @@ edited by hand; add a seed and regenerate.
   instead). `helpers/fec_common_lib.php`, `fec_fxrate.php`, `fec_blog.php` are the generated
   slices; `bonustypesarray.php` and `currenciesarray.php` the hand-edited copies above. One edit:
   `renders/filtersheaders.php` had two `default:` clauses in the `switch($filter)`; PHP 5 ran the
-  last one, PHP 7+ refuses two, so the first (empty) one is removed: same behaviour.
+  last one, PHP 7+ refuses two, so the first (empty) one is removed: same behaviour. Not copied:
+  `helpers/authors.php`, a dead file (nothing includes it) that re-declares two functions the lib
+  defines unguarded (`fec_get_bonus_author`, `fec_render_bonus_author_card`): loading both is fatal.
 
 ## Known legacy behaviour reproduced on purpose (parity)
 
