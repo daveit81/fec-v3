@@ -52,6 +52,8 @@ final class Runtime
         'JFilterOutput' => FilterOutput::class,
         'JString' => Str::class,
         'JTable' => Table::class,
+        'JTableContent' => Tables\Content::class,
+        'JTableAsset' => Tables\Asset::class,
         'JController' => Controller::class,
         'JControllerLegacy' => Controller::class,
         'JView' => View::class,

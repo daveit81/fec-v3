@@ -28,11 +28,23 @@ class Request
         }
     }
 
+    /**
+     * The mask is JRequest's: JREQUEST_NOTRIM keeps surrounding whitespace,
+     * JREQUEST_ALLOWRAW skips the string filter, JREQUEST_ALLOWHTML keeps the
+     * markup. Without them a "string" loses its tags (JFilterInput's default
+     * instance allows none) and is trimmed, as on the live site.
+     */
     public static function getVar(string $name, mixed $default = null, string $hash = 'default', string $type = 'none', int $mask = 0): mixed
     {
         $value = self::raw($name, strtolower($hash));
         if ($value === null) {
             return $default;
+        }
+        if (is_string($value) && ! ($mask & 1)) {
+            $value = trim($value);
+        }
+        if (strtoupper($type) === 'STRING' && ! ($mask & 6) && is_string($value)) {
+            $value = strip_tags(html_entity_decode($value, ENT_QUOTES | ENT_HTML401, 'UTF-8'));
         }
 
         return self::clean($value, $type);
@@ -85,7 +97,7 @@ class Request
         $base = match (strtolower($hash)) {
             'get' => $request->query(),
             'post' => $request->post(),
-            'files' => $request->allFiles(),
+            'files' => $_FILES,
             'cookie' => $request->cookie(),
             'env', 'server' => $request->server(),
             default => $request->all(),
@@ -114,7 +126,8 @@ class Request
         return match ($hash) {
             'get' => $request->query($name),
             'post' => $request->post($name),
-            'files' => $request->file($name),
+            // the $_FILES entry (name, type, tmp_name, error, size), as the legacy upload code reads it
+            'files' => $_FILES[$name] ?? null,
             'cookie' => $request->cookie($name),
             'env', 'server' => $request->server($name),
             'method' => self::getMethod() === 'POST' ? $request->post($name) : $request->query($name),
