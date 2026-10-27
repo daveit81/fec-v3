@@ -143,8 +143,13 @@ return [
             ['forbidden-query', 'GLOBALS(=|\[|\%[0-9A-Z]{0,2})'],
             ['forbidden-query', '_REQUEST(=|\[|\%[0-9A-Z]{0,2})'],
             ['forbidden-agent', 'AppEngine'], // 345-346
-            ['rewrite', '^bonuses/free-spins$', 'https://www.freeextrachips.com/bonuses/free-spins/'], // 462
+            // 462 (^bonuses/free-spins$ -> free-spins/ [R=301]) is dead on the live site: it sits below
+            // Joomla's catch-all RewriteRule (.* index.php [L]); the 301 the live site answers comes from
+            // the sh404SEF alias "bonuses/free-spins" (Sh404sefAliases), which v3 reads from the table.
             ['match', '/bonuses/ads/(.*)', '/bonuses/ctr/$1'], // 468
+            // Davey, 27 Oct 2026: the exclusive filter page goes to the hub (the same RedirectMatch
+            // goes into the live file next to line 468, so both halves answer alike)
+            ['match', '^/bonuses/exclusive/yes/?$', 'https://www.freeextrachips.com/bonuses/'],
             ['redirect', '/bonuses/7bit-casino/75-free-spins-id7289', 'https://www.freeextrachips.com/bonuses/7bit-casino/75-free-spins-id8676'], // 533
             ['match', '^/bonuses/7bit-casino/75-free-spins-id8157/?$', '/bonuses/7bit-casino/75-free-spins-id8676'], // 534
             ['redirect', '/bonuses/slotland-casino/usd25-no-deposit-bonus-id4048', 'https://www.freeextrachips.com/bonuses/slotland-casino/usd25-no-deposit-bonus-id8252'], // 536

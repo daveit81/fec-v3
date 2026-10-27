@@ -97,9 +97,12 @@ answered by PHP 8.4). `App\Fec\Url\HtaccessRedirects` answers them first, rule b
 directive's matching (`fec.legacy.htaccess_redirects`, rewrite rules before mod_alias, as the two
 modules run): the 410 of line 112 (`<section>/tag/...`), Joomla's exploit filters (403 on
 `base64_encode(`, `<script>`, `GLOBALS[`, `_REQUEST[` in the raw query string), the AppEngine
-user-agent 403, and the redirects under `bonuses/` (retired bonus types, `bonuses/free-spins` to its
-slash form, `bonuses/ads/` to `bonuses/ctr/`, replaced bonuses, every country under
-`allowed-countries/` but au and nz). Not reproduced: the LiteSpeed cache rules (v3 pages are
+user-agent 403, and the redirects under `bonuses/` (retired bonus types, `bonuses/ads/` to
+`bonuses/ctr/`, replaced bonuses, every country under `allowed-countries/` but au and nz, the
+exclusive filter page to the hub). Only the rules that are effective on the live site count: a
+`RewriteRule` below Joomla's catch-all (`.* index.php [L]`, around line 340) never fires there
+(line 462, `bonuses/free-spins` → slash form: the live 301 is the sh404SEF alias); mod_alias
+`Redirect`/`RedirectMatch` lines fire wherever they are. Not reproduced: the LiteSpeed cache rules (v3 pages are
 no-cache). **When a rule is added to the live file and can match a path v3 serves, it is added
 there too.**
 

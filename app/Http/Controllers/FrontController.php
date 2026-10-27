@@ -56,8 +56,15 @@ class FrontController extends Controller
             if (! empty($decision->url->meta['raw_location'])) {
                 return response('', $decision->status, ['Location' => $to]);
             }
-            // Keep the visitor's query string on same-site redirects (sh404SEF does).
-            if (! preg_match('#^https?://#i', $to) && ($qs = $request->getQueryString()) !== null && $qs !== '') {
+            // Keep the visitor's query string on same-site redirects (sh404SEF does). The
+            // web server's own redirects (mod_alias, RewriteRule [R]) append it to any target,
+            // absolute or not, unless the target carries a query of its own.
+            $qs = $rawQuery !== '' ? $rawQuery : null;
+            if ($qs !== null && $decision->url->source === 'htaccess') {
+                if (! str_contains($to, '?')) {
+                    $to .= '?'.$qs;
+                }
+            } elseif ($qs !== null && ! preg_match('#^https?://#i', $to)) {
                 $to .= (str_contains($to, '?') ? '&' : '?').$qs;
             }
 
