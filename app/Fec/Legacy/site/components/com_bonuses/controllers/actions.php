@@ -1971,7 +1971,7 @@ class BonusesControllerActions extends JController
 	private function purgeSiteCache()
 	{
 		if (!headers_sent()) {
-			header('X-LiteSpeed-Purge: *');
+			fec_header('X-LiteSpeed-Purge: *');
 		}
 	}
 
@@ -2053,7 +2053,7 @@ class BonusesControllerActions extends JController
 			ob_end_clean();
 		}
 
-		header('Content-Type: application/json; charset=utf-8');
+		fec_header('Content-Type: application/json; charset=utf-8');
 
 		echo json_encode(
 			array_merge(

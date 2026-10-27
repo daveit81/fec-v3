@@ -1,7 +1,7 @@
 <?php
 // No direct access to this file
 defined('_JEXEC') or die('Restricted access');
-header('Content-Type: application/json');
+fec_header('Content-Type: application/json');
 // import Joomla controller library
 jimport('joomla.application.component.controller');
 /*error_reporting(E_ALL);

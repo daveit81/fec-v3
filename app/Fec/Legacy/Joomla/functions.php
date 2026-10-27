@@ -1,6 +1,7 @@
 <?php
 
 use App\Fec\Legacy\Joomla\ExitException;
+use App\Fec\Legacy\Joomla\Factory;
 use App\Fec\Legacy\Php5Sort;
 
 /*
@@ -63,5 +64,41 @@ if (! function_exists('fec_php5_arsort')) {
     function fec_php5_arsort(array &$array, int $flags = SORT_REGULAR): bool
     {
         return Php5Sort::arsort($array, $flags);
+    }
+}
+
+/*
+| header() of the ported code (rewritten to this by the port scripts): the header
+| goes on the Joomla application object, the one place the runner builds the
+| response from, whatever the SAPI (the CLI keeps no header list, so fec:parity
+| never saw a header() the tc and ads views set). A status line ("HTTP/1.1 404
+| Not Found") or an explicit response code sets the status; a Location header
+| makes the response a 302 unless a 3xx status is set, as PHP does.
+*/
+if (! function_exists('fec_header')) {
+    function fec_header(string $header, bool $replace = true, int $response_code = 0): void
+    {
+        $header = trim($header);
+        if (preg_match('#^HTTP/\d(?:\.\d)?\s+(\d{3})#i', $header, $m)) {
+            http_response_code((int) $m[1]);
+        } elseif (str_contains($header, ':')) {
+            [$name, $value] = explode(':', $header, 2);
+            $app = Factory::getApplication();
+            $name = trim($name);
+            $value = trim($value);
+            if (! $replace) {
+                foreach ($app->getHeaders() as $k => $v) {
+                    if (strcasecmp($k, $name) === 0 && $v !== '') {
+                        $value = $v.', '.$value;
+                        $name = $k;
+                        break;
+                    }
+                }
+            }
+            $app->setHeader($name, $value);
+        }
+        if ($response_code > 0) {
+            http_response_code($response_code);
+        }
     }
 }

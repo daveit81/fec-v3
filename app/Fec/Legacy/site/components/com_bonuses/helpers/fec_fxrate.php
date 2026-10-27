@@ -5,7 +5,7 @@
  * The functions below are copied verbatim, in source order; each header names
  * the original lines and the slices (ported sections) that need it.
  * Only the port rewrites apply (scripts/legacy-rewrite.inc.php): usort/uasort/asort/arsort
- * run as fec_php5_*, the sorts of PHP 5.6.
+ * run as fec_php5_* (the sorts of PHP 5.6), header() as fec_header().
  */
 
 // File-scope constants of the source file.

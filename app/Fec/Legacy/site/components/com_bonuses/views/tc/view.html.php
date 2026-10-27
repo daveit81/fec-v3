@@ -38,7 +38,7 @@ $query->where($db->quoteName('bid')." = ".$db->quote($bid));
 $db->setQuery($query);
 $link = $db->loadResult();
 
-header("Location: " . $link);
+fec_header("Location: " . $link);
 
 parent::display($tpl);
 	}

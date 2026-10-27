@@ -124,15 +124,29 @@ return [
         // a wrong row would be served by both halves of the site.
         'sef_register' => filter_var(env('FEC_LEGACY_SEF_REGISTER', false), FILTER_VALIDATE_BOOL),
 
-        // The "Redirect 301 /path URL" lines of the legacy public_html/.htaccess (mod_alias) that fall
-        // under the paths v3 serves: Apache answered them before Joomla, the v3 block at the top of
-        // that file would send them to v3 instead, so the router answers them first, with mod_alias'
-        // semantics (App\Fec\Url\HtaccessRedirects). Source without the leading slash, target as written.
+        // The redirect lines of the legacy public_html/.htaccess (mod_alias "Redirect 301", "RedirectMatch",
+        // mod_rewrite "RewriteRule ... [R=301]") that fall under the paths v3 serves: the web server
+        // answered them before Joomla, the v3 block at the top of that file sends those paths to v3
+        // instead, so the router answers them first with each directive's semantics
+        // (App\Fec\Url\HtaccessRedirects). File order, targets as written; the line numbers are those
+        // of the file on 27 Oct 2026. Line 114 (allowed-countries/au|nz -> show&geo=) is an internal
+        // rewrite: the registry holds both spellings of those two pages.
         'htaccess_redirects' => [
-            'bonuses/free-play' => 'https://www.freeextrachips.com/bonuses/no-deposit-casinos',
-            'bonuses/slots-bonuses' => 'https://www.freeextrachips.com/bonuses/',
-            'bonuses/no-deposit-spins' => 'https://www.freeextrachips.com/bonuses/free-spins/no-deposit/',
-            'bonuses/free-cash' => 'https://www.freeextrachips.com/bonuses/no-deposit-casinos',
+            ['rewrite', '^bonuses/no-deposit-casinos/allowed-countries/(?!(?:au|nz)/?$)', '/bonuses/no-deposit-casinos'], // 115
+            ['rewrite', '^bonuses/free-spins$', 'https://www.freeextrachips.com/bonuses/free-spins/'], // 462
+            ['match', '/bonuses/ads/(.*)', '/bonuses/ctr/$1'], // 468
+            ['redirect', '/bonuses/7bit-casino/75-free-spins-id7289', 'https://www.freeextrachips.com/bonuses/7bit-casino/75-free-spins-id8676'], // 533
+            ['match', '^/bonuses/7bit-casino/75-free-spins-id8157/?$', '/bonuses/7bit-casino/75-free-spins-id8676'], // 534
+            ['redirect', '/bonuses/slotland-casino/usd25-no-deposit-bonus-id4048', 'https://www.freeextrachips.com/bonuses/slotland-casino/usd25-no-deposit-bonus-id8252'], // 536
+            ['redirect', '/bonuses/currency/btc/', 'https://www.freeextrachips.com/bonuses/crypto'], // 538
+            ['redirect', '/bonuses/free-play', 'https://www.freeextrachips.com/bonuses/no-deposit-casinos'], // 540
+            ['redirect', '/bonuses/slots-bonuses', 'https://www.freeextrachips.com/bonuses/'], // 542
+            ['redirect', '/bonuses/no-deposit-casino/', 'https://www.freeextrachips.com/bonuses/no-deposit-casinos'], // 543
+            ['redirect', '/bonuses/no-deposit-spins', 'https://www.freeextrachips.com/bonuses/free-spins/no-deposit/'], // 544
+            ['redirect', '/bonuses/extra-spins', 'https://www.freeextrachips.com/bonuses/free-spins/no-deposit/'], // 545
+            ['redirect', '/bonuses/sports-and-casino/', 'https://www.freeextrachips.com/bonuses/slots-and-casino/'], // 546
+            ['redirect', '/bonuses/high-roller-bonus', 'https://www.freeextrachips.com/bonuses/high-roller-bonuses'], // 547
+            ['redirect', '/bonuses/free-cash', 'https://www.freeextrachips.com/bonuses/no-deposit-casinos'], // 558
         ],
 
         // Public "option.view" keys that write (the tracked redirect of com_bonuses logs the click,

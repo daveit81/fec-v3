@@ -69,7 +69,7 @@ class BonusesViewAds extends JView
 			$link = JUri::root();
 		}
 
-		header("Location: " . $link);
+		fec_header("Location: " . $link);
 		JFactory::getApplication()->close();
 	}
 }

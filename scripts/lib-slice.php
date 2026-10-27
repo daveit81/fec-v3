@@ -418,7 +418,7 @@ foreach ($byFile as $file => $fns) {
     $out[] = ' * The functions below are copied verbatim, in source order; each header names';
     $out[] = ' * the original lines and the slices (ported sections) that need it.';
     $out[] = ' * Only the port rewrites apply (scripts/legacy-rewrite.inc.php): usort/uasort/asort/arsort';
-    $out[] = ' * run as fec_php5_*, the sorts of PHP 5.6.';
+    $out[] = ' * run as fec_php5_* (the sorts of PHP 5.6), header() as fec_header().';
     $out[] = ' */';
     $out[] = '';
     if (! empty($constants[$file])) {

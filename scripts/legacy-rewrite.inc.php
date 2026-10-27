@@ -6,7 +6,7 @@
  * based, idempotent; every change is reported as file:line so that
  * PORT-NOTES.md can list it.
  *
- * Rewrites:
+ * Rewrites (FEC_PORT_REWRITES):
  *   usort( / uasort( / asort( / arsort(  ->  fec_php5_usort( ...
  *     PHP 5.6 sorted with an unstable quicksort (Zend/zend_qsort.c); PHP 8
  *     sorts stably. The legacy code slices a top N after sorting candidates
@@ -14,13 +14,21 @@
  *     differ. App\Fec\Legacy\Php5Sort runs the algorithm of PHP 5.6.
  *     sort/rsort/ksort/krsort are left alone: equal values are not
  *     distinguishable after sort(), and keys are unique.
+ *   header(  ->  fec_header(
+ *     A bare header() reaches PHP's SAPI, which the runner cannot read in
+ *     every context (the CLI keeps no header list: fec:parity saw the tc and
+ *     ads views answer 200 where PHP had made them a 302 with a Location).
+ *     fec_header() records the header on the Joomla application object, the
+ *     one place the runner builds the response from; a status line
+ *     ("HTTP/1.1 404 Not Found") or a response code sets the status.
  */
 
-const FEC_PORT_SORT_REWRITES = [
+const FEC_PORT_REWRITES = [
     'usort' => 'fec_php5_usort',
     'uasort' => 'fec_php5_uasort',
     'asort' => 'fec_php5_asort',
     'arsort' => 'fec_php5_arsort',
+    'header' => 'fec_header',
 ];
 
 /**
@@ -43,13 +51,13 @@ function fec_port_rewrite(string $code, array &$changes): string
         }
 
         $name = strtolower($t[1]);
-        if (! isset(FEC_PORT_SORT_REWRITES[$name]) || ! fec_port_is_function_call($tokens, $i)) {
+        if (! isset(FEC_PORT_REWRITES[$name]) || ! fec_port_is_function_call($tokens, $i)) {
             $out .= $t[1];
 
             continue;
         }
 
-        $to = FEC_PORT_SORT_REWRITES[$name];
+        $to = FEC_PORT_REWRITES[$name];
         $changes[] = ['line' => $t[2], 'from' => $t[1], 'to' => $to];
         $out .= $to;
     }

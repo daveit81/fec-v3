@@ -80,8 +80,10 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   (`fec.legacy.docroot`): the desks' uploads (`images/rtp`, `images/blog`) land where the live site serves them.
 - PHP 5.6 sorted with an unstable quicksort, PHP 8 sorts stably: with tied scores the two show
   different rows. Every `usort/uasort/asort/arsort` of the ported code is rewritten to
-  `fec_php5_*` (`App\Fec\Legacy\Php5Sort`, the PHP 5.6 algorithm) by the slicer and by
-  `php scripts/legacy-port.php <dir>` (run after every copy; `fec:legacy:check` fails on a sort left behind).
+  `fec_php5_*` (`App\Fec\Legacy\Php5Sort`, the PHP 5.6 algorithm), and every bare `header()` to
+  `fec_header()` (the header lands on the application object the runner builds the response from:
+  a `Location` set that way is a 302, as PHP made it), by the slicer and by
+  `php scripts/legacy-port.php <dir>` (run after every copy; `fec:legacy:check` fails on a call left behind).
 
 ## Databases
 
@@ -116,10 +118,12 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
 ## Router (phase 1 kernel)
 
 - `App\Fec\Url\Router::route($path)` decides every GET that no explicit route claims
-  (`Route::fallback` → `FrontController`): `jos_sh404sef_urls` first (a known URL is served, or
-  redirected to its stored spelling), then the run-time patterns (`app/Fec/Url/Patterns`, e.g.
-  `/bonuses/<casino>/<slug>-id<bid>`), then `jos_redirection` — Joomla's redirect plugin only ever
-  fired on a 404, so its rules apply to paths nobody else knows.
+  (`Route::fallback` → `FrontController`): the legacy `.htaccess` redirect lines under our paths
+  first (`fec.legacy.htaccess_redirects`, `HtaccessRedirects`: the web server answered them before
+  Joomla), then `jos_sh404sef_urls` (a known URL is served, or redirected to its stored spelling;
+  the request's own slash spelling wins when both are stored), then the run-time patterns
+  (`app/Fec/Url/Patterns`, e.g. `/bonuses/<casino>/<slug>-id<bid>`), then `jos_redirection` —
+  Joomla's redirect plugin only ever fired on a 404, so its rules apply to paths nobody else knows.
 - A ported view = one `PageHandler` class registered in `Dispatcher::HANDLERS` under `option.view`.
   Unregistered views answer 404 (with the decision shown on the dev hostname only).
 - Probes: `php artisan fec:urls:resolve <path>...` (`--json`) and `GET /__registry?path=` on `v3.`.

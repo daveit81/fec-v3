@@ -114,29 +114,32 @@ class LegacyCheck extends Command
         }
 
         // The port rewrites (scripts/legacy-port.php) must have run on the copy: a sort left as
-        // PHP 8's is stable where PHP 5.6's was not, and tied rows come out in another order.
-        foreach ($this->unportedSorts($allFiles) as $where) {
+        // PHP 8's is stable where PHP 5.6's was not, a bare header() never reaches the response.
+        foreach ($this->unportedCalls($allFiles) as $where) {
             $failed++;
-            $this->line('  <error>FAIL</error> '.$where.' sorts with PHP 8 (run php scripts/legacy-port.php on the component)');
+            $this->line('  <error>FAIL</error> '.$where.' is not rewritten (run php scripts/legacy-port.php on the component)');
         }
 
         return $failed === 0 ? self::SUCCESS : self::FAILURE;
     }
 
     /**
-     * usort/uasort/asort/arsort calls not rewritten to fec_php5_*.
+     * Calls the port rewrites (scripts/legacy-rewrite.inc.php: usort, asort, header...)
+     * should have replaced and did not.
      *
      * @param  list<string>  $files
      * @return list<string> "file:line usort("
      */
-    private function unportedSorts(array $files): array
+    private function unportedCalls(array $files): array
     {
+        require_once base_path('scripts/legacy-rewrite.inc.php');
+        $names = array_keys(FEC_PORT_REWRITES);
         $out = [];
         foreach ($files as $file) {
             $tokens = token_get_all((string) file_get_contents($file));
             $rel = substr($file, strlen(Runtime::sitePath()) + 1);
             foreach ($tokens as $i => $t) {
-                if (! is_array($t) || $t[0] !== T_STRING || ! in_array(strtolower($t[1]), ['usort', 'uasort', 'asort', 'arsort'], true)) {
+                if (! is_array($t) || $t[0] !== T_STRING || ! in_array(strtolower($t[1]), $names, true)) {
                     continue;
                 }
                 // a call: "(" next, no "->", "::", "function" or "\" before

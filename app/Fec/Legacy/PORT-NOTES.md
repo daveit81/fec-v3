@@ -31,6 +31,13 @@ on it). They are token based and idempotent.
   `krsort` are left alone: equal values are not told apart after `sort()`, keys are unique.
   Rewritten call sites: `fec_common_lib.php` (6), `fec_fxrate.php` (1), `fec_fxrate_render.php` (2),
   `filters.php`/`filtersnew.php` (8 each), com_authors models and views (13).
+- `header(` becomes `fec_header(`: a bare `header()` goes to PHP's SAPI, which the runner cannot read
+  in every context (the CLI keeps no header list, so `fec:parity` saw the `tc` and `ads` views of
+  com_bonuses answer 200 where PHP had made them a 302 with a Location). `fec_header()` records the
+  header on the Joomla application object, where the runner builds the response from; a status line
+  or a response code sets the status; a Location header makes the response a 302 unless a 3xx status
+  is set, as PHP does, the body kept (Joomla sent it too). 23 call sites: the JSON and download tasks
+  of com_authors, `actions.php`, `mobileapp.php`, `views/tc`, `views/ads`.
 
 ## sh404SEF plugins (ported as classes, not copied)
 
@@ -79,6 +86,16 @@ plugin left them (`$dosef = false`).
   `helpers/pagination.php` (Zebra_Pagination) `get_pages()`: `get_page()` calls it before the
   record counts are set, dividing `'' / ''`; PHP 5.6 silently gave 0, PHP 8 throws a TypeError on
   string operands, so the operands are cast and a zero divisor returns 0, as before.
+
+## The legacy .htaccess, reproduced where it reaches our paths
+
+`public_html/.htaccess` redirects some paths under `bonuses/` itself (mod_alias `Redirect 301`,
+`RedirectMatch`, `RewriteRule [R=301]`: the retired bonus types, `bonuses/free-spins` to its slash
+form, `bonuses/ads/` to `bonuses/ctr/`, replaced bonuses, every country under `allowed-countries/`
+but au and nz). With the v3 switch block at the top of that file those requests reach v3, so
+`App\Fec\Url\HtaccessRedirects` answers them first, rule by rule with each directive's matching
+(`fec.legacy.htaccess_redirects`, file order, targets as written). When a line is added to the live
+file under a prefix v3 serves, it is added there too.
 
 ## Known legacy behaviour reproduced on purpose (parity)
 

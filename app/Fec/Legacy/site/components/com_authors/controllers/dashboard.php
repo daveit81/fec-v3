@@ -41,8 +41,8 @@ class AuthorsControllerDashboard extends JController
     {
         // Force JSON output
         while (ob_get_level() > (defined('FEC_OB_BASE') ? FEC_OB_BASE : 0)) { @ob_end_clean(); } // PORT: keep the runner's buffer
-        header('Content-Type: application/json; charset=utf-8');
-        header('Cache-Control: no-store, must-revalidate');
+        fec_header('Content-Type: application/json; charset=utf-8');
+        fec_header('Cache-Control: no-store, must-revalidate');
 
         if (!AuthorsModelDashboard::isAuthorized()) {
             echo json_encode(array('ok' => false, 'error' => 'forbidden'));

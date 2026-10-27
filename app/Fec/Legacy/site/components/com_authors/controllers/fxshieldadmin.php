@@ -216,11 +216,11 @@ class AuthorsControllerFxshieldadmin extends JController
         // Stream as a download, bypassing the Joomla template. Use native
         // header() so this works regardless of the Joomla version's app API.
         while (ob_get_level() > (defined('FEC_OB_BASE') ? FEC_OB_BASE : 0)) { ob_end_clean(); } // PORT: keep the runner's buffer
-        header('Content-Type: text/markdown; charset=utf-8');
-        header('Content-Disposition: attachment; filename="' . $fname . '"');
-        header('Content-Length: ' . strlen($md));
-        header('Cache-Control: no-store, no-cache, must-revalidate');
-        header('Pragma: no-cache');
+        fec_header('Content-Type: text/markdown; charset=utf-8');
+        fec_header('Content-Disposition: attachment; filename="' . $fname . '"');
+        fec_header('Content-Length: ' . strlen($md));
+        fec_header('Cache-Control: no-store, no-cache, must-revalidate');
+        fec_header('Pragma: no-cache');
         echo $md;
         jexit();
     }
@@ -253,11 +253,11 @@ class AuthorsControllerFxshieldadmin extends JController
         $fname = 'fxshield-dossier-' . $slug . '-' . $casinoId . '.md';
 
         while (ob_get_level() > (defined('FEC_OB_BASE') ? FEC_OB_BASE : 0)) { ob_end_clean(); } // PORT: keep the runner's buffer
-        header('Content-Type: text/markdown; charset=utf-8');
-        header('Content-Disposition: attachment; filename="' . $fname . '"');
-        header('Content-Length: ' . strlen($md));
-        header('Cache-Control: no-store, no-cache, must-revalidate');
-        header('Pragma: no-cache');
+        fec_header('Content-Type: text/markdown; charset=utf-8');
+        fec_header('Content-Disposition: attachment; filename="' . $fname . '"');
+        fec_header('Content-Length: ' . strlen($md));
+        fec_header('Cache-Control: no-store, no-cache, must-revalidate');
+        fec_header('Pragma: no-cache');
         echo $md;
         jexit();
     }

@@ -63,9 +63,9 @@ class AuthorsControllerPayoutindex extends JController
     protected function emit($data, $status)
     {
         if (function_exists('http_response_code')) http_response_code((int)$status);
-        header('Content-Type: application/json; charset=utf-8');
-        header('Cache-Control: no-store, no-cache, must-revalidate');
-        header('X-Robots-Tag: noindex');
+        fec_header('Content-Type: application/json; charset=utf-8');
+        fec_header('Cache-Control: no-store, no-cache, must-revalidate');
+        fec_header('X-Robots-Tag: noindex');
         echo json_encode($data);
         JFactory::getApplication()->close();
     }
