@@ -131,7 +131,7 @@ return [
             ['title' => 'FXShield verification', 'url' => '/fxshield-verify', 'note' => 'Wizard di verifica first-party con evidenze'],
             ['title' => 'Desk add (baseline)', 'url' => '/index.php?option=com_authors&view=deskadd', 'note' => 'Inserimento baseline FXShield'],
             ['title' => 'RTP dashboard', 'url' => '/index.php?option=com_authors&view=dashboard', 'note' => 'Database slot e RTP (utente 42)'],
-            ['title' => 'Blog desk', 'url' => '/index.php?option=com_authors&view=blogdesk', 'note' => 'Editor del Casino Bonus Blog (salvataggio ancora su Joomla: JTable Content da portare)'],
+            ['title' => 'Blog desk', 'url' => '/index.php?option=com_authors&view=blogdesk', 'note' => 'Editor del Casino Bonus Blog (post in jos_content con il nodo asset, meta in jos_fec_blog_meta)'],
         ],
     ],
 

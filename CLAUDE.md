@@ -45,6 +45,11 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   path the variables the registry URL does not encode (`/methodology-admin?edit=fxcheck`, `start=`), as
   sh404SEF did; messages enqueued before a redirect are flashed in the session and rendered as Joomla's
   `#system-message` block (empty container on public pages).
+- `JTable::getInstance('Content')` is `Joomla\Table` + `Tables\Content`/`Tables\Asset` with Joomla 2.5
+  semantics: bind only known columns, `check()` (title, alias, dates, meta), `store()` stamps
+  created/modified and keeps the article's node in `jos_assets` under the category's asset (nested set:
+  insert as last child, leaf move). `JFactory::getCache($group)->clean()` deletes Joomla's file cache
+  of that group in `public_html/cache/` so www shows what a v3 desk saved.
 - `JPATH_SITE` is the virtual docroot (code); `JPATH_ROOT` is the real `public_html`
   (`fec.legacy.docroot`): the desks' uploads (`images/rtp`, `images/blog`) land where the live site serves them.
 

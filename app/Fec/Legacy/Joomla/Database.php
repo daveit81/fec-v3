@@ -255,6 +255,91 @@ class Database
         return $this->escape($text, $extra);
     }
 
+    /**
+     * JDatabase::insertObject: every public, scalar, non-null property of the
+     * object whose name does not start with "_" becomes a column; the new id
+     * is written back into $key.
+     */
+    public function insertObject(string $table, object $object, ?string $key = null): bool
+    {
+        $fields = [];
+        $values = [];
+        foreach (get_object_vars($object) as $k => $v) {
+            if ($v === null || is_array($v) || is_object($v) || str_starts_with($k, '_')) {
+                continue;
+            }
+            $fields[] = $this->quoteName($k);
+            $values[] = $this->quote($v);
+        }
+        if ($fields === []) {
+            return false;
+        }
+        $this->setQuery('INSERT INTO '.$this->quoteName($table).' ('.implode(',', $fields).') VALUES ('.implode(',', $values).')');
+        if ($this->execute() === false) {
+            return false;
+        }
+        if ($key !== null && $this->insertId > 0) {
+            $object->$key = $this->insertId;
+        }
+
+        return true;
+    }
+
+    /** JDatabase::updateObject: null properties are skipped unless $nulls; the key names the row. */
+    public function updateObject(string $table, object $object, string $key, bool $nulls = false): bool
+    {
+        $fields = [];
+        $where = '';
+        foreach (get_object_vars($object) as $k => $v) {
+            if (is_array($v) || is_object($v) || str_starts_with($k, '_')) {
+                continue;
+            }
+            if ($k === $key) {
+                $where = $this->quoteName($k).' = '.$this->quote($v);
+
+                continue;
+            }
+            if ($v === null) {
+                if (! $nulls) {
+                    continue;
+                }
+                $fields[] = $this->quoteName($k).' = NULL';
+
+                continue;
+            }
+            $fields[] = $this->quoteName($k).' = '.$this->quote($v);
+        }
+        if ($where === '') {
+            $this->errorNum = 1;
+            $this->errorMsg = 'updateObject: no key '.$key;
+
+            return false;
+        }
+        if ($fields === []) {
+            return true;
+        }
+        $this->setQuery('UPDATE '.$this->quoteName($table).' SET '.implode(', ', $fields).' WHERE '.$where);
+
+        return $this->execute() !== false;
+    }
+
+    /**
+     * JDatabase::getTableColumns: column => type (or the whole SHOW FULL COLUMNS
+     * row when $typeOnly is false, as JTable reads the defaults from it).
+     *
+     * @return array<string, mixed>
+     */
+    public function getTableColumns(string $table, bool $typeOnly = true): array
+    {
+        $this->setQuery('SHOW FULL COLUMNS FROM '.$this->quoteName($table));
+        $out = [];
+        foreach ($this->loadObjectList() as $row) {
+            $out[$row->Field] = $typeOnly ? preg_replace('/[(0-9)]/', '', (string) $row->Type) : $row;
+        }
+
+        return $out;
+    }
+
     public function getNullDate(): string
     {
         return '0000-00-00 00:00:00';

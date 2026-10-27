@@ -103,7 +103,7 @@ class Factory
 
     public static function getCache(string $group = '', string $handler = 'callback', ?string $storage = null): Cache
     {
-        return new Cache;
+        return new Cache($group);
     }
 
     public static function getLanguage(): Language
