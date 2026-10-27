@@ -40,6 +40,8 @@ edited by hand; add a seed and regenerate.
   last one, PHP 7+ refuses two, so the first (empty) one is removed: same behaviour. Not copied:
   `helpers/authors.php`, a dead file (nothing includes it) that re-declares two functions the lib
   defines unguarded (`fec_get_bonus_author`, `fec_render_bonus_author_card`): loading both is fatal.
+  Nor `views/authors/`: its file declares `BonusesViewTc` (a copy-paste), so `view=authors` was
+  already broken on Joomla ("class BonusesViewAuthors not found") and no URL points to it.
 
 ## Known legacy behaviour reproduced on purpose (parity)
 

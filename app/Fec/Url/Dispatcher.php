@@ -34,7 +34,6 @@ final class Dispatcher
         'com_bonuses.ads' => \App\Fec\Legacy\ComponentRunner::class,
         'com_bonuses.wcalc' => \App\Fec\Legacy\ComponentRunner::class,
         'com_bonuses.cmp' => \App\Fec\Legacy\ComponentRunner::class,
-        'com_bonuses.authors' => \App\Fec\Legacy\ComponentRunner::class,
         // phase 4: com_content.*, com_atlas.*
     ];
 

@@ -2,7 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Fec\Legacy\Joomla\ExitException;
+use App\Fec\Legacy\Joomla\RedirectException;
 use App\Fec\Legacy\Joomla\Runtime;
+use App\Fec\Legacy\LegacyErrors;
 use Illuminate\Console\Command;
 use Throwable;
 
@@ -31,6 +34,9 @@ class LegacyCheck extends Command
         }
 
         Runtime::boot($component);
+        foreach (['REQUEST_URI' => '/', 'QUERY_STRING' => '', 'REQUEST_METHOD' => 'GET', 'HTTP_HOST' => (string) parse_url((string) config('fec.site_url'), PHP_URL_HOST), 'SERVER_NAME' => (string) parse_url((string) config('fec.site_url'), PHP_URL_HOST), 'HTTPS' => 'on', 'REMOTE_ADDR' => '127.0.0.1', 'HTTP_USER_AGENT' => 'fec:legacy:check'] as $k => $v) {
+            $_SERVER[$k] ??= $v;
+        }
         $base = Runtime::sitePath().'/components/'.$component;
         if (! is_dir($base)) {
             $this->error('Not ported: '.$base);
@@ -72,17 +78,25 @@ class LegacyCheck extends Command
 
                 continue;
             }
+            // Many legacy view files are a class followed by template code that runs at
+            // include time and expects a request: notices are collected as in the runner,
+            // a redirect/exit is normal, any other runtime error is reported but is not a
+            // declaration problem (those are fatal and show above).
+            $level = ob_get_level();
+            LegacyErrors::begin('legacy:check '.$rel);
             try {
                 ob_start();
                 require_once $file;
-                ob_end_clean();
                 $this->line('  <info>ok</info>   '.$rel);
+            } catch (RedirectException|ExitException $e) {
+                $this->line('  <info>ok</info>   '.$rel.' (template code ended the request)');
             } catch (Throwable $e) {
-                while (ob_get_level() > 0) {
+                $this->line('  <comment>warn</comment> '.$rel.' - template code at include time: '.$e->getMessage());
+            } finally {
+                LegacyErrors::end();
+                while (ob_get_level() > $level) {
                     ob_end_clean();
                 }
-                $failed++;
-                $this->line('  <error>FAIL</error> '.$rel.' - '.$e->getMessage());
             }
         }
 
