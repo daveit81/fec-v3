@@ -160,6 +160,10 @@ final class ComponentRunner implements PageHandler
         if ($format !== 'html' && $format !== '') {
             return $this->raw($body, $request);
         }
+        // sh404SEF's per-page title and metas, applied last on the live site (after the
+        // component and the template), keyed on the page's own non-SEF URL.
+        Sh404sefMetas::apply($doc, $url->newurl);
+
         if ($tmpl === 'component') {
             return response()->view('legacy.bare', ['doc' => $doc, 'body' => $body]);
         }
