@@ -9,6 +9,8 @@ namespace App\Fec\Url;
  *          render      -> $handler (a PageHandler class) renders $url
  *          not_ported  -> the path is a known page, v3 has no handler yet: 404
  *          not_found   -> gone or miss: 404
+ *          gone        -> a legacy .htaccess [G] rule: 410
+ *          forbidden   -> a legacy .htaccess [F] rule (the query-string exploit filters): 403
  */
 final class Decision
 {
@@ -18,8 +20,7 @@ final class Decision
         public readonly ResolvedUrl $url,
         public readonly ?string $location = null,
         public readonly ?string $handler = null,
-    ) {
-    }
+    ) {}
 
     public function isRedirect(): bool
     {

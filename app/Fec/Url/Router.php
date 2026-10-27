@@ -7,7 +7,7 @@ use App\Fec\Url\Patterns\BonusDetails;
 /**
  * The v3 router of the convivenza: one public path in, one Decision out.
  *
- *   0. .htaccess redirects  the legacy "Redirect 301" lines under our paths (Apache answered first)
+ *   0. .htaccess rules      the legacy redirects, 410s and 403s under our paths (the web server answered first)
  *   0b. jos_sh404sef_aliases sh404SEF's aliases, before its own URLs, Location as written
  *   1. jos_sh404sef_urls    canonical page, duplicate of a page, slash spelling, recorded 404
  *   2. run-time patterns    URL families sh404SEF never stored (bonus details)
@@ -33,10 +33,14 @@ final class Router
     {
         $path = UrlRegistry::normalize($path);
 
-        // The legacy .htaccess "Redirect 301" lines under our paths: Apache answered
-        // them before Joomla saw the request, so they come before everything here.
-        if ($rule = HtaccessRedirects::match($path)) {
-            return new Decision('redirect', 301, $rule, $rule->target);
+        // The legacy .htaccess rules under our paths (redirects, 410, 403): the web server
+        // answered them before Joomla saw the request, so they come before everything here.
+        if ($rule = HtaccessRedirects::match($path, null, (string) $query)) {
+            return match ($rule->kind) {
+                'gone' => new Decision('gone', 410, $rule),
+                'forbidden' => new Decision('forbidden', 403, $rule),
+                default => new Decision('redirect', 301, $rule, $rule->target),
+            };
         }
 
         // sh404SEF's aliases: checked before its own URLs (a path with an alias redirects

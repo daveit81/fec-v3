@@ -3,52 +3,74 @@
 namespace App\Fec\Url;
 
 /**
- * The redirect lines of the legacy public_html/.htaccess that fall under the
- * paths v3 serves (fec.legacy.htaccess_redirects), answered by v3 itself.
+ * The rules of the legacy public_html/.htaccess that fall under the paths v3
+ * serves (fec.legacy.htaccess_redirects), answered by v3 itself.
  *
  * On the live site the web server answered them before Joomla saw the
- * request; with the v3 block at the top of the same .htaccess those paths
- * reach v3 instead. The rules are kept in the file's order and with each
- * directive's own semantics, the targets exactly as written:
+ * request. The v3 block sits at the top of that file and rewrites to
+ * /v3/index.php, whose own .htaccess (Laravel's) is the only one the second
+ * pass reads: every rule below the block is skipped for the paths it routes.
+ * So v3 answers them, in the file's order and with each directive's own
+ * semantics, the targets exactly as written:
  *
  *   ['redirect', '/path', target]      mod_alias "Redirect 301": the source is a prefix of the
  *                                      request matched on whole segments ("/bonuses/free-cash"
  *                                      also matches "/bonuses/free-cash/x", never
  *                                      "/bonuses/free-cashier"); the rest of the path is
- *                                      appended to the target as is.
+ *                                      appended to the target as is. 301.
  *   ['match', regex, target]           "RedirectMatch 301": the regex against the path with
  *                                      its leading slash, unanchored unless it anchors itself;
- *                                      $1..$9 in the target are the groups.
+ *                                      $1..$9 in the target are the groups. 301.
  *   ['rewrite', regex, target]         "RewriteRule ... [R=301]" in .htaccess context: the
- *                                      regex against the path without the leading slash; $1..$9.
+ *                                      regex against the path without the leading slash; $1..$9. 301.
+ *   ['gone', regex]                    "RewriteRule regex - [G]": 410 Gone.
+ *   ['forbidden-query', regex, 'NC']   "RewriteCond %{QUERY_STRING} regex [NC,OR]" before a
+ *                                      "RewriteRule .* ... [F]": 403 when the raw query string
+ *                                      matches; the third element is the flags ("NC" = no case).
  *
- * The query string travels on in every case (FrontController keeps it), the
- * status is 301.
+ * The query string travels on with every redirect (FrontController keeps it).
  */
 final class HtaccessRedirects
 {
     /**
-     * @param  list<array{0: string, 1: string, 2: string}>|null  $rules  default: fec.legacy.htaccess_redirects
-     * @return ResolvedUrl|null kind "redirect", source "htaccess"
+     * @param  list<array<int, string>>|null  $rules  default: fec.legacy.htaccess_redirects
+     * @return ResolvedUrl|null kind "redirect" (301), "gone" (410) or "forbidden" (403), source "htaccess"
      */
-    public static function match(string $path, ?array $rules = null): ?ResolvedUrl
+    public static function match(string $path, ?array $rules = null, string $query = ''): ?ResolvedUrl
     {
         $path = '/'.ltrim(UrlRegistry::normalize($path), '/');
         $rules ??= (array) config('fec.legacy.htaccess_redirects', []);
 
         foreach ($rules as $rule) {
-            if (! is_array($rule) || count($rule) < 3) {
+            if (! is_array($rule) || count($rule) < 2) {
                 continue;
             }
-            [$type, $source, $target] = $rule;
-            $target = (string) $target;
-            if ($target === '') {
+            $type = (string) $rule[0];
+            $source = (string) $rule[1];
+            $third = (string) ($rule[2] ?? '');
+
+            if ($type === 'gone') {
+                if (self::regexMatch(ltrim($path, '/'), $source, '') !== null) {
+                    return new ResolvedUrl('gone', ltrim($path, '/'), [], null, null, null, null, null, 'htaccess');
+                }
+
                 continue;
             }
-            $to = match ((string) $type) {
-                'redirect' => self::aliasMatch($path, (string) $source, $target),
-                'match' => self::regexMatch($path, (string) $source, $target),
-                'rewrite' => self::regexMatch(ltrim($path, '/'), (string) $source, $target),
+            if ($type === 'forbidden-query') {
+                if ($query !== '' && self::regexMatch($query, $source, '', str_contains(strtoupper($third), 'NC')) !== null) {
+                    return new ResolvedUrl('forbidden', ltrim($path, '/'), [], null, null, null, null, null, 'htaccess');
+                }
+
+                continue;
+            }
+
+            if ($third === '') {
+                continue;
+            }
+            $to = match ($type) {
+                'redirect' => self::aliasMatch($path, $source, $third),
+                'match' => self::regexMatch($path, $source, $third),
+                'rewrite' => self::regexMatch(ltrim($path, '/'), $source, $third),
                 default => null,
             };
             if ($to !== null) {
@@ -73,10 +95,10 @@ final class HtaccessRedirects
         return $target.$rest;
     }
 
-    /** RedirectMatch / RewriteRule: a PCRE against the subject, $N of the target replaced. */
-    private static function regexMatch(string $subject, string $regex, string $target): ?string
+    /** RedirectMatch / RewriteRule / RewriteCond: a PCRE against the subject, $N of the target replaced. */
+    private static function regexMatch(string $subject, string $regex, string $target, bool $noCase = false): ?string
     {
-        if ($regex === '' || @preg_match('#'.str_replace('#', '\#', $regex).'#', $subject, $m) !== 1) {
+        if ($regex === '' || @preg_match('#'.str_replace('#', '\#', $regex).'#'.($noCase ? 'i' : ''), $subject, $m) !== 1) {
             return null;
         }
 

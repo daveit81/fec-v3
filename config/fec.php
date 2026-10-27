@@ -124,14 +124,16 @@ return [
         // a wrong row would be served by both halves of the site.
         'sef_register' => filter_var(env('FEC_LEGACY_SEF_REGISTER', false), FILTER_VALIDATE_BOOL),
 
-        // The redirect lines of the legacy public_html/.htaccess (mod_alias "Redirect 301", "RedirectMatch",
-        // mod_rewrite "RewriteRule ... [R=301]") that fall under the paths v3 serves: the web server
-        // answered them before Joomla, the v3 block at the top of that file sends those paths to v3
-        // instead, so the router answers them first with each directive's semantics
+        // The rules of the legacy public_html/.htaccess (mod_alias "Redirect 301", "RedirectMatch",
+        // mod_rewrite "RewriteRule ... [R=301]", [G] 410, [F] 403 query filters) that fall under the paths
+        // v3 serves: the web server answered them before Joomla; the v3 block at the top of that file
+        // rewrites those paths to v3, whose own .htaccess is the only one the second pass reads, so the
+        // router answers them first with each directive's semantics
         // (App\Fec\Url\HtaccessRedirects). File order, targets as written; the line numbers are those
         // of the file on 27 Oct 2026. Line 114 (allowed-countries/au|nz -> show&geo=) is an internal
         // rewrite: the registry holds both spellings of those two pages.
         'htaccess_redirects' => [
+            ['gone', '^[^/]+/tag(/.*)?$'], // 112: every "<section>/tag/..." path is 410
             ['rewrite', '^bonuses/no-deposit-casinos/allowed-countries/(?!(?:au|nz)/?$)', '/bonuses/no-deposit-casinos'], // 115
             ['rewrite', '^bonuses/free-spins$', 'https://www.freeextrachips.com/bonuses/free-spins/'], // 462
             ['match', '/bonuses/ads/(.*)', '/bonuses/ctr/$1'], // 468

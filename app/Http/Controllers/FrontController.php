@@ -37,7 +37,17 @@ class FrontController extends Controller
     {
         // getPathInfo() keeps the trailing slash (path() trims it): the registry stores
         // "bonuses/" and "bonuses" apart, and sh404SEF redirected between the two.
-        $decision = $router->route($request->getPathInfo(), $request->getQueryString());
+        // The raw query string, as the web server's RewriteCond and sh404SEF saw it
+        // (getQueryString() normalises the order and the encoding).
+        $rawQuery = (string) $request->server->get('QUERY_STRING', '');
+        $decision = $router->route($request->getPathInfo(), $rawQuery !== '' ? $rawQuery : null);
+
+        // What the web server itself answered for these paths (LiteSpeed's own error pages).
+        if (in_array($decision->action, ['gone', 'forbidden'], true)) {
+            $text = $decision->status === 410 ? 'Gone' : 'Forbidden';
+
+            return response('<!DOCTYPE html><html><head><title>'.$decision->status.' '.$text.'</title></head><body><h1>'.$decision->status.'</h1><h2>'.$text.'</h2></body></html>', $decision->status, ['Content-Type' => 'text/html']);
+        }
 
         if ($decision->isRedirect()) {
             $to = (string) $decision->location;

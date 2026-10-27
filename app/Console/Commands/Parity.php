@@ -229,7 +229,9 @@ class Parity extends Command
             return $this->check('location', $strip((string) ($live['location'] ?? '')), $strip((string) ($v3['location'] ?? ''))) && $ok;
         }
 
-        if ($this->option('headers-only')) {
+        // The web server's own error pages (410 of a [G] rule, 403 of an [F] rule) are not
+        // pages of the site: the status is the parity.
+        if ($this->option('headers-only') || ! in_array((int) $live['status'], [200, 404], true)) {
             return $ok;
         }
 

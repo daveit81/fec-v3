@@ -54,6 +54,26 @@ class HtaccessRedirectsTest extends TestCase
         $this->assertNull($this->target('/bonuses/7bit-casino/75-free-spins-id8157x'));
     }
 
+    public function test_gone_and_forbidden_rules(): void
+    {
+        $rules = [
+            ['gone', '^[^/]+/tag(/.*)?$'],
+            ['forbidden-query', 'base64_encode[^(]*\\([^)]*\\)'],
+            ['forbidden-query', '(<|%3C)([^s]*s)+cript.*(>|%3E)', 'NC'],
+            ['forbidden-query', 'GLOBALS(=|\\[|\\%[0-9A-Z]{0,2})'],
+            ['redirect', '/slots/tag', 'https://example.com/never'],
+        ];
+        $this->assertSame('gone', HtaccessRedirects::match('/slots/tag/powered-by-rival-gaming/', $rules)->kind);
+        $this->assertSame('gone', HtaccessRedirects::match('/bonuses/tag', $rules)->kind);
+        $this->assertNull(HtaccessRedirects::match('/slots/tags', $rules));
+        $this->assertNull(HtaccessRedirects::match('/slots/a/tag', $rules), 'only the second segment');
+        $this->assertSame('forbidden', HtaccessRedirects::match('/authors', $rules, 'q=base64_encode(x)')->kind);
+        $this->assertSame('forbidden', HtaccessRedirects::match('/authors', $rules, 'x=%3CSCRIPT%3Ealert(1)%3C/script%3E')->kind, 'NC');
+        $this->assertSame('forbidden', HtaccessRedirects::match('/authors', $rules, 'GLOBALS%5Bx%5D=1')->kind);
+        $this->assertNull(HtaccessRedirects::match('/authors', $rules, 'utm_source=newsletter'));
+        $this->assertNull(HtaccessRedirects::match('/authors', $rules));
+    }
+
     public function test_nothing_else_matches(): void
     {
         $this->assertNull($this->target('/bonuses/no-deposit-casinos'));
