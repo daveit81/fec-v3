@@ -9,6 +9,7 @@ use App\Fec\Legacy\Joomla\Request as JRequest;
 use App\Fec\Legacy\Joomla\Runtime;
 use App\Fec\Legacy\Joomla\Uri;
 use App\Fec\Url\PageHandler;
+use App\Fec\Url\Redirects;
 use App\Fec\Url\ResolvedUrl;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -117,7 +118,7 @@ final class ComponentRunner implements PageHandler
                 $request->session()->flash('legacy.messages', $queue);
             }
 
-            return redirect()->to($e->url, $e->status);
+            return Redirects::to($request, $e->url, $e->status);
         } catch (ExitException $e) {
             // jexit(): what was echoed so far is the whole response (JSON tasks, raw output).
             $body = (string) ob_get_clean();

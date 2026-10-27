@@ -25,7 +25,7 @@ class LegacyDeskController extends Controller
 {
     public function sef(Request $request, Router $router, ComponentRunner $runner): Response
     {
-        $decision = $router->route($request->path());
+        $decision = $router->route($request->getPathInfo());
         if (! $decision->url->isPage() || $decision->url->option() === null) {
             abort(404);
         }

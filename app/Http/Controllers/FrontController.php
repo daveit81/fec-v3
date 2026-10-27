@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Fec\Url\PageHandler;
 use App\Models\Fec\Article;
+use App\Fec\Url\Redirects;
 use App\Fec\Url\Router;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -34,7 +35,9 @@ class FrontController extends Controller
 
     private function respond(Request $request, Router $router): Response
     {
-        $decision = $router->route($request->path());
+        // getPathInfo() keeps the trailing slash (path() trims it): the registry stores
+        // "bonuses/" and "bonuses" apart, and sh404SEF redirected between the two.
+        $decision = $router->route($request->getPathInfo());
 
         if ($decision->isRedirect()) {
             $to = (string) $decision->location;
@@ -43,7 +46,7 @@ class FrontController extends Controller
                 $to .= (str_contains($to, '?') ? '&' : '?').$qs;
             }
 
-            return redirect()->to($to, $decision->status);
+            return Redirects::to($request, $to, $decision->status);
         }
 
         if ($decision->action === 'render' && $decision->handler !== null) {

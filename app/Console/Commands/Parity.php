@@ -289,6 +289,8 @@ class Parity extends Command
         $html = preg_replace('/name="fts" value="\d+"/', 'name="fts" value="FTS"', $html) ?? $html;
         $html = preg_replace('/name="fsg" value="[a-f0-9]{64}"/', 'name="fsg" value="FSG"', $html) ?? $html;
         $html = preg_replace('/\?v=\d+/', '?v=N', $html) ?? $html;
+        // live counters that move between the two fetches (the trending tag "#1 . 476 opens")
+        $html = preg_replace('/\b\d[\d.,]*\s+opens\b/', 'N opens', $html) ?? $html;
         $html = preg_replace('/\s+/', ' ', $html) ?? $html;
         $html = preg_replace('/>\s+</', '><', $html) ?? $html;
         // one tag per line so diffs stay readable
