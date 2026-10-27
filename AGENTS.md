@@ -37,6 +37,10 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   `$currency`, `$bonustype` to `$GLOBALS` when included, and its functions read them there).
 - `php artisan fec:parity <path>...` compares the live page and the v3 rendering (status, title,
   metas, canonical, stylesheets, JSON-LD, body); every switch needs it green on the section's URLs.
+  `--option=com_x` walks the registry (`--view=`, `--where=type=nd`, `--sample=N --seed=S` for a
+  component with thousands of URLs, `--headers-only` for the tc/ads redirects, `--bust` past the
+  live cache). `fec:urls:htaccess --option=com_x --served=com_authors` ignores the URLs of the
+  components already on v3 when it chooses the prefixes.
 - Public pages are stateless (routes/stateless.php fallback, no cookies). Desks need the redazione
   login (`/desk/login`: password + emailed code; accounts via `fec:user:create`), run on `fec_rw`,
   see `JFactory::getUser()` as the account's `joomla_user_id`, and keep Joomla's own token check

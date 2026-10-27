@@ -16,11 +16,15 @@ use Illuminate\Support\Facades\DB;
  * prefixes while "online-casinos/fast-payouts" stays exact, because
  * "online-casinos/<casino>" is com_content). Desk views are left on Joomla.
  * --test gates the rules on v3test=1 in the query string, to try the
- * section under the live hostname before the real switch.
+ * section under the live hostname before the real switch. --served names
+ * the components already switched to v3: their URLs no longer block a
+ * prefix ("bonuses/welcome-packages" is com_authors, so "bonuses" can be a
+ * prefix of com_bonuses once com_authors is on v3; v3 routes both).
  */
 class UrlHtaccess extends Command
 {
     protected $signature = 'fec:urls:htaccess {--option= : Component (com_authors)}
+                            {--served= : Components already served by v3, comma separated (com_authors): no conflict with their URLs}
                             {--test : Gate the rules on ?v3test=1 (pre-switch trial)}';
 
     protected $description = 'Print the legacy .htaccess block that routes a section to v3';
@@ -35,21 +39,28 @@ class UrlHtaccess extends Command
         }
 
         $desk = (array) config('fec.legacy.desk_views', []);
+        $served = array_values(array_filter(array_map('trim', explode(',', (string) $this->option('served')))));
         $rows = DB::connection('fec')->table('sh404sef_urls')
             ->where('rank', 0)->where('newurl', '<>', '')
             ->get(['oldurl', 'newurl']);
 
         $mine = [];      // path => true (this component, public)
-        $others = [];    // path => true (everything else)
+        $others = [];    // path => true (everything else still on Joomla)
+        $onV3 = 0;       // public URLs of the components already served by v3: neither side of a conflict
         foreach ($rows as $r) {
             $path = trim((string) $r->oldurl, '/');
             $q = UrlRegistry::parseQuery((string) $r->newurl);
             $key = ($q['option'] ?? '').'.'.($q['view'] ?? '');
             if (($q['option'] ?? '') === $option && ! in_array($key, $desk, true)) {
                 $mine[$path] = true;
+            } elseif (in_array($q['option'] ?? '', $served, true) && ! in_array($key, $desk, true)) {
+                $onV3++;
             } else {
                 $others[$path] = true;
             }
+        }
+        if ($served !== []) {
+            $this->comment(sprintf('%d public URL(s) of %s already on v3: not counted as conflicts', $onV3, implode(', ', $served)));
         }
         if ($mine === []) {
             $this->error('No public registry URL for '.$option);

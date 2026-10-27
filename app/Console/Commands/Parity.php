@@ -2,12 +2,15 @@
 
 namespace App\Console\Commands;
 
+use App\Fec\Url\UrlRegistry;
 use DOMDocument;
 use DOMXPath;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Symfony\Component\Console\Formatter\OutputFormatter;
 use Throwable;
 
 /**
@@ -26,7 +29,12 @@ class Parity extends Command
 {
     protected $signature = 'fec:parity {path?* : Public paths to compare}
                             {--option= : Compare every canonical registry URL of a component (com_authors)}
+                            {--view= : With --option, only the URLs of this view (details, casino, show...)}
+                            {--where= : With --option, only the URLs whose Joomla query contains this text (type=nd)}
+                            {--sample=0 : With --option, N registry URLs drawn at random instead of the first N}
+                            {--seed=0 : With --sample, the random seed (0 = a new draw every run; print it to repeat a run)}
                             {--limit=0 : With --option, stop after N paths (0 = all)}
+                            {--headers-only : Compare status and Location only (tc/ads redirects), never the page}
                             {--save : Write the normalised documents to storage/app/parity/}
                             {--in-process : Render v3 in this process instead of one process per path (debugging)}
                             {--context=3 : Diff context lines}
@@ -40,7 +48,7 @@ class Parity extends Command
         $paths = (array) $this->argument('path');
         if ($option = (string) $this->option('option')) {
             $paths = array_merge($paths, $this->registryPaths($option, (int) $this->option('limit')));
-            $this->info(count($paths).' path(s) for '.$option);
+            $this->info(count($paths).' path(s) for '.$option.($this->option('view') ? ' view='.$this->option('view') : '').($this->option('where') ? ' where '.$this->option('where') : ''));
         }
         if ($paths === []) {
             $this->error('Give at least one path or --option=com_x');
@@ -90,24 +98,54 @@ class Parity extends Command
         return $failed === 0 ? self::SUCCESS : self::FAILURE;
     }
 
-    /** Canonical SEF paths of a component as the registry holds them, oldest first. @return list<string> */
+    /**
+     * Canonical SEF paths of a component as the registry holds them, oldest first;
+     * narrowed by view and by a text of the query (--where=type=nd), drawn at random
+     * with --sample (the seed is printed so that a run can be repeated).
+     *
+     * @return list<string>
+     */
     private function registryPaths(string $option, int $limit): array
     {
         $desk = (array) config('fec.legacy.desk_views', []);
-        $rows = \Illuminate\Support\Facades\DB::connection('fec')->table('sh404sef_urls')
+        $view = (string) $this->option('view');
+        $where = (string) $this->option('where');
+        $q = DB::connection('fec')->table('sh404sef_urls')
             ->where('rank', 0)
             ->where('newurl', 'like', '%option='.$option.'%')
-            ->orderBy('id')
-            ->get(['oldurl', 'newurl'])
-            ->reject(function ($r) use ($desk) {
-                $q = \App\Fec\Url\UrlRegistry::parseQuery((string) $r->newurl);
+            ->orderBy('id');
+        if ($view !== '') {
+            $q->where('newurl', 'like', '%view='.$view.'%');
+        }
+        if ($where !== '') {
+            $q->where('newurl', 'like', '%'.$where.'%');
+        }
+        $rows = $q->get(['oldurl', 'newurl'])
+            ->reject(function ($r) use ($desk, $view) {
+                $q = UrlRegistry::parseQuery((string) $r->newurl);
 
-                return in_array(($q['option'] ?? '').'.'.($q['view'] ?? ''), $desk, true);
-            })
-            ->when($limit > 0, fn ($c) => $c->take($limit))
-            ->pluck('oldurl');
+                return in_array(($q['option'] ?? '').'.'.($q['view'] ?? ''), $desk, true)
+                    || ($view !== '' && ($q['view'] ?? '') !== $view);
+            });
 
-        return array_values(array_unique(array_map(fn ($u) => '/'.ltrim((string) $u, '/'), $rows->all())));
+        $sample = (int) $this->option('sample');
+        if ($sample > 0) {
+            $seed = (int) $this->option('seed') ?: random_int(1, 999999);
+            mt_srand($seed);
+            $all = $rows->values()->all();
+            $picked = [];
+            while ($all !== [] && count($picked) < $sample) {
+                $i = mt_rand(0, count($all) - 1);
+                $picked[] = $all[$i];
+                array_splice($all, $i, 1);
+            }
+            $rows = collect($picked);
+            $this->comment("sample of $sample (--seed=$seed to repeat)");
+        }
+
+        $paths = $rows->when($limit > 0, fn ($c) => $c->take($limit))->pluck('oldurl');
+
+        return array_values(array_unique(array_map(fn ($u) => '/'.ltrim((string) $u, '/'), $paths->all())));
     }
 
     /** @return array{status: int, html: string} */
@@ -189,6 +227,10 @@ class Parity extends Command
             };
 
             return $this->check('location', $strip((string) ($live['location'] ?? '')), $strip((string) ($v3['location'] ?? ''))) && $ok;
+        }
+
+        if ($this->option('headers-only')) {
+            return $ok;
         }
 
         $a = $this->parse($live['html']);
@@ -402,6 +444,6 @@ class Parity extends Command
 
     private function clip(string $s): string
     {
-        return \Symfony\Component\Console\Formatter\OutputFormatter::escape(mb_strimwidth($s, 0, 160, '...'));
+        return OutputFormatter::escape(mb_strimwidth($s, 0, 160, '...'));
     }
 }
