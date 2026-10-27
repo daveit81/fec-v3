@@ -40,7 +40,7 @@ class FrontController extends Controller
         // The raw query string, as the web server's RewriteCond and sh404SEF saw it
         // (getQueryString() normalises the order and the encoding).
         $rawQuery = (string) $request->server->get('QUERY_STRING', '');
-        $decision = $router->route($request->getPathInfo(), $rawQuery !== '' ? $rawQuery : null);
+        $decision = $router->route($request->getPathInfo(), $rawQuery !== '' ? $rawQuery : null, (string) $request->userAgent());
 
         // What the web server itself answered for these paths (LiteSpeed's own error pages).
         if (in_array($decision->action, ['gone', 'forbidden'], true)) {

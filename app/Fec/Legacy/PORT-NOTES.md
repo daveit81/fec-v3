@@ -89,13 +89,19 @@ plugin left them (`$dosef = false`).
 
 ## The legacy .htaccess, reproduced where it reaches our paths
 
-`public_html/.htaccess` redirects some paths under `bonuses/` itself (mod_alias `Redirect 301`,
-`RedirectMatch`, `RewriteRule [R=301]`: the retired bonus types, `bonuses/free-spins` to its slash
-form, `bonuses/ads/` to `bonuses/ctr/`, replaced bonuses, every country under `allowed-countries/`
-but au and nz). With the v3 switch block at the top of that file those requests reach v3, so
-`App\Fec\Url\HtaccessRedirects` answers them first, rule by rule with each directive's matching
-(`fec.legacy.htaccess_redirects`, file order, targets as written). When a line is added to the live
-file under a prefix v3 serves, it is added there too.
+The v3 switch block sits at the top of `public_html/.htaccess` and rewrites the section's paths to
+`/v3/index.php`; the second pass reads the `.htaccess` of that directory (Laravel's), not the rest of
+the root one, so **every rule below the block is skipped for those paths** (verified on 27 Oct 2026
+with the test block: `/slots/tag/...`, `/authors?GLOBALS[x]=1`, `/authors?q=base64_encode(x)` all
+answered by PHP 8.4). `App\Fec\Url\HtaccessRedirects` answers them first, rule by rule with each
+directive's matching (`fec.legacy.htaccess_redirects`, rewrite rules before mod_alias, as the two
+modules run): the 410 of line 112 (`<section>/tag/...`), Joomla's exploit filters (403 on
+`base64_encode(`, `<script>`, `GLOBALS[`, `_REQUEST[` in the raw query string), the AppEngine
+user-agent 403, and the redirects under `bonuses/` (retired bonus types, `bonuses/free-spins` to its
+slash form, `bonuses/ads/` to `bonuses/ctr/`, replaced bonuses, every country under
+`allowed-countries/` but au and nz). Not reproduced: the LiteSpeed cache rules (v3 pages are
+no-cache). **When a rule is added to the live file and can match a path v3 serves, it is added
+there too.**
 
 ## sh404SEF's other tables
 

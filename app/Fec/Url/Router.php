@@ -29,13 +29,13 @@ final class Router
         private readonly Dispatcher $dispatcher,
     ) {}
 
-    public function route(string $path, ?string $query = null): Decision
+    public function route(string $path, ?string $query = null, ?string $userAgent = null): Decision
     {
         $path = UrlRegistry::normalize($path);
 
         // The legacy .htaccess rules under our paths (redirects, 410, 403): the web server
         // answered them before Joomla saw the request, so they come before everything here.
-        if ($rule = HtaccessRedirects::match($path, null, (string) $query)) {
+        if ($rule = HtaccessRedirects::match($path, null, (string) $query, (string) $userAgent)) {
             return match ($rule->kind) {
                 'gone' => new Decision('gone', 410, $rule),
                 'forbidden' => new Decision('forbidden', 403, $rule),

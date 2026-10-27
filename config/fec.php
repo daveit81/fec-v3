@@ -131,10 +131,18 @@ return [
         // router answers them first with each directive's semantics
         // (App\Fec\Url\HtaccessRedirects). File order, targets as written; the line numbers are those
         // of the file on 27 Oct 2026. Line 114 (allowed-countries/au|nz -> show&geo=) is an internal
-        // rewrite: the registry holds both spellings of those two pages.
+        // rewrite: the registry holds both spellings of those two pages. Not reproduced: the LiteSpeed
+        // cache rules (lines 52-101: v3 pages are no-cache) and line 111 (410 on old sections, none
+        // under our paths). mod_rewrite runs before mod_alias, and the file lists the rewrite rules first.
         'htaccess_redirects' => [
             ['gone', '^[^/]+/tag(/.*)?$'], // 112: every "<section>/tag/..." path is 410
             ['rewrite', '^bonuses/no-deposit-casinos/allowed-countries/(?!(?:au|nz)/?$)', '/bonuses/no-deposit-casinos'], // 115
+            // 301-305: Joomla's stock exploit filters (403), every path
+            ['forbidden-query', 'base64_encode[^(]*\([^)]*\)'],
+            ['forbidden-query', '(<|%3C)([^s]*s)+cript.*(>|%3E)', 'NC'],
+            ['forbidden-query', 'GLOBALS(=|\[|\%[0-9A-Z]{0,2})'],
+            ['forbidden-query', '_REQUEST(=|\[|\%[0-9A-Z]{0,2})'],
+            ['forbidden-agent', 'AppEngine'], // 345-346
             ['rewrite', '^bonuses/free-spins$', 'https://www.freeextrachips.com/bonuses/free-spins/'], // 462
             ['match', '/bonuses/ads/(.*)', '/bonuses/ctr/$1'], // 468
             ['redirect', '/bonuses/7bit-casino/75-free-spins-id7289', 'https://www.freeextrachips.com/bonuses/7bit-casino/75-free-spins-id8676'], // 533

@@ -27,6 +27,7 @@ namespace App\Fec\Url;
  *   ['forbidden-query', regex, 'NC']   "RewriteCond %{QUERY_STRING} regex [NC,OR]" before a
  *                                      "RewriteRule .* ... [F]": 403 when the raw query string
  *                                      matches; the third element is the flags ("NC" = no case).
+ *   ['forbidden-agent', regex, 'NC']   "RewriteCond %{HTTP_USER_AGENT} regex" before "[F]": 403.
  *
  * The query string travels on with every redirect (FrontController keeps it).
  */
@@ -36,7 +37,7 @@ final class HtaccessRedirects
      * @param  list<array<int, string>>|null  $rules  default: fec.legacy.htaccess_redirects
      * @return ResolvedUrl|null kind "redirect" (301), "gone" (410) or "forbidden" (403), source "htaccess"
      */
-    public static function match(string $path, ?array $rules = null, string $query = ''): ?ResolvedUrl
+    public static function match(string $path, ?array $rules = null, string $query = '', string $userAgent = ''): ?ResolvedUrl
     {
         $path = '/'.ltrim(UrlRegistry::normalize($path), '/');
         $rules ??= (array) config('fec.legacy.htaccess_redirects', []);
@@ -56,8 +57,9 @@ final class HtaccessRedirects
 
                 continue;
             }
-            if ($type === 'forbidden-query') {
-                if ($query !== '' && self::regexMatch($query, $source, '', str_contains(strtoupper($third), 'NC')) !== null) {
+            if ($type === 'forbidden-query' || $type === 'forbidden-agent') {
+                $subject = $type === 'forbidden-query' ? $query : $userAgent;
+                if ($subject !== '' && self::regexMatch($subject, $source, '', str_contains(strtoupper($third), 'NC')) !== null) {
                     return new ResolvedUrl('forbidden', ltrim($path, '/'), [], null, null, null, null, null, 'htaccess');
                 }
 

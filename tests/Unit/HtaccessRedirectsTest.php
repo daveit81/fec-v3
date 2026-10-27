@@ -72,6 +72,10 @@ class HtaccessRedirectsTest extends TestCase
         $this->assertSame('forbidden', HtaccessRedirects::match('/authors', $rules, 'GLOBALS%5Bx%5D=1')->kind);
         $this->assertNull(HtaccessRedirects::match('/authors', $rules, 'utm_source=newsletter'));
         $this->assertNull(HtaccessRedirects::match('/authors', $rules));
+
+        $agent = [['forbidden-agent', 'AppEngine']];
+        $this->assertSame('forbidden', HtaccessRedirects::match('/authors', $agent, '', 'AppEngine-Google; (+http://code.google.com/appengine)')->kind);
+        $this->assertNull(HtaccessRedirects::match('/authors', $agent, '', 'Mozilla/5.0'));
     }
 
     public function test_nothing_else_matches(): void
