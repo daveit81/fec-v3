@@ -61,6 +61,11 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   sh404SEF plugin `legacy/components/com_bonuses/sef_ext/com_bonuses.php`, not by a router: `JRoute`
   needs its port for URLs the registry does not have. `fec:legacy:check` includes only files that
   declare classes or functions; template-style helpers are parsed, not run.
+- While a component runs, `LegacyErrors` turns PHP notices/warnings/deprecations into lines of
+  `storage/logs/legacy-notices.log` (first occurrence per file:line, page key in front) instead of
+  the exceptions Laravel would raise: PHP 5.6 code warns where Joomla never showed anything. Fatal
+  errors and exceptions still fail the request. The runner also copies the request's server
+  variables into `$_SERVER` (REQUEST_URI, HTTP_REFERER...) for console runs (parity, snapshots).
 - `JPATH_SITE` is the virtual docroot (code); `JPATH_ROOT` is the real `public_html`
   (`fec.legacy.docroot`): the desks' uploads (`images/rtp`, `images/blog`) land where the live site serves them.
 

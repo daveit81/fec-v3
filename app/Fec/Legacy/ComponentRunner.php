@@ -98,10 +98,12 @@ final class ComponentRunner implements PageHandler
         }
         JRequest::seed($seed);
         Factory::getApplication()->getMenu()->activateFor($url->query);
+        $this->syncServerGlobals($request);
 
         $body = '';
         $level = ob_get_level();
         ob_start();
+        LegacyErrors::begin($url->routeKey() ?? $option);
         try {
             require $entry;
             $body = (string) ob_get_clean();
@@ -131,6 +133,8 @@ final class ComponentRunner implements PageHandler
                 return response()->view('legacy.system-error', ['code' => (int) $e->getCode(), 'message' => $e->getMessage()], (int) $e->getCode());
             }
             throw $e;
+        } finally {
+            LegacyErrors::end();
         }
 
         $doc = Factory::getDocument();
@@ -234,6 +238,28 @@ final class ComponentRunner implements PageHandler
 
         return $option !== '' && $view !== ''
             && in_array($option.'.'.$view, (array) config('fec.legacy.desk_views', []), true);
+    }
+
+    /**
+     * The legacy code reads $_SERVER directly (REQUEST_URI for pagination links,
+     * HTTP_REFERER, REMOTE_ADDR, HTTPS...). In a web request the superglobal
+     * already is the request; in the console (fec:parity:render, the snapshot
+     * commands) it is the shell's, so the request's values are copied in.
+     */
+    private function syncServerGlobals(Request $request): void
+    {
+        $always = ['REQUEST_URI', 'QUERY_STRING', 'REQUEST_METHOD', 'HTTP_HOST', 'SERVER_NAME', 'PATH_INFO', 'HTTPS', 'SERVER_PORT', 'HTTP_USER_AGENT', 'HTTP_REFERER', 'REMOTE_ADDR'];
+        foreach ($request->server->all() as $key => $value) {
+            if (! is_scalar($value)) {
+                continue;
+            }
+            if (! array_key_exists($key, $_SERVER) || in_array($key, $always, true)) {
+                $_SERVER[$key] = $value;
+            }
+        }
+        if (! isset($_SERVER['HTTPS']) && $request->isSecure()) {
+            $_SERVER['HTTPS'] = 'on';
+        }
     }
 
     private function discard(int $level): void
