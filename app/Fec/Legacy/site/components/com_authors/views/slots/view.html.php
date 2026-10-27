@@ -181,18 +181,18 @@ class AuthorsViewSlots extends JView
             $d = (string)$s->last_verified_date;
             if ($d !== '' && $d !== '0000-00-00') $byDate[] = $s;
         }
-        usort($byRtp, function ($a, $b) {
+        fec_php5_usort($byRtp, function ($a, $b) {
             $x = (float)$a->rtp_theoretical_max; $y = (float)$b->rtp_theoretical_max;
             if ($x == $y) return strcmp($a->game_name, $b->game_name);
             return ($x < $y) ? 1 : -1;
         });
-        usort($bySpread, function ($a, $b) {
+        fec_php5_usort($bySpread, function ($a, $b) {
             $x = (float)$a->rtp_theoretical_max - (float)$a->rtp_theoretical_min;
             $y = (float)$b->rtp_theoretical_max - (float)$b->rtp_theoretical_min;
             if ($x == $y) return strcmp($a->game_name, $b->game_name);
             return ($x < $y) ? 1 : -1;
         });
-        usort($byDate, function ($a, $b) {
+        fec_php5_usort($byDate, function ($a, $b) {
             $c = strcmp((string)$b->last_verified_date, (string)$a->last_verified_date);
             if ($c !== 0) return $c;
             return strcmp((string)$b->published_at, (string)$a->published_at);

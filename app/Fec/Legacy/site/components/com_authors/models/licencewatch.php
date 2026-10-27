@@ -194,7 +194,7 @@ class AuthorsModelLicencewatch extends JModel
             if ($hasMt && $hasCw) $pairs['malta_curacao']++;
             if ($hasUk && count($parts) === 1) $pairs['uk_only']++;
         }
-        arsort($declared);
+        fec_php5_arsort($declared);
         $declaredList = array();
         foreach ($declared as $k => $n) {
             $declaredList[] = array('key' => $k, 'label' => isset($labels[$k]) ? $labels[$k] : ucwords(str_replace('-', ' ', $k)),
@@ -286,7 +286,7 @@ class AuthorsModelLicencewatch extends JModel
             $groupList[] = array('family' => $g['family'], 'label' => $g['label'], 'bucket' => $g['bucket'],
                                  'brands' => (int)$g['brands'], 'operators' => count($g['ops']), 'operator_names' => array_values($g['ops']));
         }
-        usort($groupList, function ($a, $b) use ($order) {
+        fec_php5_usort($groupList, function ($a, $b) use ($order) {
             if ($a['brands'] !== $b['brands']) return ($a['brands'] > $b['brands']) ? -1 : 1;
             $oa = isset($order[$a['bucket']]) ? $order[$a['bucket']] : 9; $ob = isset($order[$b['bucket']]) ? $order[$b['bucket']] : 9;
             if ($oa !== $ob) return ($oa < $ob) ? -1 : 1;
@@ -302,7 +302,7 @@ class AuthorsModelLicencewatch extends JModel
             if (!isset($geoOps[$j][$vb['entity_id']])) { $geoOps[$j][$vb['entity_id']] = true; $geo[$j]['operators']++; }
         }
         $geoList = array_values($geo);
-        usort($geoList, function ($a, $b) { return ($a['brands'] === $b['brands']) ? 0 : (($a['brands'] > $b['brands']) ? -1 : 1); });
+        fec_php5_usort($geoList, function ($a, $b) { return ($a['brands'] === $b['brands']) ? 0 : (($a['brands'] > $b['brands']) ? -1 : 1); });
         $shells = array('total' => 0, 'by_jurisdiction' => array());
         try {
             $db->setQuery("SELECT COALESCE(jurisdiction, '?') AS j, COUNT(*) AS n FROM #__atlas_entities WHERE entity_type = 'payment_shell' GROUP BY j");
@@ -318,7 +318,7 @@ class AuthorsModelLicencewatch extends JModel
                 $o = trim((string)$r['jr_owner']); $costaricaOwners[$o] = isset($costaricaOwners[$o]) ? $costaricaOwners[$o] + 1 : 1;
             }
         }
-        arsort($costaricaOwners);
+        fec_php5_arsort($costaricaOwners);
         $noReg = array(
             'not_regulated'      => $dv('not-regulated'),
             'costarica'          => $dv('costarica'),
@@ -604,7 +604,7 @@ class AuthorsModelLicencewatch extends JModel
             $a = isset($pd[$k]) ? $pd[$k] : 0; $b = isset($cd[$k]) ? $cd[$k] : 0;
             if ($a !== $b) $declared[] = array('key' => $k, 'from' => $a, 'to' => $b, 'delta' => $b - $a);
         }
-        usort($declared, function ($x, $y) { $ax = abs($x['delta']); $ay = abs($y['delta']); return ($ax === $ay) ? 0 : (($ax > $ay) ? -1 : 1); });
+        fec_php5_usort($declared, function ($x, $y) { $ax = abs($x['delta']); $ay = abs($y['delta']); return ($ax === $ay) ? 0 : (($ax > $ay) ? -1 : 1); });
         $byType = array();
         foreach ((array)$events as $ev) { $t = (string)$ev['event_type']; $byType[$t] = isset($byType[$t]) ? $byType[$t] + 1 : 1; }
         return array(

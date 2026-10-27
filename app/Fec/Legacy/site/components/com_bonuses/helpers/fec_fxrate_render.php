@@ -1417,12 +1417,12 @@ if (!function_exists('fec_fxrate_home_pick')) {
 		$picks = array(); $used = array();
 
 		$byDate = $pool;
-		usort($byDate, 'fec_fxrate_home_sort_newest');
+		fec_php5_usort($byDate, 'fec_fxrate_home_sort_newest');
 		$picks[] = array('key' => 'latest', 'label' => 'Latest priced', 'row' => $byDate[0]);
 		$used[(int)$byDate[0]['pkg_id']] = true;
 
 		$byRatio = $pool;
-		usort($byRatio, 'fec_fxrate_home_sort_ratio_desc');
+		fec_php5_usort($byRatio, 'fec_fxrate_home_sort_ratio_desc');
 		foreach ($byRatio as $r) {
 			if (isset($used[(int)$r['pkg_id']]) || $r['ratio'] <= 1.005) continue;
 			$picks[] = array('key' => 'widest', 'label' => 'Widest gap', 'row' => $r);

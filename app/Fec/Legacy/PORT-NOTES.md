@@ -12,6 +12,26 @@ anything not listed is byte-identical to `legacy/` and must stay so (re-snapshot
 functions each ported section needs, copied verbatim with the source file's constants. Never
 edited by hand; add a seed and regenerate.
 
+## Mechanical rewrites (every ported file)
+
+`scripts/legacy-rewrite.inc.php` holds the rewrites the port applies to all legacy code: the
+slicer applies them when it writes a slice, `php scripts/legacy-port.php <dir>` applies them to
+copied files (run it after every copy; `--check` lists what is left, and `fec:legacy:check` fails
+on it). They are token based and idempotent.
+
+- `usort(` / `uasort(` / `asort(` / `arsort(` become `fec_php5_usort(` ... (`App\Fec\Legacy\Php5Sort`,
+  loaded with the layer's functions). PHP 5.6 sorted with `Zend/zend_qsort.c`, a quicksort that is
+  not stable (two elements the comparator cannot tell apart swap places, three come out reversed);
+  PHP 8 sorts stably. The lib sorts candidates by a score and keeps a top N (`fec_render_similar_offers`,
+  the editor's picks, the sister map) and walks `arsort()`ed click maps (trending): with tied scores
+  the live site and v3 showed different rows (details pages: "similar offers" Uptown Aces/Dragonara
+  on the live site, Uptown Pokies/Omni Slots on v3, same data and lib). `Php5Sort` is the PHP 5.6
+  algorithm step by step, validated against the C source of php-5.6.40 on random inputs; the
+  comparison itself (`<=>`, `strnatcasecmp`...) is the current engine's. `sort`/`rsort`/`ksort`/
+  `krsort` are left alone: equal values are not told apart after `sort()`, keys are unique.
+  Rewritten call sites: `fec_common_lib.php` (6), `fec_fxrate.php` (1), `fec_fxrate_render.php` (2),
+  `filters.php`/`filtersnew.php` (8 each), com_authors models and views (13).
+
 ## Hand edits
 
 - `components/com_bonuses/helpers/bonustypesarray.php`: `getenv(GEOIP_COUNTRY_CODE)` used an

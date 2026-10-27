@@ -4,6 +4,8 @@
  * Legacy snapshot: 2026-10-26T07:47:00Z (lib md5 ed846d615aba8d09905fd4438ae9b83d).
  * The functions below are copied verbatim, in source order; each header names
  * the original lines and the slices (ported sections) that need it.
+ * Only the port rewrites apply (scripts/legacy-rewrite.inc.php): usort/uasort/asort/arsort
+ * run as fec_php5_*, the sorts of PHP 5.6.
  */
 
 // File-scope constants of the source file.

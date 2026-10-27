@@ -244,8 +244,8 @@ class AuthorsModelPackageindex extends JModel
             }
         }
 
-        usort($priced, array('AuthorsModelPackageindex', 'sortEffectiveDesc'));
-        usort($unpriced, array('AuthorsModelPackageindex', 'sortBrandAsc'));
+        fec_php5_usort($priced, array('AuthorsModelPackageindex', 'sortEffectiveDesc'));
+        fec_php5_usort($unpriced, array('AuthorsModelPackageindex', 'sortBrandAsc'));
 
         $st['casinos'] = count($cids);
         if ($adv) {

@@ -4,6 +4,8 @@
  * Legacy snapshot: 2026-10-26T07:47:00Z (lib md5 ed846d615aba8d09905fd4438ae9b83d).
  * The functions below are copied verbatim, in source order; each header names
  * the original lines and the slices (ported sections) that need it.
+ * Only the port rewrites apply (scripts/legacy-rewrite.inc.php): usort/uasort/asort/arsort
+ * run as fec_php5_*, the sorts of PHP 5.6.
  */
 
 // File-scope constants of the source file.
@@ -1556,7 +1558,7 @@ function fec_bonus_full_title($set, $countrycode, $currencyMap, $bonustypeMap) {
       $p = isset($sevOrder[$s]) ? $sevOrder[$s] : 99;
       $tmp[] = array($p, $idx, $it);
     }
-    usort($tmp, function($a, $b){
+    fec_php5_usort($tmp, function($a, $b){
       if ($a[0] !== $b[0]) return $a[0] - $b[0];
       return $a[1] - $b[1];
     });
@@ -5587,7 +5589,7 @@ $noteHtml = '';
     if (empty($picked)) return '';
 
     // Re-sort by adjusted score
-    usort($picked, function($a, $b) {
+    fec_php5_usort($picked, function($a, $b) {
       $sa = isset($a['_final_score']) ? (float)$a['_final_score'] : 0.0;
       $sb = isset($b['_final_score']) ? (float)$b['_final_score'] : 0.0;
       if ($sa === $sb) return 0;
@@ -5779,7 +5781,7 @@ $noteHtml = '';
       );
     }
 
-    usort($list, function($a, $b) {
+    fec_php5_usort($list, function($a, $b) {
       if ($a['count'] === $b['count']) return 0;
       return ($a['count'] < $b['count']) ? 1 : -1;
     });
@@ -7802,7 +7804,7 @@ function close(asDismiss){
         'label' => $cl[1],
       );
     }
-    usort($sisters, function ($a, $b) {
+    fec_php5_usort($sisters, function ($a, $b) {
       $ra = fec_sister_status_rank($a['label']); $rb = fec_sister_status_rank($b['label']);
       if ($ra !== $rb) return $ra - $rb;
       return strcasecmp($a['name'], $b['name']);
@@ -8056,7 +8058,7 @@ function close(asDismiss){
     $ownerHeading = !empty($opts['owner_heading']);
 
     // Surface problems first: blacklisted, warning, suspended/closed, then active.
-    usort($members, function ($a, $b) {
+    fec_php5_usort($members, function ($a, $b) {
       $ca = fec_sister_node_color($a); $cb = fec_sister_node_color($b);
       $ra = fec_sister_status_rank(isset($ca[1]) ? $ca[1] : '');
       $rb = fec_sister_status_rank(isset($cb[1]) ? $cb[1] : '');
@@ -8907,7 +8909,7 @@ function close(asDismiss){
     if (empty($map)) return '';
 
     // Pool = everything above the LOWEST floor, click-desc, capped.
-    arsort($map);
+    fec_php5_arsort($map);
     $pool = array();
     $cap  = (int)$opts['pool_cap'];
     if ($cap < $limit) $cap = $limit;

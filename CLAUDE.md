@@ -70,6 +70,10 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   variables into `$_SERVER` (REQUEST_URI, HTTP_REFERER...) for console runs (parity, snapshots).
 - `JPATH_SITE` is the virtual docroot (code); `JPATH_ROOT` is the real `public_html`
   (`fec.legacy.docroot`): the desks' uploads (`images/rtp`, `images/blog`) land where the live site serves them.
+- PHP 5.6 sorted with an unstable quicksort, PHP 8 sorts stably: with tied scores the two show
+  different rows. Every `usort/uasort/asort/arsort` of the ported code is rewritten to
+  `fec_php5_*` (`App\Fec\Legacy\Php5Sort`, the PHP 5.6 algorithm) by the slicer and by
+  `php scripts/legacy-port.php <dir>` (run after every copy; `fec:legacy:check` fails on a sort left behind).
 
 ## Databases
 

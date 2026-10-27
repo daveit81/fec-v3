@@ -230,7 +230,7 @@ class AuthorsModelPayoutindex extends JModel
         }
 
         // Fastest measured first; ties broken by the smaller gap to declared.
-        usort($out, array('AuthorsModelPayoutindex', 'cmpDesk'));
+        fec_php5_usort($out, array('AuthorsModelPayoutindex', 'cmpDesk'));
         return $out;
     }
 

@@ -115,7 +115,7 @@ class AuthorsHelperBlogdesk
     {
         $out = array();
         foreach (self::softMap() as $opt) $out[$opt['value']] = $opt['text'];
-        asort($out, SORT_NATURAL | SORT_FLAG_CASE);
+        fec_php5_asort($out, SORT_NATURAL | SORT_FLAG_CASE);
         return $out;
     }
 

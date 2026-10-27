@@ -110,7 +110,7 @@ $db->setQuery($query);
 $sq = $db->loadRow();
 $multiarray = explode("*",$sq['0']);
 $multiunique = array_unique($multiarray,SORT_STRING);
-$msorted = asort($multiunique);
+$msorted = fec_php5_asort($multiunique);
 
     echo '<select class="filter" name="fq">';
     echo '<option value="">Choose a Software</option>';
@@ -160,7 +160,7 @@ $query->where($db->quoteName('a.type').' LIKE '.$db->quote($type));
 }
 $db->setQuery($query);
 $row = $db->loadAssocList();
-asort($row);
+fec_php5_asort($row);
 
     echo '<select class="filter" name="fq">';
     
@@ -196,7 +196,7 @@ $query->where($db->quoteName('a.type').' LIKE '.$db->quote($type));
 }
 $db->setQuery($query);
 $row = $db->loadAssocList();
-asort($row);
+fec_php5_asort($row);
 
 echo '<select class="filter" name="fq">';
     
@@ -227,7 +227,7 @@ $query->where($db->quoteName('a.type').' LIKE '.$db->quote($type));
 }
 $db->setQuery($query);
 $row = $db->loadAssocList();
-asort($row);
+fec_php5_asort($row);
 
 echo '<select class="filter" name="fq">';
  
@@ -258,7 +258,7 @@ $query->where($db->quoteName('a.type').' LIKE '.$db->quote($type));
 }
 $db->setQuery($query);
 $row = $db->loadAssocList();
-asort($row);
+fec_php5_asort($row);
 
     echo '<select class="filter" name="fq">';
     
@@ -295,7 +295,7 @@ $query->where($db->quoteName('a.type').' LIKE '.$db->quote($type));
 }
 $db->setQuery($query);
 $row = $db->loadAssocList();
-asort($row);
+fec_php5_asort($row);
 
     echo '<select class="filter" name="fq">';
     
@@ -331,7 +331,7 @@ $query->where($db->quoteName('a.type').' LIKE '.$db->quote($type));
 }
 $db->setQuery($query);
 $row = $db->loadAssocList();
-asort($row);
+fec_php5_asort($row);
 
     echo '<select class="filter" name="fq">';
     
@@ -393,7 +393,7 @@ $query->where($db->quoteName('a.type').' LIKE '.$db->quote($type));
 }
 $db->setQuery($query);
 $row = $db->loadAssocList();
-asort($row);
+fec_php5_asort($row);
 
     echo '<select class="filter" name="fq">';
     

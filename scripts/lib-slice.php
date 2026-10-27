@@ -20,9 +20,15 @@
  * literals ('fec_x' to preg_replace_callback, array_map, call_user_func)
  * are followed; a variable function ($fn()) is not. A function reported
  * missing at run time is added to the seeds.
+ *
+ * Verbatim but for the port's mechanical rewrites (scripts/legacy-rewrite.inc.php):
+ * the sorts of PHP 5.6 (usort -> fec_php5_usort...), reported per slice as
+ * source line numbers.
  */
 
 declare(strict_types=1);
+
+require __DIR__.'/legacy-rewrite.inc.php';
 
 $root = dirname(__DIR__);
 $manifestFile = $root.'/app/Fec/Legacy/lib-slices.json';
@@ -411,6 +417,8 @@ foreach ($byFile as $file => $fns) {
     $out[] = ' * Legacy snapshot: '.($snapshot['snapshot_at'] ?? '?').' (lib md5 '.($snapshot['fec_common_lib_md5'] ?? '?').').';
     $out[] = ' * The functions below are copied verbatim, in source order; each header names';
     $out[] = ' * the original lines and the slices (ported sections) that need it.';
+    $out[] = ' * Only the port rewrites apply (scripts/legacy-rewrite.inc.php): usort/uasort/asort/arsort';
+    $out[] = ' * run as fec_php5_*, the sorts of PHP 5.6.';
     $out[] = ' */';
     $out[] = '';
     if (! empty($constants[$file])) {
@@ -440,6 +448,19 @@ foreach ($byFile as $file => $fns) {
         }
         $out[] = '';
     }
-    file_put_contents($outDir.'/'.$base, implode("\n", $out)."\n");
+    $changes = [];
+    $code = fec_port_rewrite(implode("\n", $out)."\n", $changes);
+    file_put_contents($outDir.'/'.$base, $code);
     echo "written: ".substr($outDir, strlen($root) + 1)."/$base\n";
+    foreach ($changes as $c) {
+        // name the function the rewritten line belongs to (nearest "// --- name" header above it)
+        $fn = '(file scope)';
+        for ($l = $c['line'] - 1; $l >= 0; $l--) {
+            if (preg_match('/^\/\/ --- (\w+)  \(source lines/', $out[$l] ?? '', $m)) {
+                $fn = $m[1].'()';
+                break;
+            }
+        }
+        printf("  rewrite %s: %s( -> %s( in %s\n", $c['line'], $c['from'], $c['to'], $fn);
+    }
 }

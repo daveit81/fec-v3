@@ -106,13 +106,59 @@ class LegacyCheck extends Command
 
         // Joomla globals the code reaches for at run time (not at include time): every
         // J* constant and J* class named in the component must exist in the layer.
-        $missing = $this->missingGlobals(array_merge($files, glob($base.'/views/*/tmpl/*.php') ?: [], glob($base.'/renders/*.php') ?: [], glob($base.'/modules/*.php') ?: []));
+        $allFiles = array_merge($files, glob($base.'/views/*/tmpl/*.php') ?: [], glob($base.'/renders/*.php') ?: [], glob($base.'/modules/*.php') ?: []);
+        $missing = $this->missingGlobals($allFiles);
         foreach ($missing as $name => $where) {
             $failed++;
             $this->line('  <error>FAIL</error> '.$name.' is not provided by the compatibility layer ('.$where.')');
         }
 
+        // The port rewrites (scripts/legacy-port.php) must have run on the copy: a sort left as
+        // PHP 8's is stable where PHP 5.6's was not, and tied rows come out in another order.
+        foreach ($this->unportedSorts($allFiles) as $where) {
+            $failed++;
+            $this->line('  <error>FAIL</error> '.$where.' sorts with PHP 8 (run php scripts/legacy-port.php on the component)');
+        }
+
         return $failed === 0 ? self::SUCCESS : self::FAILURE;
+    }
+
+    /**
+     * usort/uasort/asort/arsort calls not rewritten to fec_php5_*.
+     *
+     * @param  list<string>  $files
+     * @return list<string> "file:line usort("
+     */
+    private function unportedSorts(array $files): array
+    {
+        $out = [];
+        foreach ($files as $file) {
+            $tokens = token_get_all((string) file_get_contents($file));
+            $rel = substr($file, strlen(Runtime::sitePath()) + 1);
+            foreach ($tokens as $i => $t) {
+                if (! is_array($t) || $t[0] !== T_STRING || ! in_array(strtolower($t[1]), ['usort', 'uasort', 'asort', 'arsort'], true)) {
+                    continue;
+                }
+                // a call: "(" next, no "->", "::", "function" or "\" before
+                $next = $i + 1;
+                while (isset($tokens[$next]) && is_array($tokens[$next]) && in_array($tokens[$next][0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                    $next++;
+                }
+                $prev = $i - 1;
+                while ($prev >= 0 && is_array($tokens[$prev]) && in_array($tokens[$prev][0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                    $prev--;
+                }
+                if (($tokens[$next] ?? null) !== '(') {
+                    continue;
+                }
+                if ($prev >= 0 && is_array($tokens[$prev]) && in_array($tokens[$prev][0], [T_OBJECT_OPERATOR, T_NULLSAFE_OBJECT_OPERATOR, T_DOUBLE_COLON, T_FUNCTION, T_NS_SEPARATOR, T_NEW], true)) {
+                    continue;
+                }
+                $out[] = $rel.':'.$t[2].' '.$t[1].'(';
+            }
+        }
+
+        return $out;
     }
 
     /**

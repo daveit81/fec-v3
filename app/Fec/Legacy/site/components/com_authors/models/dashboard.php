@@ -445,7 +445,7 @@ class AuthorsModelDashboard extends JModel
 
         // 3. By name, natural order, case-insensitive.
         $out = array_values($out);
-        usort($out, array(__CLASS__, 'compareProviderName'));
+        fec_php5_usort($out, array(__CLASS__, 'compareProviderName'));
         return $out;
     }
 
