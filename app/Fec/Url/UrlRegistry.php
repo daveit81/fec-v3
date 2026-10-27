@@ -62,6 +62,7 @@ final class UrlRegistry
 
         $rule = $this->db()->table('redirection')
             ->whereIn('oldurl', self::variants($path))
+            ->orderByRaw('(oldurl = ?) desc', [$path])
             ->orderBy('rank')
             ->first(['id', 'oldurl', 'newurl', 'rank']);
 
@@ -77,8 +78,12 @@ final class UrlRegistry
     {
         $path = self::normalize($path);
 
+        // The request's own spelling first: sh404SEF matched the stored oldurl exactly, and the
+        // table may hold both "bonuses/free-spins" and "bonuses/free-spins/" as rows of their
+        // own (different queries, both rank 0); the other spelling is only the slash fallback.
         $row = $this->db()->table('sh404sef_urls')
             ->whereIn('oldurl', self::variants($path))
+            ->orderByRaw('(oldurl = ?) desc', [$path])
             ->orderBy('rank')
             ->first(['id', 'oldurl', 'newurl', 'rank']);
         if (! $row) {
