@@ -222,6 +222,54 @@ final class UrlRegistry
         return array_map(fn ($v) => is_array($v) ? json_encode($v) : (string) $v, $out);
     }
 
+    /**
+     * Record a SEF URL a plugin port built, as sh404SEF's sefGetLocation() did the
+     * first time it generated one: a new pair gets rank 0 and the "automatic" date
+     * (0000-00-00); a path another query already owns gets the next rank (the
+     * duplicate rows Joomla serves as aliases); a recorded 404 for that path is
+     * upgraded to the pair. The only write of the public side besides the click
+     * log, on the writing connection whatever the page runs on.
+     */
+    public function register(string $oldurl, string $newurl): void
+    {
+        $oldurl = ltrim($oldurl, '/');
+        if ($oldurl === '' || $newurl === '') {
+            return;
+        }
+        $rw = DB::connection('fec_rw');
+        $rows = $rw->table('sh404sef_urls')
+            ->where('oldurl', $oldurl)
+            ->orderBy('rank')
+            ->get(['id', 'newurl', 'rank', 'dateadd']);
+
+        foreach ($rows as $row) {
+            if ((string) $row->newurl === $newurl) {
+                return; // already there (another request got in first)
+            }
+        }
+
+        if ($rows->isEmpty()) {
+            $rw->table('sh404sef_urls')->insert(['oldurl' => $oldurl, 'newurl' => $newurl, 'rank' => 0, 'dateadd' => '0000-00-00']);
+
+            return;
+        }
+
+        $first = $rows->first();
+        if (trim((string) $first->newurl) === '') {
+            $rw->table('sh404sef_urls')->where('id', $first->id)->update(['newurl' => $newurl, 'dateadd' => '0000-00-00']);
+
+            return;
+        }
+
+        $auto = (string) $first->dateadd === '0000-00-00' || $first->dateadd === null;
+        $rw->table('sh404sef_urls')->insert([
+            'oldurl' => $oldurl,
+            'newurl' => $newurl,
+            'rank' => (int) $rows->max('rank') + 1,
+            'dateadd' => $auto ? '0000-00-00' : date('Y-m-d'),
+        ]);
+    }
+
     /** A redirect target as sh404SEF stores it may be a path or a full URL; keep absolute ones. */
     private function publicUrl(string $newurl): string
     {

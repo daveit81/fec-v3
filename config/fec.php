@@ -117,6 +117,13 @@ return [
         // Component options (JComponentHelper::getParams): none set on the live site.
         'params' => [],
 
+        // JRoute for a query the registry does not hold: the port of the component's sh404SEF
+        // plugin builds the path (App\Fec\Legacy\Sef) and, when this is on, records the pair in
+        // jos_sh404sef_urls as sh404SEF did, so that Joomla resolves the links v3 writes. Off
+        // until `fec:sef:check` rebuilds the whole registry of the component without a difference:
+        // a wrong row would be served by both halves of the site.
+        'sef_register' => filter_var(env('FEC_LEGACY_SEF_REGISTER', false), FILTER_VALIDATE_BOOL),
+
         // Public "option.view" keys that write (the tracked redirect of com_bonuses logs the click,
         // as goto.php does): served with the fec_rw connection without a login.
         'writing_views' => ['com_bonuses.ads'],

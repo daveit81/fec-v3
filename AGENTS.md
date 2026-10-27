@@ -60,9 +60,13 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
 - Phase 3 (com_bonuses): the component is copied verbatim too (`PORT-NOTES.md` lists what is left
   out), its lib closure is the "bonuses" slice (197 functions), its nine public views are in
   `Dispatcher::HANDLERS`, `com_bonuses.ads` is a writing view (click log). Its URLs are built by the
-  sh404SEF plugin `legacy/components/com_bonuses/sef_ext/com_bonuses.php`, not by a router: `JRoute`
-  needs its port for URLs the registry does not have. `fec:legacy:check` includes only files that
-  declare classes or functions; template-style helpers are parsed, not run.
+  sh404SEF plugin `legacy/components/com_bonuses/sef_ext/com_bonuses.php`, not by a router: its port
+  is `App\Fec\Legacy\Sef` (`Sh404sef` = sefGetLocation with the live settings, `BonusesPlugin` = the
+  plugin branch by branch); `JRoute` uses it for a query the registry does not hold and, with
+  `FEC_LEGACY_SEF_REGISTER=true`, records the pair in `jos_sh404sef_urls` as sh404SEF did.
+  `php artisan fec:sef:check --option=com_bonuses` rebuilds the whole registry of the component with
+  the port and must report no difference before registration is switched on. `fec:legacy:check`
+  includes only files that declare classes or functions; template-style helpers are parsed, not run.
 - While a component runs, `LegacyErrors` turns PHP notices/warnings/deprecations into lines of
   `storage/logs/legacy-notices.log` (first occurrence per file:line, page key in front) instead of
   the exceptions Laravel would raise: PHP 5.6 code warns where Joomla never showed anything. Fatal

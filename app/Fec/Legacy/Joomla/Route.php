@@ -2,6 +2,7 @@
 
 namespace App\Fec\Legacy\Joomla;
 
+use App\Fec\Legacy\Sef\Sh404sef;
 use App\Fec\Url\UrlRegistry;
 use Throwable;
 
@@ -10,9 +11,10 @@ use Throwable;
  * ("index.php?option=...") becomes the SEF path stored in jos_sh404sef_urls
  * ("/authors/davey"), site-relative with a leading slash. Lookup order:
  * exact newurl, tolerant (parameter order, lang, Itemid, "id:alias"), then
- * the ported component router (<Com>BuildRoute) for a URL the table never
- * stored, then the raw query as a last resort. Anything that does not start
- * with index.php is returned untouched, as JRoute does.
+ * the port of the component's sh404SEF plugin (App\Fec\Legacy\Sef, which also
+ * records the new URL in the registry), then the ported component router
+ * (<Com>BuildRoute), then the raw query as a last resort. Anything that does
+ * not start with index.php is returned untouched, as JRoute does.
  */
 class Route
 {
@@ -55,6 +57,21 @@ class Route
             }
         } catch (Throwable $e) {
             error_log('legacy JRoute registry lookup failed: '.$e->getMessage());
+        }
+
+        // a URL the table never stored: the sh404SEF plugin of the component, ported, builds
+        // it and records it, as sh404SEF did the first time a page linked it
+        $sef = Sh404sef::build($url, $query);
+        if ($sef !== null) {
+            if (config('fec.legacy.sef_register', false)) {
+                try {
+                    Sh404sef::register($sef);
+                } catch (Throwable $e) {
+                    error_log('legacy JRoute: registering '.$sef->path.' failed: '.$e->getMessage());
+                }
+            }
+
+            return '/'.$sef->path.$suffix;
         }
 
         $built = self::buildWithComponentRouter($query);

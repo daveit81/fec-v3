@@ -32,6 +32,20 @@ on it). They are token based and idempotent.
   Rewritten call sites: `fec_common_lib.php` (6), `fec_fxrate.php` (1), `fec_fxrate_render.php` (2),
   `filters.php`/`filtersnew.php` (8 each), com_authors models and views (13).
 
+## sh404SEF plugins (ported as classes, not copied)
+
+`legacy/components/<option>/sef_ext/<option>.php` ran inside sh404SEF and used its globals
+(`$dosef`, `$title`, `sef_404::sefGetLocation`), so it is ported as a class instead:
+`App\Fec\Legacy\Sef\Sh404sef` is `sefGetLocation()` (titleToLocation with the live settings,
+join, collapse, the registry row) and `Sef\BonusesPlugin` is `sef_ext/com_bonuses.php` branch by
+branch (`$bonustype` copied from `helpers/bonustypesarray.php`, a file-scope file). `JRoute` calls
+it for a query the registry does not hold and, with `FEC_LEGACY_SEF_REGISTER=true`, records the
+pair as sh404SEF did (rank 0, duplicates with the next rank, a recorded 404 upgraded).
+`php artisan fec:sef:check --option=com_bonuses` rebuilds every canonical row of the registry
+with the port: the exhaustive test of the slugifier. Not ported: the shURL page ids
+(`jos_sh404sef_pageids`) and the hit counter `cpt`; the desk views and tasks stay non-SEF, as the
+plugin left them (`$dosef = false`).
+
 ## Hand edits
 
 - `components/com_bonuses/helpers/bonustypesarray.php`: `getenv(GEOIP_COUNTRY_CODE)` used an
