@@ -124,6 +124,17 @@ return [
         // a wrong row would be served by both halves of the site.
         'sef_register' => filter_var(env('FEC_LEGACY_SEF_REGISTER', false), FILTER_VALIDATE_BOOL),
 
+        // The "Redirect 301 /path URL" lines of the legacy public_html/.htaccess (mod_alias) that fall
+        // under the paths v3 serves: Apache answered them before Joomla, the v3 block at the top of
+        // that file would send them to v3 instead, so the router answers them first, with mod_alias'
+        // semantics (App\Fec\Url\HtaccessRedirects). Source without the leading slash, target as written.
+        'htaccess_redirects' => [
+            'bonuses/free-play' => 'https://www.freeextrachips.com/bonuses/no-deposit-casinos',
+            'bonuses/slots-bonuses' => 'https://www.freeextrachips.com/bonuses/',
+            'bonuses/no-deposit-spins' => 'https://www.freeextrachips.com/bonuses/free-spins/no-deposit/',
+            'bonuses/free-cash' => 'https://www.freeextrachips.com/bonuses/no-deposit-casinos',
+        ],
+
         // Public "option.view" keys that write (the tracked redirect of com_bonuses logs the click,
         // as goto.php does): served with the fec_rw connection without a login.
         'writing_views' => ['com_bonuses.ads'],
