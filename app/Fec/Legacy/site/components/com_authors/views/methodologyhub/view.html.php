@@ -34,7 +34,16 @@ class AuthorsViewMethodologyhub extends JView
         require_once JPATH_COMPONENT . '/models/methodology.php';
         $model = new AuthorsModelMethodology();
 
-        $this->topics = $model->getTopics();
+        // The hub lists methodology-kind topics only. Page-kind rows (the editorial
+        // pages' registry since 2.7.38: RG, privacy, disclosure, the indexes) have
+        // their own URLs and sections, and the methodology view refuses them; on
+        // the hub they doubled the external cards. Absent kind = methodology.
+        $this->topics = array();
+        foreach ($model->getTopics() as $slug => $t) {
+            $kind = (isset($t['kind']) && $t['kind'] !== '') ? $t['kind'] : 'methodology';
+            if ($kind === 'page') continue;
+            $this->topics[$slug] = $t;
+        }
         $this->stats  = $model->getHubStats();
 
         // ---- Document setup -------------------------------------------------
@@ -97,11 +106,7 @@ class AuthorsViewMethodologyhub extends JView
         $hasPart = array();
         foreach ($this->topics as $slug => $t) {
             if (!isset($t['status']) || $t['status'] !== 'live') continue;
-            // Same routing by kind as the cards: page topics under the page view.
-            $kind = (isset($t['kind']) && $t['kind'] !== '') ? $t['kind'] : 'methodology';
-            $topicRel = ($kind === 'page')
-                ? JRoute::_('index.php?option=com_authors&view=page&slug=' . urlencode($slug))
-                : JRoute::_('index.php?option=com_authors&view=methodology&topic=' . urlencode($slug));
+            $topicRel = JRoute::_('index.php?option=com_authors&view=methodology&topic=' . urlencode($slug));
             $hasPart[] = array(
                 '@type' => 'Article',
                 '@id'   => $this->absUrl($topicRel, $siteRoot) . '#article',
