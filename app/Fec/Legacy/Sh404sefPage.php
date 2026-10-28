@@ -117,11 +117,13 @@ final class Sh404sefPage
             $customTitle = $doc->getTitle();
         }
         if ($customTitle !== '' && $catid !== 8 && $catid !== 139) {
-            $doc->setTitle(self::cleanTitle(($cfg['prepend_to_page_title'] ?? '').$customTitle.($cfg['append_to_page_title'] ?? '')));
+            $pageTitle = htmlspecialchars(self::cleanTitle(($cfg['prepend_to_page_title'] ?? '').$customTitle.($cfg['append_to_page_title'] ?? '')), ENT_COMPAT, 'UTF-8');
+            self::replaceTitle($doc, $pageTitle);
         }
         if ($rowTitle !== '' && $catid === 8) {
-            // inserted as it is, unescaped: the layout escapes the text
-            $doc->setTitle(html_entity_decode((string) $row->metatitle, ENT_QUOTES | ENT_HTML401, 'UTF-8'));
+            // the row's title as it is, neither escaped nor protected: on the live
+            // site "$1000 Free Play" came out as "00 Free Play" ($10 a backreference)
+            self::replaceTitle($doc, (string) $row->metatitle);
         }
 
         if ($row !== null && trim((string) $row->metadesc) !== '') {
@@ -302,10 +304,32 @@ final class Sh404sefPage
         return $item !== null ? (string) ($item->title ?? '') : '';
     }
 
-    /** shCleanUpTitle(), PHP 5.6 defaults: html_entity_decode leaves the single quotes encoded. */
+    /**
+     * shCleanUpTitle(), PHP 5.6 defaults (html_entity_decode leaves the single
+     * quotes encoded), with its escaping of "$nn" for the replacement below.
+     */
     private static function cleanTitle(string $title): string
     {
-        return trim(trim(stripslashes(html_entity_decode($title, ENT_COMPAT | ENT_HTML401, 'UTF-8'))), '"');
+        $title = trim(trim(stripslashes(html_entity_decode($title, ENT_COMPAT | ENT_HTML401, 'UTF-8'))), '"');
+
+        return (string) (preg_replace('#\$([0-9]*)#u', '\\\$${1}', $title) ?? $title);
+    }
+
+    /**
+     * The title tag replaced as ShlSystem_Strings::pr() replaced it in the
+     * page: the new title is a preg replacement string ("$10" or "\1" are
+     * backreferences, unmatched ones vanish), the page unchanged when the
+     * replacement fails. Done on the tag Joomla's head renderer wrote, then
+     * read back as text for the layout.
+     */
+    private static function replaceTitle(Document $doc, string $html): void
+    {
+        $tag = '<title>'.htmlspecialchars($doc->getTitle(), ENT_COMPAT, 'UTF-8').'</title>';
+        $out = preg_replace('/\<\s*title\s*\>.*\<\s*\/title\s*\>/isuU', '<title>'.$html.'</title>', $tag);
+        if ($out === null || $out === '' || ! preg_match('#<title>(.*)</title>#su', $out, $m)) {
+            return;
+        }
+        $doc->setTitle(html_entity_decode($m[1], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
     }
 
     /** shCleanUpDesc() */

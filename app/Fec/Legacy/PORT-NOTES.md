@@ -252,6 +252,14 @@ there too.**
 
 ## Known legacy behaviour reproduced on purpose (parity)
 
+- sh404SEF wrote a page title into the HTML as a preg replacement string: on a review (catid 8)
+  the "Title and metas" row's title goes in unprotected, so "$1000 Free Play" shows as "00 Free
+  Play" (`/online-casinos/eurofortune`: "$10" is an empty backreference); on the other pages its
+  own escaping keeps the dollars. `Sh404sefPage::replaceTitle()` runs the same `preg_replace`.
+- `JRegistry` read a params or metadata string that is not wrapped in braces with its INI reader
+  (Joomla 2.5's JSON format handed it over): old articles still carry Joomla 1.5 metadata
+  (`robots=index, follow`, jos_content 88) and the live page prints that robots. `Registry` does
+  the same (`Registry::iniToArray()` is JRegistryFormatINI without sections).
 - Only the `authors` and `author` views load the lib themselves; the other views call `fec_*`
   inside `function_exists` guards and, as on the live site, render without breadcrumbs/JSON-LD
   when the lib is not loaded first. The runner does not pre-load the lib.

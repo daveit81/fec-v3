@@ -67,14 +67,19 @@ class Registry
         return $value;
     }
 
-    /** JSON (Joomla 2.5 params) or INI "key=value" lines (Joomla 1.5 leftovers). */
+    /**
+     * JSON (Joomla 2.5 params) or INI "key=value" lines (Joomla 1.5 leftovers): as
+     * Joomla 2.5's JSON reader did, a string that neither starts with "{" nor ends
+     * with "}" goes to the INI reader (an old article's metadata "robots=index,
+     * follow" set the page's robots on the live site).
+     */
     public function loadString(string $data, string $format = 'JSON'): static
     {
         $data = trim($data);
         if ($data === '') {
             return $this;
         }
-        if (strtoupper($format) === 'JSON' || str_starts_with($data, '{')) {
+        if (strtoupper($format) === 'JSON' && (str_starts_with($data, '{') || str_ends_with($data, '}'))) {
             $decoded = json_decode($data, true);
             if (is_array($decoded)) {
                 $this->loadArray($decoded);
@@ -82,14 +87,46 @@ class Registry
 
             return $this;
         }
-        foreach (preg_split('/\r?\n/', $data) ?: [] as $line) {
-            if (str_contains($line, '=') && ! str_starts_with(trim($line), ';')) {
-                [$k, $v] = explode('=', $line, 2);
-                $this->set(trim($k), trim($v));
+
+        return $this->loadArray(self::iniToArray($data));
+    }
+
+    /**
+     * JRegistryFormatINI::stringToObject() of Joomla 2.5.28 without sections:
+     * keys of letters, digits and underscores, quoted values are strings,
+     * true/false booleans, numbers int or float, anything else as written.
+     *
+     * @return array<string, mixed>
+     */
+    public static function iniToArray(string $data): array
+    {
+        $out = [];
+        foreach (explode("\n", $data) as $line) {
+            $line = trim($line);
+            if ($line === '' || $line === '0' || $line[0] === ';' || $line[0] === '[') {
+                continue;
             }
+            if (! strpos($line, '=')) {
+                continue;
+            }
+            [$key, $value] = explode('=', $line, 2);
+            if (preg_match('/[^A-Z0-9_]/i', $key)) {
+                continue;
+            }
+            $length = strlen($value);
+            if ($length > 0 && $value[0] === '"' && $value[$length - 1] === '"') {
+                $value = str_replace('\n', "\n", stripcslashes(substr($value, 1, $length - 2)));
+            } elseif ($value === 'false') {
+                $value = false;
+            } elseif ($value === 'true') {
+                $value = true;
+            } elseif (is_numeric($value)) {
+                $value = str_contains($value, '.') ? (float) $value : (int) $value;
+            }
+            $out[$key] = $value;
         }
 
-        return $this;
+        return $out;
     }
 
     /** @param  array<string, mixed>  $array */

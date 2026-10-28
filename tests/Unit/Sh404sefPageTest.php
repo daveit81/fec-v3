@@ -2,8 +2,10 @@
 
 namespace Tests\Unit;
 
+use App\Fec\Legacy\Joomla\Document;
 use App\Fec\Legacy\Sh404sefPage;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 
 /**
  * The canonical branches of the live copy of sh404SEF's shDoTitleTags, on the
@@ -70,5 +72,31 @@ final class Sh404sefPageTest extends TestCase
     public function test_legacy_page_parameter_is_kept_on_an_inserted_category_canonical(): void
     {
         $this->assertSame([self::SITE.'/online-casinos/clusters/?page=3'], $this->canon([], '', 180, 0, '/online-casinos/clusters/', '3'));
+    }
+
+    private function title(string $method, string $before, string $value): string
+    {
+        $doc = (new Document)->setTitle($before);
+        $clean = new ReflectionMethod(Sh404sefPage::class, 'cleanTitle');
+        $replace = new ReflectionMethod(Sh404sefPage::class, 'replaceTitle');
+        $html = $method === 'clean' ? htmlspecialchars($clean->invoke(null, $value), ENT_COMPAT, 'UTF-8') : $value;
+        $replace->invoke(null, $doc, $html);
+
+        return $doc->getTitle();
+    }
+
+    public function test_review_row_title_loses_its_dollar_digits_as_on_the_live_site(): void
+    {
+        // /online-casinos/eurofortune, 28 Oct 2026: "$10" read as a backreference
+        $this->assertSame('Eurofortune Casino Review | 00 Free Play | Rival Gaming',
+            $this->title('raw', 'Old', 'Eurofortune Casino Review | $1000 Free Play | Rival Gaming'));
+        $this->assertSame('River Nile Casino | $/€1500 Free Play | 50 Free Spins',
+            $this->title('raw', 'Old', 'River Nile Casino | $/€1500 Free Play | 50 Free Spins'));
+    }
+
+    public function test_cleaned_title_keeps_its_dollars(): void
+    {
+        $this->assertSame('Jackpots: $205k & more', $this->title('clean', 'Old', 'Jackpots: $205k &amp; more'));
+        $this->assertSame('Clusters | Online Casinos', $this->title('clean', 'Home', 'Clusters | Online Casinos'));
     }
 }
