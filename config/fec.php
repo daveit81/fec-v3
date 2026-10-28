@@ -222,6 +222,17 @@ return [
             ['redirect', '/bonuses/sports-and-casino/', 'https://www.freeextrachips.com/bonuses/slots-and-casino/'], // 546
             ['redirect', '/bonuses/high-roller-bonus', 'https://www.freeextrachips.com/bonuses/high-roller-bonuses'], // 547
             ['redirect', '/bonuses/free-cash', 'https://www.freeextrachips.com/bonuses/no-deposit-casinos'], // 558
+            // 28 Oct 2026: the methodology hub linked its six page-kind topics under /methodology/<slug>,
+            // which the methodology view refuses (404); sh404SEF registered those URLs (rank 0) and they
+            // were crawled. The hub now routes them to the page view; these 301s send the registered
+            // spellings to the pages (the same RedirectMatch lines are in the live file, next to the
+            // exclusive/yes one, for the days /methodology is still Joomla's).
+            ['match', '^/methodology/responsible-gambling/?$', 'https://www.freeextrachips.com/responsible-gambling'],
+            ['match', '^/methodology/privacy-policy/?$', 'https://www.freeextrachips.com/privacy-policy'],
+            ['match', '^/methodology/affiliate-disclosure/?$', 'https://www.freeextrachips.com/affiliate-advertiser-disclosure'],
+            ['match', '^/methodology/fast-payouts/?$', 'https://www.freeextrachips.com/online-casinos/fast-payouts'],
+            ['match', '^/methodology/licence-watch/?$', 'https://www.freeextrachips.com/online-casinos/licence-watch'],
+            ['match', '^/methodology/welcome-packages/?$', 'https://www.freeextrachips.com/bonuses/welcome-packages'],
         ],
 
         // Public "option.view" keys that write (the tracked redirect of com_bonuses logs the click,

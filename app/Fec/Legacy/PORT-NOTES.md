@@ -79,6 +79,15 @@ plugin left them (`$dosef = false`).
 - `components/com_authors/models/payoutindex.php` renderCard: the edition card is written under
   `JPATH_ROOT . CARD_DIR` instead of `JPATH_SITE` (same path on Joomla, where the two are one
   directory; here `JPATH_SITE` is the code and `JPATH_ROOT` the real `public_html`).
+- `components/com_authors/views/methodologyhub/{tmpl/default.php,view.html.php}` (28 Oct 2026, a
+  live bug, fixed on Joomla the same day with the same edit, so the copy and the live file agree):
+  the hub's card links and its JSON-LD `hasPart` built `view=methodology&topic=<slug>` for every live
+  topic, page-kind ones too (responsible-gambling, privacy-policy, affiliate-disclosure, fast-payouts,
+  licence-watch, welcome-packages), which the methodology model refuses (`kind !== 'methodology'` →
+  404): sh404SEF registered `methodology/<slug>` for them and they were crawled. Both places now route
+  by `kind` as `views/methodologyadmin/tmpl/default.php` does (`view=page&slug=<slug>` for pages).
+  The six registered URLs are 301s to the pages (`fec.legacy.htaccess_redirects`, and the live
+  `.htaccess`); the registry rows stay, the router answers the redirect first.
 
 - `components/com_bonuses/`: verbatim copy of the site component (phase 3) without the static
   assets (`css/`, `js/`, `data/`: served from the live docroot), the standalone scripts (`chron/`,

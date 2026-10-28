@@ -97,7 +97,11 @@ class AuthorsViewMethodologyhub extends JView
         $hasPart = array();
         foreach ($this->topics as $slug => $t) {
             if (!isset($t['status']) || $t['status'] !== 'live') continue;
-            $topicRel = JRoute::_('index.php?option=com_authors&view=methodology&topic=' . urlencode($slug));
+            // Same routing by kind as the cards: page topics under the page view.
+            $kind = (isset($t['kind']) && $t['kind'] !== '') ? $t['kind'] : 'methodology';
+            $topicRel = ($kind === 'page')
+                ? JRoute::_('index.php?option=com_authors&view=page&slug=' . urlencode($slug))
+                : JRoute::_('index.php?option=com_authors&view=methodology&topic=' . urlencode($slug));
             $hasPart[] = array(
                 '@type' => 'Article',
                 '@id'   => $this->absUrl($topicRel, $siteRoot) . '#article',

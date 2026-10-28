@@ -63,6 +63,13 @@ $arrowUpRight = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" str
 $cardUrlFor = function ($slug, $t) {
     if (!isset($t['status'])) return '';
     if ($t['status'] === 'live') {
+        // Route by kind, as the admin list does (2.7.38): page topics live under
+        // the page view and their own SEF URL; the methodology view refuses them
+        // (404). A topic with no kind is methodology (pre-2.7.38 rows).
+        $kind = (isset($t['kind']) && $t['kind'] !== '') ? $t['kind'] : 'methodology';
+        if ($kind === 'page') {
+            return JRoute::_('index.php?option=com_authors&view=page&slug=' . urlencode($slug));
+        }
         return JRoute::_('index.php?option=com_authors&view=methodology&topic=' . urlencode($slug));
     }
     if ($t['status'] === 'external' && !empty($t['external_url'])) {
