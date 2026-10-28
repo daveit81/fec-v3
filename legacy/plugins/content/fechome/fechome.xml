@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension version="2.5" type="plugin" group="content" method="upgrade">
+
+    <name>plg_content_fechome</name>
+    <author>FreeExtraChips</author>
+    <creationDate>May 2026</creationDate>
+    <copyright>(C) FreeExtraChips.com. All rights reserved.</copyright>
+    <license>GPL-2.0-or-later</license>
+    <version>1.0.0</version>
+
+    <description><![CDATA[
+        <h3>FEC Home Shortcodes</h3>
+        <p>
+            Replaces <code>{fec-*}</code> shortcodes on the homepage Joomla article
+            with the rendered output of helpers defined in
+            <code>components/com_bonuses/helpers/fec_common_lib.php</code>.
+        </p>
+        <p>Supported shortcodes (place inside the home article body):</p>
+        <ul>
+            <li><code>{fec-home-hero}</code> — Hero section (h1, stats, CTAs)</li>
+            <li><code>{fec-trust-pulse}</code> — 7-day activity strip</li>
+            <li><code>{fec-browse-grid}</code> — Browse by bonus type (6 cards, country-aware)</li>
+            <li><code>{fec-editor-picks}</code> — 3 verified bonus picks</li>
+            <li><code>{fec-latest-bonuses}</code> — 6 newest bonuses (country-aware)</li>
+            <li><code>{fec-blog-grid}</code> — 3 latest blog posts from EasyBlog</li>
+            <li><code>{fec-latest-casinos}</code> — 4 latest casino reviews</li>
+        </ul>
+        <p>
+            By default the plugin only fires on the article with alias <code>home</code>.
+            Change the alias or enable for all articles in the params below.
+        </p>
+    ]]></description>
+
+    <files>
+        <filename plugin="fechome">fechome.php</filename>
+        <filename>index.html</filename>
+    </files>
+
+    <config>
+        <fields name="params">
+            <fieldset name="basic">
+
+                <field
+                    name="home_alias"
+                    type="text"
+                    default="home"
+                    label="Home article alias"
+                    description="Only process articles with this alias (case-sensitive). Default: home"
+                />
+
+                <field
+                    name="enabled_for_all"
+                    type="radio"
+                    default="0"
+                    label="Process all articles"
+                    description="If Yes, scans every com_content article for shortcodes. Otherwise only the article matching the alias above. Recommended: No."
+                    class="btn-group"
+                >
+                    <option value="0">No</option>
+                    <option value="1">Yes</option>
+                </field>
+
+            </fieldset>
+        </fields>
+    </config>
+
+</extension>

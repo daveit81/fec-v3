@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension version="2.5" type="plugin" group="system" method="upgrade">
+	<name>System - FEC Template Switch</name>
+	<author>FreeExtraChips</author>
+	<creationDate>June 2026</creationDate>
+	<version>1.0.0</version>
+	<description>Forces selected components (default: com_easyblog) to render with a legacy template (default: rt_lumiere). Gantry-safe: switches via template style id so style params are loaded. Disable or uninstall once the blog is ported to the new design.</description>
+	<files>
+		<filename plugin="fectemplateswitch">fectemplateswitch.php</filename>
+		<filename>index.html</filename>
+	</files>
+	<config>
+		<fields name="params">
+			<fieldset name="basic">
+				<field name="components" type="text" default="com_easyblog" size="60"
+					label="Components (comma separated)"
+					description="Component option values to force onto the legacy template, e.g. com_easyblog,com_search" />
+				<field name="template" type="text" default="rt_lumiere" size="30"
+					label="Template"
+					description="Template directory name under /templates" />
+				<field name="style_id" type="text" default="0" size="10"
+					label="Template style ID (0 = auto)"
+					description="Style id from #__template_styles. Leave 0 to auto-detect the template's default style (recommended)." />
+			</fieldset>
+		</fields>
+	</config>
+</extension>

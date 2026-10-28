@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension version="2.5" type="plugin" group="system" method="upgrade">
+    <name>plg_system_feccanonicalfix</name>
+    <author>FreeExtraChips</author>
+    <creationDate>May 2026</creationDate>
+    <copyright>(c) FreeExtraChips</copyright>
+    <license>GPL v2 or later</license>
+    <authorEmail></authorEmail>
+    <authorUrl>https://www.freeextrachips.com</authorUrl>
+    <version>3.0.0</version>
+    <description>
+        Fixes the homepage canonical URL by adding the trailing slash
+        (https://www.freeextrachips.com -> https://www.freeextrachips.com/).
+        v3: permissive preg_replace_callback - finds ANY &lt;link&gt; tag with
+        rel=canonical pointing at the bare host (any quote style, attribute
+        order, or whitespace incl. tabs/newlines) and rebuilds it. Debug marker
+        now also hex-dumps the first canonical-ish tag it sees, so a non-match
+        can be diagnosed straight from view-source. Runs in onAfterRender,
+        single pass, idempotent (safe to leave enabled).
+    </description>
+    <files>
+        <filename plugin="feccanonicalfix">feccanonicalfix.php</filename>
+        <filename>index.html</filename>
+    </files>
+    <config>
+        <fields name="params">
+            <fieldset name="basic">
+                <field name="debug" type="radio" default="0"
+                       label="Debug marker"
+                       description="When ON, injects an HTML comment before the closing head tag reporting whether the plugin ran and how many canonical tags it rewrote. When nothing matched, it also hex-dumps the first canonical-ish link tag for diagnosis. Use it to confirm the plugin is firing, then turn OFF. You can also trigger it per-request with ?fec_canon_debug=1 in the URL without changing this setting.">
+                    <option value="1">Yes</option>
+                    <option value="0">No</option>
+                </field>
+            </fieldset>
+        </fields>
+    </config>
+</extension>

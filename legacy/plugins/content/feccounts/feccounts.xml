@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension version="2.5" type="plugin" group="content" method="upgrade">
+    <name>plg_content_feccounts</name>
+    <author>FreeExtraChips Editorial</author>
+    <creationDate>2026-05-26</creationDate>
+    <copyright>(C) FreeExtraChips</copyright>
+    <license>Proprietary</license>
+    <version>1.0.0</version>
+    <description>
+        Resolves {FEC:NAME} placeholders in article bodies with live counts
+        from the FreeExtraChips database (active casinos, bonuses, FXCheck
+        reports, verified slots, active editors).
+
+        Enable in Extensions → Plugins after install. Triggers on
+        onContentPrepare so the substitution runs for any article render.
+    </description>
+    <files>
+        <filename plugin="feccounts">feccounts.php</filename>
+        <filename>index.html</filename>
+    </files>
+</extension>
