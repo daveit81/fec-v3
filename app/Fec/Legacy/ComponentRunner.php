@@ -217,8 +217,15 @@ final class ComponentRunner implements PageHandler
             return $this->raw($body, $request);
         }
         // sh404SEF's per-page title and metas, applied last on the live site (after the
-        // component and the template), keyed on the page's own non-SEF URL.
-        Sh404sefMetas::apply($doc, $url->newurl);
+        // component and the template), keyed on the page's own non-SEF URL. On a
+        // com_content page the whole page rewrite of the live copy (its meta plugin's
+        // title, the canonical branches): it decides the page's canonicals too.
+        $sh404Canonicals = null;
+        if ($option === 'com_content') {
+            $sh404Canonicals = Sh404sefPage::content($doc, $url);
+        } else {
+            Sh404sefMetas::apply($doc, $url->newurl);
+        }
 
         if ($tmpl === 'component') {
             $response = response()->view('legacy.bare', ['doc' => $doc, 'body' => $body]);
@@ -227,9 +234,15 @@ final class ComponentRunner implements PageHandler
             return $response;
         }
 
-        $canonical = $doc->canonical();
-        if ($canonical === null && $url->canonical !== null) {
-            $canonical = Uri::site().$url->canonical;
+        if ($sh404Canonicals !== null) {
+            // the first one (an inserted canonical sits at the top of the head, as the
+            // layout prints it); none at all when sh404SEF left the page without one
+            $canonical = $sh404Canonicals[0] ?? null;
+        } else {
+            $canonical = $doc->canonical();
+            if ($canonical === null && $url->canonical !== null) {
+                $canonical = Uri::site().$url->canonical;
+            }
         }
 
         $messages = Factory::getApplication()->getMessageQueue();

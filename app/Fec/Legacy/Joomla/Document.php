@@ -259,6 +259,35 @@ class Document
         return null;
     }
 
+    /**
+     * Every canonical the component put on the document, in the order Joomla's
+     * head renderer printed them (head links, then custom tags), taken off the
+     * document: sh404SEF's page rewrite decides which ones the page keeps
+     * (App\Fec\Legacy\Sh404sefPage).
+     *
+     * @return list<string>
+     */
+    public function takeCanonicals(): array
+    {
+        $hrefs = [];
+        foreach ($this->headLinks as $i => $link) {
+            if ($link['relation'] === 'canonical') {
+                $hrefs[] = $link['href'];
+                unset($this->headLinks[$i]);
+            }
+        }
+        $this->headLinks = array_values($this->headLinks);
+        foreach ($this->customTags as $i => $tag) {
+            if (preg_match('/<link\b[^>]*\brel=["\']canonical["\'][^>]*>/i', $tag) && preg_match('/\bhref=["\']([^"\']*)["\']/i', $tag, $m)) {
+                $hrefs[] = html_entity_decode($m[1], ENT_QUOTES, 'UTF-8');
+                unset($this->customTags[$i]);
+            }
+        }
+        $this->customTags = array_values($this->customTags);
+
+        return $hrefs;
+    }
+
     public function renderStyles(): string
     {
         $lines = [];

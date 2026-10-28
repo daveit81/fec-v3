@@ -170,10 +170,27 @@ template), `system/fecclustermeta` (the title and description of the cluster pag
 blog listing, stashed on the application by the lib and written into the finished page after
 sh404SEF: the runner's `afterRender()` is Joomla's `onAfterRender`). The 30 third party content
 plugins enabled on the live site are not ported: `fec:parity` on the reviews says which of them
-change a page, and those are reproduced one by one (none known yet). `feccanonicalfix`,
-`fectemplateswitch`, `geoip` and `cfcookie` are not ported (the home canonical is v3's own, the
-template switch is for com_easyblog, the country comes from Cloudflare's header, the cookie is
-Joomla's login).
+change a page, and those are reproduced one by one (none known yet). `system/feccanonicalfix`
+(verbatim, ordering 86) gives its slash to the bare-host canonical that sh404SEF writes on menu
+item 26 (the home and any article on that item outside the reviews). `fectemplateswitch`, `geoip`
+and `cfcookie` are not ported (the template switch is for com_easyblog, the country comes from
+Cloudflare's header, the cookie is Joomla's login).
+
+`App\Fec\Legacy\Sh404sefPage` is sh404SEF's page rewrite on the com_content pages
+(`components/com_sh404sef/shPageRewrite.full.php`, `shDoTitleTags`, with its meta plugin
+`meta_ext/com_content.php`, 4.3.0.1671): the live copy was edited by hand for FEC (menu item 26,
+categories 8 and 139 in its branches) and that copy is what is ported, branch by branch, with the
+settings of the live `config.sef.php` in `fec.legacy.sh404sef`. The title is the meta plugin's
+(an article's title; a category's last two categories, `Clusters | Online Casinos`) or the
+"Title and metas" row's, never on catid 8 (the reviews' override sets its own; a row still wins
+there) or 139; the canonical follows the five branches (an article's canonical rewritten to the
+relative `JRoute` of its own non-SEF URL, `/online-casinos/king-billy-casino`; a page with none
+gets its own URL at the top, the bare home on menu item 26 outside catid 8; more than one are all
+removed first). Measured on 28 Oct 2026 on the review, the clusters index, a cluster, a blog post
+and the directory (`tests/Unit/Sh404sefPageTest.php`). The site-wide `canonical` system plugin is
+enabled in `#__extensions` but none of its raw-URI links reaches those pages: not reproduced.
+The other components keep `Sh404sefMetas` (the row only) and their own canonical, which is what
+the same branches give on their pages (no meta plugin, one canonical of their own).
 
 `plugins/system/sef/sef.php` is our port of Joomla's core SEF system plugin (2.5.28, the
 original's regexes): on the finished page every `href="index.php?..."` written literally (the

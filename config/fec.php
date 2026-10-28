@@ -173,8 +173,36 @@ return [
         'plugins' => [
             'content' => ['feccounts', 'fechome'],
             // in Joomla's order: the core SEF plugin (76: href="index.php?..." routed, relative
-            // src/href given the base) before fecclustermeta (87, after sh404SEF)
-            'system' => ['sef', 'fecclustermeta'],
+            // src/href given the base), then after sh404SEF (79, App\Fec\Legacy\Sh404sefPage on
+            // the com_content pages) feccanonicalfix (86: the bare-host canonical sh404SEF writes
+            // on menu item 26 gets its slash) and fecclustermeta (87)
+            'system' => ['sef', 'feccanonicalfix', 'fecclustermeta'],
+        ],
+
+        // sh404SEF's settings read by its page rewrite and its com_content meta plugin
+        // (administrator/components/com_sh404sef/config/config.sef.php on the live site, 28 Oct
+        // 2026; removeOtherCanonicals is not in the file: the class default). Used by
+        // App\Fec\Legacy\Sh404sefPage; the categories are sh404SEF's codes (0 all nested,
+        // 1 first, 2 last, 3 two first, 4 two last, 5 none).
+        'sh404sef' => [
+            'remove_other_canonicals' => true,
+            'page_title_separator' => ' | ',
+            'prepend_to_page_title' => '',
+            'append_to_page_title' => '',
+            'content_title_include_cat' => 5,        // contentTitleIncludeCat: an article's title alone
+            'include_content_cat_categories' => 4,   // includeContentCatCategories: a category's last two
+            'content_title_use_alias' => false,
+            'content_title_use_cat_alias' => false,
+            'insert_content_table_name' => false,
+            'content_table_name' => '',
+            'insert_content_blog_name' => false,
+            'content_blog_name' => '',
+            'slug_for_uncategorized_content' => 0,
+            'page_text' => 'page-%s',                // pageTexts en-GB
+            'pagerep' => '-',
+            'always_append_items_per_page' => false,
+            // the live copy of shDoTitleTags names the home menu item in its canonical branches
+            'home_menu_item' => 26,
         ],
 
         // JRoute for a query the registry does not hold: the port of the component's sh404SEF

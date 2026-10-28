@@ -26,21 +26,7 @@ final class Sh404sefMetas
 {
     public static function apply(Document $doc, ?string $newurl): void
     {
-        $newurl = trim((string) $newurl);
-        if ($newurl === '') {
-            return;
-        }
-
-        try {
-            $row = DB::connection('fec')->table('sh404sef_metas')
-                ->where('newurl', $newurl)
-                ->orderBy('id')
-                ->first(['metatitle', 'metadesc', 'metakey', 'metarobots', 'canonical']);
-        } catch (Throwable $e) {
-            error_log('sh404sef metas lookup failed: '.$e->getMessage());
-
-            return;
-        }
+        $row = self::row($newurl);
         if ($row === null) {
             return;
         }
@@ -60,6 +46,29 @@ final class Sh404sefMetas
         if (trim((string) $row->canonical) !== '') {
             $doc->headLinks = array_values(array_filter($doc->headLinks, fn ($l) => $l['relation'] !== 'canonical'));
             $doc->addHeadLink(trim((string) $row->canonical), 'canonical');
+        }
+    }
+
+    /**
+     * The row of the page's own non-SEF URL, if the redazione set one
+     * (metatitle, metadesc, metakey, metarobots, canonical).
+     */
+    public static function row(?string $newurl): ?object
+    {
+        $newurl = trim((string) $newurl);
+        if ($newurl === '') {
+            return null;
+        }
+
+        try {
+            return DB::connection('fec')->table('sh404sef_metas')
+                ->where('newurl', $newurl)
+                ->orderBy('id')
+                ->first(['metatitle', 'metadesc', 'metakey', 'metarobots', 'canonical']);
+        } catch (Throwable $e) {
+            error_log('sh404sef metas lookup failed: '.$e->getMessage());
+
+            return null;
         }
     }
 }
