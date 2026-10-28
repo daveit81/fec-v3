@@ -15,10 +15,10 @@ AddHandler application/x-httpd-alt-php84 .php
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
 
-    # Redirect Trailing Slashes If Not A Folder...
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_URI} (.+)/$
-    RewriteRule ^ %1 [L,R=301]
+    # No "redirect trailing slashes" rule (Laravel's default): sh404SEF's URLs end
+    # with a slash (/bonuses/, /blog/, /bonuses/<casino>/) and the URL registry
+    # decides which spelling is the page and which one redirects. With the rule,
+    # /blog/ -> /blog (web server) -> /blog/ (registry) looped on v3.
 
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d

@@ -23,6 +23,8 @@ DST="${FEC_V3_ROOT:-/home/freeextr/fecv3}/legacy"
 
 # Our code only: no Joomla core, no third-party extensions (JReviews, sh404SEF,
 # AcyMailing, Community Builder). Missing roots are reported, not fatal.
+# Never copied: fec_review_config.php (Turnstile key), fec-admin/fec_cofm_cron.php
+# (the cron key is in the file), the simplehtmldom library of com_tournaments.
 ROOTS=(
   components/com_bonuses
   components/com_authors
@@ -37,10 +39,20 @@ ROOTS=(
   administrator/components/com_partnerdesk
   administrator/components/com_fecapi
   administrator/components/com_shortlink
+  components/com_tournaments
+  components/com_jackpots
+  administrator/components/com_tournaments
+  administrator/components/com_jackpots
   templates/fecv2
   plugins/system/fecclustermeta
   plugins/system/cfcookie
+  plugins/system/feccanonicalfix
+  plugins/system/fectemplateswitch
+  plugins/system/geoip
+  plugins/content/fechome
+  plugins/content/feccounts
   renders
+  fec-admin
   goto.php
   freshtoken.php
   r.php
@@ -48,6 +60,11 @@ ROOTS=(
   get_bonuses.php
   ajax_review_submit.php
   og_image.php
+  fec_dashboard.php
+  fec_dash_api.php
+  fec_brandmap_build.php
+  fec_cmp_build.php
+  fec_listing_v2.php
 )
 
 if [[ "$(id -un)" != "freeextr" ]]; then
@@ -77,7 +94,8 @@ for root in "${ROOTS[@]}"; do
          -o -name '*.html' -o -name '*.htm' -o -name '*.json' -o -name '*.txt' -o -name '*.md' -o -name '.htaccess' \) \
       ! -path '*/conf/*' ! -path '*/cache/*' ! -path '*/logs/*' ! -path '*/tmp/*' \
       ! -name '*_bk*' ! -name '*_before_*' ! -name '*.bak' ! -name '*.orig' ! -name '*.log' \
-      ! -name 'fec_review_config.php' \
+      ! -name 'fec_review_config.php' ! -name 'fec_cofm_cron.php' \
+      ! -path '*/simplehtmldom/*' \
       -print0 > "$list"
   n=0
   while IFS= read -r -d '' f; do
