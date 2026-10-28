@@ -164,6 +164,12 @@ change a page, and those are reproduced one by one (none known yet). `feccanonic
 template switch is for com_easyblog, the country comes from Cloudflare's header, the cookie is
 Joomla's login).
 
+`plugins/system/sef/sef.php` is our port of Joomla's core SEF system plugin (2.5.28, the
+original's regexes): on the finished page every `href="index.php?..."` written literally (the
+lib's FXShield report link) is routed through `JRoute`, and relative `src`/`href`/`poster`,
+`onclick`, background images and object parameters get the site base in front. It runs first
+among the system plugins, as on the live site (ordering 76, before sh404SEF and fecclustermeta).
+
 `components/com_bonuses/fec_review_config.php` is not the live file (excluded from the snapshot:
 it holds the Turnstile secret) but a small one of ours that defines the same constants the lib
 reads at include time from the environment (`fec.legacy.review`: the public site key the review

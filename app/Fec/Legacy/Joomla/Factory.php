@@ -95,6 +95,7 @@ class Factory
             'MetaAuthor' => (string) config('fec.legacy.meta.author', '0'),
             'robots' => (string) config('fec.legacy.meta.robots', ''),
             'sitename_pagetitles' => (int) config('fec.legacy.meta.sitename_pagetitles', 0),
+            'sef' => '1',
         ]);
     }
 

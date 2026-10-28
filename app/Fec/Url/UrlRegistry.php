@@ -195,7 +195,7 @@ final class UrlRegistry
     private const DECORATION_KEYS = ['catid'];
 
     /** Variables sh404SEF never stored in newurl: they ride on as the query string of the SEF path. */
-    private const LEFTOVER_KEYS = ['limitstart', 'start', 'limit', 'page', 'tmpl', 'format', 'layout', 'preview', 'edit', 'q', 'return', 'n', 'v3test'];
+    private const LEFTOVER_KEYS = ['limitstart', 'start', 'limit', 'page', 'tmpl', 'format', 'layout', 'preview', 'edit', 'q', 'return', 'n', 'v3test', 'filters', 'sort'];
 
     /**
      * The query variables that identify a page: everything but "lang" and

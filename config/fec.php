@@ -172,7 +172,9 @@ return [
         // ones change a page, and those are reproduced one by one.
         'plugins' => [
             'content' => ['feccounts', 'fechome'],
-            'system' => ['fecclustermeta'],
+            // in Joomla's order: the core SEF plugin (76: href="index.php?..." routed, relative
+            // src/href given the base) before fecclustermeta (87, after sh404SEF)
+            'system' => ['sef', 'fecclustermeta'],
         ],
 
         // JRoute for a query the registry does not hold: the port of the component's sh404SEF

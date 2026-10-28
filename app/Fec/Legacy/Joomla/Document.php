@@ -235,12 +235,24 @@ class Document
         return implode("\n", $lines);
     }
 
-    /** The canonical the component set, if any (the registry one applies otherwise). */
+    /**
+     * The canonical the component set, if any (the registry one applies otherwise):
+     * a head link, or a <link rel="canonical"> it added as a custom tag (the review
+     * pages do: Joomla 2.5 had no setter), which then leaves the custom tags so that
+     * the page carries one canonical, the component's, as the live page does.
+     */
     public function canonical(): ?string
     {
         foreach ($this->headLinks as $link) {
             if ($link['relation'] === 'canonical') {
                 return $link['href'];
+            }
+        }
+        foreach ($this->customTags as $i => $tag) {
+            if (preg_match('/<link\b[^>]*\brel=["\']canonical["\'][^>]*>/i', $tag) && preg_match('/\bhref=["\']([^"\']*)["\']/i', $tag, $m)) {
+                unset($this->customTags[$i]);
+
+                return html_entity_decode($m[1], ENT_QUOTES, 'UTF-8');
             }
         }
 
