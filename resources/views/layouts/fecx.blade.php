@@ -3,7 +3,8 @@
     editorial design system). Same markup, same classes, same stylesheets
     served from the live docroot. Parity, not improvement.
 
-    Sections:  title, meta_description, robots, canonical, body_class, content
+    Sections:  title, meta_description, robots, canonical, body_class, main_class,
+               head_after (raw tags after the head, the home's Open Graph), content
     Stacks:    head (extra <link>/<meta>), scripts (end of body)
     Legacy document slots (ported Joomla components, in the order Joomla's head
     renderer used): head_meta, head_links, head_styles, head_scripts, head_tail
@@ -71,6 +72,10 @@
 function do_nothing() { return; }
   </script>
 @yield('head_tail')
+@hasSection('head_after')
+
+@yield('head_after')
+@endif
 
   <link rel="icon" type="image/png" sizes="32x32" href="{{ $assets }}/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="{{ $assets }}/favicon-16x16.png">
@@ -139,7 +144,9 @@ function do_nothing() { return; }
     </header>
 
     <main class="fec-main{{ $mainClass !== '' ? ' '.$mainClass : '' }}" role="main">
+@if (empty($noSystemMessage))
 @include('partials.system-message', ['messages' => $messages ?? []])
+@endif
 @yield('content')
     </main>
   </div>

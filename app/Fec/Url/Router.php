@@ -3,12 +3,15 @@
 namespace App\Fec\Url;
 
 use App\Fec\Url\Patterns\BonusDetails;
+use Illuminate\Support\Facades\DB;
+use Throwable;
 
 /**
  * The v3 router of the convivenza: one public path in, one Decision out.
  *
  *   0. .htaccess rules      the legacy redirects, 410s and 403s under our paths (the web server answered first)
  *   0b. jos_sh404sef_aliases sh404SEF's aliases, before its own URLs, Location as written
+ *   0c. the home            "/" is the home menu item (jos_menu home = 1), never a row of the table
  *   1. jos_sh404sef_urls    canonical page, duplicate of a page, slash spelling, recorded 404
  *   2. run-time patterns    URL families sh404SEF never stored (bonus details)
  *   3. jos_redirection      the desk's 301s: Joomla's redirect plugin only fired on a 404
@@ -49,6 +52,11 @@ final class Router
             return new Decision('redirect', 301, $alias, $alias->target);
         }
 
+        // The home: sh404SEF answered an empty path with the home menu item's link.
+        if ($path === '' && ($home = $this->home()) !== null) {
+            return $this->decide($home);
+        }
+
         // The SEF registry first: a URL sh404SEF knows is served (or redirected to its
         // stored spelling). Joomla's redirect plugin only ever fired on a 404, so the
         // jos_redirection rules apply to paths the registry and the patterns do not know.
@@ -70,6 +78,42 @@ final class Router
         }
 
         return $this->decide($url);
+    }
+
+    /**
+     * The home as Joomla and sh404SEF served it: the query of the home menu
+     * item's link with its Itemid (and the language sh404SEF adds), flagged
+     * for the runner, which prints the template's home instead of the
+     * component's body (App\Fec\Legacy\HomeTemplate). Null when the menu
+     * has no published home item.
+     */
+    public function home(): ?ResolvedUrl
+    {
+        try {
+            $item = DB::connection('fec')->table('menu')
+                ->where('home', 1)->where('published', 1)->where('client_id', 0)
+                ->orderBy('id')->first(['id', 'link']);
+        } catch (Throwable $e) {
+            error_log('router: home menu item lookup failed: '.$e->getMessage());
+
+            return null;
+        }
+        if ($item === null) {
+            return null;
+        }
+        $query = UrlRegistry::parseQuery((string) $item->link);
+        if (($query['option'] ?? '') === '') {
+            return null;
+        }
+        $query['Itemid'] = (string) $item->id;
+        $query['lang'] ??= 'en';
+        // sh404SEF's spelling of a non-SEF URL: option first, the rest in byte order
+        $rest = $query;
+        unset($rest['option']);
+        ksort($rest, SORT_STRING);
+        $newurl = 'index.php?option='.$query['option'].'&'.http_build_query($rest);
+
+        return new ResolvedUrl('page', '', $query, '/', null, null, 0, $newurl, 'home', ['home' => true]);
     }
 
     private function decide(ResolvedUrl $url): Decision

@@ -46,9 +46,11 @@ use Throwable;
  * is enabled in #__extensions but none of its links reaches the live pages
  * (28 Oct 2026: the review page carries the override's tag rewritten in place,
  * the clusters index sh404SEF's at the top): it is not reproduced.
- * Not reproduced either: the home (sh404SEF's home code for the metas row:
- * phase 4 step 2), the multi-page article titles (no article has page breaks)
- * and the "featured" view (no page uses it).
+ * The home is the home menu item's article with the template's head on top
+ * (HomeTemplate): its metas row is the one under sh404SEF's home code and no
+ * prefix or suffix goes around its title. Not reproduced: the multi-page
+ * article titles (no article has page breaks) and the "featured" view (no
+ * page uses it).
  */
 final class Sh404sefPage
 {
@@ -68,10 +70,11 @@ final class Sh404sefPage
      *
      * @return list<string>
      */
-    public static function content(Document $doc, ResolvedUrl $url): array
+    public static function content(Document $doc, ResolvedUrl $url, bool $isHome = false): array
     {
         $cfg = (array) config('fec.legacy.sh404sef', []);
-        $row = Sh404sefMetas::row($url->newurl);
+        // the home's "Title and metas" row is stored under sh404SEF's home code, not its URL
+        $row = Sh404sefMetas::row($isHome ? self::homepageCode() : $url->newurl);
 
         $view = JRequest::getCmd('view');
         $id = JRequest::getInt('id');
@@ -117,7 +120,9 @@ final class Sh404sefPage
             $customTitle = $doc->getTitle();
         }
         if ($customTitle !== '' && $catid !== 8 && $catid !== 139) {
-            $pageTitle = htmlspecialchars(self::cleanTitle(($cfg['prepend_to_page_title'] ?? '').$customTitle.($cfg['append_to_page_title'] ?? '')), ENT_COMPAT, 'UTF-8');
+            $prepend = $isHome ? '' : (string) ($cfg['prepend_to_page_title'] ?? '');
+            $append = $isHome ? '' : (string) ($cfg['append_to_page_title'] ?? '');
+            $pageTitle = htmlspecialchars(self::cleanTitle($prepend.$customTitle.$append), ENT_COMPAT, 'UTF-8');
             self::replaceTitle($doc, $pageTitle);
         }
         if ($rowTitle !== '' && $catid === 8) {
@@ -161,6 +166,12 @@ final class Sh404sefPage
             Uri::site(),
             $cfg,
         );
+    }
+
+    /** sh404SEF_HOMEPAGE_CODE (administrator/components/com_sh404sef/defines.php). */
+    public static function homepageCode(): string
+    {
+        return 'index.php?'.md5('sh404SEF Homepage url code');
     }
 
     /**

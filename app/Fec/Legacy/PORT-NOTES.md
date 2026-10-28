@@ -156,9 +156,23 @@ The overrides themselves are verbatim copies, `templates/fecv2/html/com_content/
 and `category/default.php`, found by `JView` on the theme path first, as Joomla did. One edit in
 the category override: two includes used `JPATH_ROOT` for the lib and the blog helper (one
 directory on Joomla); here they use `JPATH_SITE`, where the code is (`JPATH_ROOT` is the real
-docroot, which holds the unported lib). `article/default_withclock.php` (no article or menu item
-uses the layout), `article/home.php` (the home does not run through com_content) and the
-`com_users` and `mod_menu` overrides are not copied.
+docroot, which holds the unported lib). `article/home.php` is verbatim too: the home menu item may
+ask for it, and Joomla ran the home's component even though the template never printed its body.
+`article/default_withclock.php` (no article or menu item uses the layout) and the `com_users` and
+`mod_menu` overrides are not copied.
+
+## The home (phase 4, step 2)
+
+"/" is the home menu item (`jos_menu` home = 1) for the router (`Router::home()`, flagged
+`meta.home`), as sh404SEF answered an empty path, and runs like any com_content page: the
+component with its plugins (the home article's head stays, `fechome` processes its shortcodes),
+then `App\Fec\Legacy\HomeTemplate`, the `$isHome` branch of `templates/fecv2/index.php`: the
+title and description it set, its Open Graph and Twitter tags after the head (`head_after`), the
+sections in its order with its country and its fallback message (`sections()`, under
+`LegacyErrors`), "is-home" on the body, "fec-main--home" on `<main>`, no message container. Then
+`Sh404sefPage` with the home's metas row (sh404SEF's home code) and the canonical branches (the
+bare home on menu item 26, given its slash by `feccanonicalfix`), then the system plugins. The
+status page keeps "/" on the development hostname (APP_URL), where `/__home` shows the home.
 
 ## Plugins (phase 4)
 

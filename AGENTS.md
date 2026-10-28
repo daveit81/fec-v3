@@ -102,7 +102,10 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   hit counter. The "radice" lib slice holds the home, review, directory, cluster and blog functions.
   On com_content pages the title and the canonical are decided by `Sh404sefPage`, the port of the
   live (hand-edited) copy of sh404SEF's page rewrite and its com_content meta plugin, with the
-  live settings in `fec.legacy.sh404sef`; the other components keep `Sh404sefMetas`.
+  live settings in `fec.legacy.sh404sef`; the other components keep `Sh404sefMetas`. The home is
+  the home menu item's article run like any other with the template's `$isHome` branch on top
+  (`HomeTemplate`): `Router::home()` answers "/" on the live hostname, the status page keeps "/"
+  on the development one (APP_URL), where `/__home` shows the home.
 - The com_bonuses desk (views `home`, `add`, `manage`, `clicks`, tasks `actions.*`) runs like the
   com_authors desks, through `/index.php?option=com_bonuses&...` on the root route. Its pages call
   three standalone scripts by path, `/components/com_bonuses/ajax/{clicks_live,ftd_save,ftd_import}.php`

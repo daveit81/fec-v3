@@ -1,6 +1,7 @@
 <?php
 
 use App\Fec\Legacy\ComponentRunner;
+use App\Fec\Url\Router;
 use App\Http\Controllers\Desk\HomeController;
 use App\Http\Controllers\Desk\LoginController;
 use App\Http\Controllers\HealthController;
@@ -14,16 +15,34 @@ use Illuminate\Support\Facades\Route;
 // /index.php?option=... reaches Laravel with the path "/" (the front
 // controller is stripped from the URI), and Joomla itself treated
 // /?option=... the same way. With option= the request goes to the desks.
-Route::match(['GET', 'POST'], '/', function (Request $request, HealthController $health, LegacyDeskController $desk, ComponentRunner $runner) {
-    if ($request->filled('option')) {
-        return $desk->index($request, $runner);
-    }
-    if ($request->isMethod('POST')) {
-        abort(405);
-    }
+// Only on the development hostname (APP_URL, v3.): on the live hostname "/"
+// is the home, served by the public fallback (routes/stateless.php, no
+// cookies) through the router like every other page.
+$devHost = strtolower((string) parse_url((string) config('app.url'), PHP_URL_HOST));
+$liveHost = strtolower((string) parse_url((string) config('fec.site_url'), PHP_URL_HOST));
+$devOnly = $devHost !== '' && $devHost !== $liveHost ? ['domain' => $devHost] : [];
+Route::group($devOnly, function () use ($devOnly): void {
+    Route::match(['GET', 'POST'], '/', function (Request $request, HealthController $health, LegacyDeskController $desk, ComponentRunner $runner) {
+        if ($request->filled('option')) {
+            return $desk->index($request, $runner);
+        }
+        if ($request->isMethod('POST')) {
+            abort(405);
+        }
 
-    return view('status', ['report' => $health->report()]);
-})->name('status');
+        return view('status', ['report' => $health->report()]);
+    })->name('status');
+
+    // Phase 4: the home as the live hostname serves it, to look at on v3. (the status page holds "/").
+    if ($devOnly !== []) {
+        Route::get('/__home', function (Request $request, Router $router, ComponentRunner $runner) {
+            $home = $router->home();
+            abort_if($home === null, 404);
+
+            return $runner->handle($request, $home);
+        })->name('home.preview');
+    }
+});
 
 Route::get('/health', HealthController::class)->name('health');
 

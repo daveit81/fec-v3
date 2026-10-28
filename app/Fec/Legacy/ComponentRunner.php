@@ -216,13 +216,23 @@ final class ComponentRunner implements PageHandler
         if ($format !== 'html' && $format !== '') {
             return $this->raw($body, $request);
         }
+
+        // The home: Joomla ran the home menu item's component (its head stays, its
+        // body is never printed) and the template's $isHome branch set the title, the
+        // description and the Open Graph tags, then printed the sections itself.
+        $home = (bool) ($url->meta['home'] ?? false);
+        if ($home) {
+            HomeTemplate::head($doc);
+            $body = HomeTemplate::sections();
+        }
+
         // sh404SEF's per-page title and metas, applied last on the live site (after the
         // component and the template), keyed on the page's own non-SEF URL. On a
         // com_content page the whole page rewrite of the live copy (its meta plugin's
         // title, the canonical branches): it decides the page's canonicals too.
         $sh404Canonicals = null;
         if ($option === 'com_content') {
-            $sh404Canonicals = Sh404sefPage::content($doc, $url);
+            $sh404Canonicals = Sh404sefPage::content($doc, $url, $home);
         } else {
             Sh404sefMetas::apply($doc, $url->newurl);
         }
@@ -254,7 +264,11 @@ final class ComponentRunner implements PageHandler
             'doc' => $doc,
             'body' => $body,
             'canonical' => $canonical,
-            'bodyClass' => '',
+            'bodyClass' => $home ? 'is-home' : '',
+            'mainClass' => $home ? 'fec-main--home' : '',
+            // the home printed no message container (no <jdoc:include type="message" />)
+            'noSystemMessage' => $home,
+            'headAfter' => $home ? HomeTemplate::openGraph() : '',
             'messages' => $messages,
         ]);
         foreach (Factory::getApplication()->getHeaders() as $name => $value) {

@@ -31,7 +31,14 @@
 {!! $doc->renderTail() !!}
 @endsection
 
+@if (($headAfter ?? '') !== '')
+@section('head_after')
+{!! $headAfter !!}
+@endsection
+@endif
+
 @section('body_class', $bodyClass)
+@section('main_class', $mainClass ?? '')
 
 @section('content')
 {!! $body !!}
