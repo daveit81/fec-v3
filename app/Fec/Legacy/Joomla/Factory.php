@@ -88,6 +88,13 @@ class Factory
             'log_path' => storage_path('logs'),
             'mailfrom' => (string) config('mail.from.address', ''),
             'fromname' => (string) config('mail.from.name', ''),
+            // the global metadata and title options of configuration.php (com_content reads them)
+            'MetaDesc' => (string) config('fec.legacy.meta.description', ''),
+            'MetaKeys' => (string) config('fec.legacy.meta.keywords', ''),
+            'MetaRights' => (string) config('fec.legacy.meta.rights', ''),
+            'MetaAuthor' => (string) config('fec.legacy.meta.author', '0'),
+            'robots' => (string) config('fec.legacy.meta.robots', ''),
+            'sitename_pagetitles' => (int) config('fec.legacy.meta.sitename_pagetitles', 0),
         ]);
     }
 

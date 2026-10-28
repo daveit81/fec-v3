@@ -114,8 +114,55 @@ return [
         // crontab lines that call them on Joomla are removed: never both.
         'schedule_snapshots' => filter_var(env('FEC_LEGACY_SCHEDULE_SNAPSHOTS', false), FILTER_VALIDATE_BOOL),
 
-        // Component options (JComponentHelper::getParams): none set on the live site.
-        'params' => [],
+        // Component options (JComponentHelper::getParams): com_authors and com_bonuses have none;
+        // com_content's are the row of #__extensions on the live site (28 Oct 2026), read by the
+        // port of the core component: show_intro=0 makes the article text the full text alone
+        // when there is one, the intro text otherwise.
+        'params' => [
+            'com_content' => [
+                'article_layout' => '_:default', 'show_title' => '0', 'link_titles' => '0', 'show_intro' => '0',
+                'show_category' => '0', 'link_category' => '0', 'show_parent_category' => '0', 'link_parent_category' => '0',
+                'show_author' => '0', 'link_author' => '0', 'show_create_date' => '0', 'show_modify_date' => '0',
+                'show_publish_date' => '0', 'show_item_navigation' => '0', 'show_vote' => '0', 'show_readmore' => '0',
+                'show_readmore_title' => '0', 'readmore_limit' => '100', 'show_icons' => '0', 'show_print_icon' => '0',
+                'show_email_icon' => '0', 'show_hits' => '0', 'show_noauth' => '0', 'urls_position' => '0',
+                'show_publishing_options' => '1', 'show_article_options' => '1', 'show_urls_images_frontend' => '0',
+                'show_urls_images_backend' => '1', 'targeta' => 0, 'targetb' => 0, 'targetc' => 0,
+                'float_intro' => 'left', 'float_fulltext' => 'left', 'category_layout' => '_:default',
+                'show_category_title' => '0', 'show_description' => '0', 'show_description_image' => '0',
+                'maxLevel' => '-1', 'show_empty_categories' => '0', 'show_no_articles' => '0', 'show_subcat_desc' => '0',
+                'show_cat_num_articles' => '0', 'show_base_description' => '0', 'maxLevelcat' => '-1',
+                'show_empty_categories_cat' => '0', 'show_subcat_desc_cat' => '0', 'show_cat_num_articles_cat' => '0',
+                'num_leading_articles' => '1', 'num_intro_articles' => '4', 'num_columns' => '2', 'num_links' => '4',
+                'multi_column_order' => '0', 'show_subcategory_content' => '0', 'show_pagination_limit' => '1',
+                'filter_field' => 'hide', 'show_headings' => '1', 'list_show_date' => '0', 'date_format' => '',
+                'list_show_hits' => '1', 'list_show_author' => '1', 'orderby_pri' => 'order', 'orderby_sec' => 'rdate',
+                'order_date' => 'published', 'show_pagination' => '2', 'show_pagination_results' => '1',
+                'show_feed_link' => '0', 'feed_summary' => '0', 'feed_show_readmore' => '0',
+            ],
+        ],
+
+        // The global metadata options of configuration.php that com_content reads (the site's
+        // MetaDesc is the description of a page without one of its own, sitename_pagetitles
+        // prefixes or suffixes the site name to every title: 0 on the live site).
+        'meta' => [
+            'description' => env('FEC_LEGACY_META_DESCRIPTION', ''),
+            'keywords' => env('FEC_LEGACY_META_KEYWORDS', ''),
+            'rights' => env('FEC_LEGACY_META_RIGHTS', ''),
+            'author' => env('FEC_LEGACY_META_AUTHOR', '0'),
+            'robots' => env('FEC_LEGACY_META_ROBOTS', ''),
+            'sitename_pagetitles' => (int) env('FEC_LEGACY_SITENAME_PAGETITLES', 0),
+        ],
+
+        // The plugins ported verbatim (site/plugins/<type>/<name>/<name>.php), with the params of
+        // their rows in #__extensions: the content plugins run on every article's text
+        // (onContentPrepare), the system plugin after the page is rendered (onAfterRender).
+        // The third party content plugins of the live site are not ported: fec:parity says which
+        // ones change a page, and those are reproduced one by one.
+        'plugins' => [
+            'content' => ['feccounts', 'fechome'],
+            'system' => ['fecclustermeta'],
+        ],
 
         // JRoute for a query the registry does not hold: the port of the component's sh404SEF
         // plugin builds the path (App\Fec\Legacy\Sef) and, when this is on, records the pair in

@@ -89,6 +89,17 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   (the exception the runner turns into the response of what was echoed; the `or die(...)` guards stay),
   by the slicer and by `php scripts/legacy-port.php <dir>` (run after every copy; `fec:legacy:check`
   fails on a call left behind).
+- Phase 4 (the root): `site/components/com_content/` is our port of Joomla's core component
+  (written from 2.5.28, not copied: the article and category views with what the model did before
+  the fecv2 overrides, which are verbatim under `site/templates/fecv2/html/com_content/` and found
+  by `JView` on the theme path first). Joomla's plugins run through `JPlugin`/`JPluginHelper`/
+  `JDispatcher` (`fec.legacy.plugins`: our `feccounts`, `fechome`, `fecclustermeta`, verbatim under
+  `site/plugins/`; the runner's `afterRender()` is `onAfterRender` on the finished page);
+  `JCategories` is the published tree of `jos_categories`; `Application::getParams()` is
+  `JSite::getParams()` (menu item params over the component's, `page_title` = the menu item's
+  title); the component's options and the global metadata of `configuration.php` are config
+  (`fec.legacy.params.com_content`, `fec.legacy.meta.*`). Not reproduced on purpose: the article
+  hit counter. The "radice" lib slice holds the home, review, directory, cluster and blog functions.
 - The com_bonuses desk (views `home`, `add`, `manage`, `clicks`, tasks `actions.*`) runs like the
   com_authors desks, through `/index.php?option=com_bonuses&...` on the root route. Its pages call
   three standalone scripts by path, `/components/com_bonuses/ajax/{clicks_live,ftd_save,ftd_import}.php`

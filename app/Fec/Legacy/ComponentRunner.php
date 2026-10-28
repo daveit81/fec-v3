@@ -2,8 +2,10 @@
 
 namespace App\Fec\Legacy;
 
+use App\Fec\Legacy\Joomla\Dispatcher;
 use App\Fec\Legacy\Joomla\ExitException;
 use App\Fec\Legacy\Joomla\Factory;
+use App\Fec\Legacy\Joomla\PluginHelper;
 use App\Fec\Legacy\Joomla\RedirectException;
 use App\Fec\Legacy\Joomla\Request as JRequest;
 use App\Fec\Legacy\Joomla\Runtime;
@@ -219,7 +221,10 @@ final class ComponentRunner implements PageHandler
         Sh404sefMetas::apply($doc, $url->newurl);
 
         if ($tmpl === 'component') {
-            return response()->view('legacy.bare', ['doc' => $doc, 'body' => $body]);
+            $response = response()->view('legacy.bare', ['doc' => $doc, 'body' => $body]);
+            $response->setContent($this->afterRender((string) $response->getContent()));
+
+            return $response;
         }
 
         $canonical = $doc->canonical();
@@ -242,6 +247,7 @@ final class ComponentRunner implements PageHandler
         foreach (Factory::getApplication()->getHeaders() as $name => $value) {
             $response->headers->set($name, $value);
         }
+        $response->setContent($this->afterRender((string) $response->getContent()));
 
         // Development hostname: make the legacy asset paths point at the live docroot.
         $live = strtolower((string) parse_url((string) config('fec.site_url'), PHP_URL_HOST));
@@ -250,6 +256,23 @@ final class ComponentRunner implements PageHandler
         }
 
         return $response;
+    }
+
+    /**
+     * Joomla's onAfterRender on the finished page: the system plugins we ported
+     * (fec.legacy.plugins.system) rewrite the HTML as they did on the live site,
+     * after sh404SEF (fecclustermeta: the title and description of the cluster
+     * pages and of the blog listing, stashed on the application by the lib).
+     */
+    private function afterRender(string $html): string
+    {
+        if (! PluginHelper::importPlugin('system')) {
+            return $html;
+        }
+        Joomla\Response::setBody($html);
+        Dispatcher::getInstance()->trigger('onAfterRender');
+
+        return (string) Joomla\Response::getBody();
     }
 
     private function raw(string $body, Request $request): Response

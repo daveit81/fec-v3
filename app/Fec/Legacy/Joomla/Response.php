@@ -4,8 +4,9 @@ namespace App\Fec\Legacy\Joomla;
 
 /**
  * JResponse: the headers a component sets on the response (the runner copies
- * them from the application), and allowCache(), which v3 does not need: no
- * page is cached.
+ * them from the application), allowCache(), which v3 does not need (no page is
+ * cached), and the body during onAfterRender: the runner stores the finished
+ * page here, the system plugins rewrite it, the runner takes it back.
  */
 class Response
 {
@@ -36,18 +37,26 @@ class Response
         return self::$cachable;
     }
 
+    /** @var string the rendered page, set by the runner before onAfterRender (the system plugins rewrite it) */
+    private static string $body = '';
+
     public static function setBody(string $content): void
     {
-        echo $content;
+        self::$body = $content;
     }
 
     public static function appendBody(string $content): void
     {
-        echo $content;
+        self::$body .= $content;
+    }
+
+    public static function prependBody(string $content): void
+    {
+        self::$body = $content.self::$body;
     }
 
     public static function getBody(bool $toArray = false): string|array
     {
-        return $toArray ? [] : '';
+        return $toArray ? [self::$body] : self::$body;
     }
 }

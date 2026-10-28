@@ -117,6 +117,58 @@ plugin left them (`$dosef = false`).
   beside it (`ini_set('error_log', ...)`): dropped, errors go to Laravel's log. The scripts' `exit`
   and `header()` are rewritten as everywhere (above).
 
+## com_content (phase 4): our port of the core component
+
+`components/com_content/` is not a copy: Joomla's core component is not in the snapshot (it is
+Joomla, not our code), so the files are written by hand from Joomla 2.5.28's
+`components/com_content` (content.php, controller.php, helpers/route.php, models/article.php,
+models/category.php, views/article/view.html.php, views/category/view.html.php), the original's
+comments kept where they explain a choice, reduced to what the fecv2 template overrides receive:
+the article row with its published state, dates and category (the "badcats" join), `params` as
+the menu item and the article's `attribs` cascade them, `metadata`, the text as `show_intro`
+decides (0 on the live site: the full text alone when there is one, the intro text otherwise),
+the content plugins on it (`onContentPrepare` and the three display events), the document title
+and metas (`_prepareDocument`), the category node with its params and access, the layout choice.
+Left out, each one invisible in the output: the pathway (the template prints none), the hit
+counter (`hit()` is kept, the view does not call it: the counter is shown nowhere and the public
+pages do not write; a declared parity exception), the article list of the category view and the
+plugins on each intro text (the override queries the lib itself and reads only `$this->category`;
+`getItems()` returns an empty list), the feed format of the category view (RSS/Atom of the blog:
+a decision of phase 4), print and pagebreak, edit, vote and form tasks, the multilingual lookups,
+the edit permissions of a logged user. The component's options are the live row of
+`#__extensions` (`fec.legacy.params.com_content`); the global metadata options of
+`configuration.php` are `fec.legacy.meta.*` (`JSite::getParams()` is ported in `Application::getParams()`).
+`JRoute` strips Joomla's `id:alias` slugs from com_content links before the registry lookup
+(ContentHelperRoute builds them, sh404SEF stored numeric ids).
+
+The overrides themselves are verbatim copies, `templates/fecv2/html/com_content/article/default.php`
+and `category/default.php`, found by `JView` on the theme path first, as Joomla did. One edit in
+the category override: two includes used `JPATH_ROOT` for the lib and the blog helper (one
+directory on Joomla); here they use `JPATH_SITE`, where the code is (`JPATH_ROOT` is the real
+docroot, which holds the unported lib). `article/default_withclock.php` (no article or menu item
+uses the layout), `article/home.php` (the home does not run through com_content) and the
+`com_users` and `mod_menu` overrides are not copied.
+
+## Plugins (phase 4)
+
+`plugins/<type>/<name>/<name>.php` are verbatim copies of our plugins, run by the layer's
+`JPlugin`/`JPluginHelper`/`JDispatcher` (`fec.legacy.plugins` lists them, their params come from
+their rows of `#__extensions`): `content/feccounts` (`{FEC:...}` counts in article text),
+`content/fechome` (the shortcodes of the home article: inert, the home is rendered by the
+template), `system/fecclustermeta` (the title and description of the cluster pages and of the
+blog listing, stashed on the application by the lib and written into the finished page after
+sh404SEF: the runner's `afterRender()` is Joomla's `onAfterRender`). The 30 third party content
+plugins enabled on the live site are not ported: `fec:parity` on the reviews says which of them
+change a page, and those are reproduced one by one (none known yet). `feccanonicalfix`,
+`fectemplateswitch`, `geoip` and `cfcookie` are not ported (the home canonical is v3's own, the
+template switch is for com_easyblog, the country comes from Cloudflare's header, the cookie is
+Joomla's login).
+
+`helpers/fxclock_widget.php` (verbatim since phase 3) loads the FXClock library from
+`/home/freeextr/fxclock/bootstrap.php`, outside the docroot and outside this repository, as it
+did on Joomla (`dirname(JPATH_SITE)` resolves elsewhere here, the absolute fallback is what
+runs): the review pages depend on that library until phase 5 decides where FXClock lives.
+
 ## The legacy .htaccess, reproduced where it reaches our paths
 
 The v3 switch block sits at the top of `public_html/.htaccess` and rewrites the section's paths to

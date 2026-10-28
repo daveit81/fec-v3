@@ -55,6 +55,11 @@ class Request
         return (int) self::getVar($name, $default, $hash, 'int');
     }
 
+    public static function getUInt(string $name, int $default = 0, string $hash = 'default'): int
+    {
+        return abs((int) self::getVar($name, $default, $hash, 'int'));
+    }
+
     public static function getFloat(string $name, float $default = 0.0, string $hash = 'default'): float
     {
         return (float) self::getVar($name, $default, $hash, 'float');

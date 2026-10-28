@@ -19,6 +19,9 @@ class Application
     /** @var array<string, string> */
     private array $headers = [];
 
+    /** @var array<string, mixed> JApplication's registry: what the code set() for a later get() (fecclustermeta) */
+    private array $registry = [];
+
     public function __construct()
     {
         $this->input = new Input;
@@ -54,9 +57,39 @@ class Application
         return $params ? (object) ['template' => 'fecv2', 'params' => new Registry] : 'fecv2';
     }
 
+    /** @var array<string, Registry> JSite::getParams() is computed once per option */
+    private array $params = [];
+
+    /**
+     * JSite::getParams() of Joomla 2.5: the component's options with the active
+     * menu item's params merged over them, and the page_title (the menu item's
+     * title, else the site name), page_description (the site's MetaDesc),
+     * page_rights and robots defaults the views read.
+     */
     public function getParams(?string $option = null): Registry
     {
-        return ComponentHelper::getParams($option ?? (string) Request::getCmd('option', ''));
+        $option = $option !== null && $option !== '' ? $option : (string) Request::getCmd('option', '');
+        if (! isset($this->params[$option])) {
+            $params = clone ComponentHelper::getParams($option);
+            $config = Factory::getConfig();
+            $title = (string) $config->get('sitename', '');
+            $menu = $this->getMenu()->getActive();
+            if (is_object($menu)) {
+                $params->merge($menu->params instanceof Registry ? $menu->params : new Registry((string) $menu->params));
+                $title = (string) $menu->title;
+            } else {
+                $temp = clone ComponentHelper::getParams('com_menus');
+                $params->merge($temp);
+                $title = (string) $temp->get('page_title', $title);
+            }
+            $params->def('page_title', $title);
+            $params->def('page_description', (string) $config->get('MetaDesc', ''));
+            $params->def('page_rights', (string) $config->get('MetaRights', ''));
+            $params->def('robots', (string) $config->get('robots', ''));
+            $this->params[$option] = $params;
+        }
+
+        return $this->params[$option];
     }
 
     public function getPathway(): Pathway
@@ -130,17 +163,21 @@ class Application
 
     public function get(string $key, mixed $default = null): mixed
     {
-        return $default;
+        return array_key_exists($key, $this->registry) ? $this->registry[$key] : $default;
     }
 
     public function set(string $key, mixed $value = null): mixed
     {
-        return $value;
+        $previous = $this->registry[$key] ?? null;
+        $this->registry[$key] = $value;
+
+        return $previous;
     }
 
+    /** The plugins imported so far (JPluginHelper::importPlugin) answer the event, in order. */
     public function triggerEvent(string $event, ?array $args = null): array
     {
-        return [];
+        return Dispatcher::getInstance()->trigger($event, $args ?? []);
     }
 
     public function registerEvent(string $event, mixed $handler): void

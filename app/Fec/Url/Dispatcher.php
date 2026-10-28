@@ -34,7 +34,10 @@ final class Dispatcher
         'com_bonuses.ads' => \App\Fec\Legacy\ComponentRunner::class,
         'com_bonuses.wcalc' => \App\Fec\Legacy\ComponentRunner::class,
         'com_bonuses.cmp' => \App\Fec\Legacy\ComponentRunner::class,
-        // phase 4: com_content.*, com_atlas.*
+        // phase 4: com_content (our port of the core component under the fecv2 overrides:
+        // the reviews, the directory, the clusters, the blog), then com_atlas, com_tournaments
+        'com_content.article' => \App\Fec\Legacy\ComponentRunner::class,
+        'com_content.category' => \App\Fec\Legacy\ComponentRunner::class,
     ];
 
     /** @return class-string<PageHandler>|null */

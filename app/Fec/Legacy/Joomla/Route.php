@@ -50,6 +50,22 @@ class Route
         $fragment = (string) (parse_url($url, PHP_URL_FRAGMENT) ?? '');
         $suffix = $fragment !== '' ? '#'.$fragment : '';
 
+        // com_content links carry Joomla's "id:alias" slugs (ContentHelperRoute builds
+        // them, the blog and the reviews link that way); sh404SEF stored the numeric
+        // ids, and so does the registry.
+        if (($query['option'] ?? '') === 'com_content') {
+            $changed = false;
+            foreach (['id', 'catid'] as $k) {
+                if (isset($query[$k]) && preg_match('/^(\d+):/', (string) $query[$k], $m)) {
+                    $query[$k] = $m[1];
+                    $changed = true;
+                }
+            }
+            if ($changed) {
+                $url = 'index.php?'.http_build_query($query);
+            }
+        }
+
         try {
             $path = app(UrlRegistry::class)->pathFor($url, true);
             if ($path !== null) {

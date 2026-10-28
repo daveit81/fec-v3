@@ -65,6 +65,11 @@ final class Runtime
         'JViewLegacy' => View::class,
         'JModel' => Model::class,
         'JModelLegacy' => Model::class,
+        'JPlugin' => Plugin::class,
+        'JPluginHelper' => PluginHelper::class,
+        'JDispatcher' => Dispatcher::class,
+        'JCategories' => Categories::class,
+        'JCategoryNode' => CategoryNode::class,
     ];
 
     /** Bind the global names. Safe to call more than once; never loaded where a real Joomla runs. */
@@ -116,6 +121,9 @@ final class Runtime
         Route::reset();
         Uri::reset();
         Controller::reset();
+        Dispatcher::reset();
+        PluginHelper::reset();
+        Categories::reset();
     }
 
     /**

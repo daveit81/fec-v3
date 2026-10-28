@@ -70,6 +70,29 @@ class Model
     {
     }
 
+    /** @var list<string> JObject's error stack */
+    protected array $_errors = [];
+
+    public function setError(mixed $error)
+    {
+        $this->_errors[] = $error instanceof \Throwable ? $error->getMessage() : (string) $error;
+    }
+
+    public function getError(?int $i = null, bool $toString = true)
+    {
+        if ($this->_errors === []) {
+            return false;
+        }
+
+        return $i === null ? end($this->_errors) : ($this->_errors[$i] ?? false);
+    }
+
+    /** @return list<string> */
+    public function getErrors()
+    {
+        return $this->_errors;
+    }
+
     /** @return list<object> */
     protected function _getList(string|\Stringable $query, int $limitstart = 0, int $limit = 0)
     {
