@@ -127,7 +127,7 @@ class Route
         unset($vars['option'], $vars['Itemid'], $vars['lang']);
         $segments = (array) $function($vars);
         if ($segments === []) {
-            return null;
+            return self::defaultSef($option, $vars);
         }
         $path = '/'.implode('/', array_map('rawurlencode', array_map('strval', $segments)));
         if ($vars !== []) {
@@ -135,5 +135,22 @@ class Route
         }
 
         return $path;
+    }
+
+    /**
+     * What sh404SEF's default plugin made of a query no component plugin and no
+     * router segment could name: the component's name as the path and the
+     * variables it did not consume as the query string, in alphabetical order
+     * (the FXShield report link of the reviews on the live site:
+     * /authors?casino_id=910&tmpl=component&view=fxreport). Never stored.
+     *
+     * @param  array<string, string>  $vars
+     */
+    private static function defaultSef(string $option, array $vars): string
+    {
+        ksort($vars, SORT_STRING);
+        $path = '/'.substr($option, 4);
+
+        return $vars !== [] ? $path.'?'.http_build_query($vars) : $path;
     }
 }

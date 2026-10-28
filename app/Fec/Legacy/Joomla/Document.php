@@ -50,9 +50,9 @@ class Document
         return 'html';
     }
 
-    public function setTitle(string $title): static
+    public function setTitle(string|int|float|null $title): static
     {
-        $this->title = $title;
+        $this->title = (string) $title;
 
         return $this;
     }
@@ -62,9 +62,9 @@ class Document
         return $this->title;
     }
 
-    public function setDescription(string $description): static
+    public function setDescription(string|int|float|null $description): static
     {
-        $this->description = $description;
+        $this->description = (string) $description;
 
         return $this;
     }
@@ -88,9 +88,11 @@ class Document
         return $this;
     }
 
-    public function setMetaData(string $name, string $content, bool $httpEquiv = false): static
+    /** Joomla took any scalar (com_content passes the author name, null when the category has none). */
+    public function setMetaData(string $name, string|int|float|bool|null $content, bool $httpEquiv = false): static
     {
         $name = strtolower($name);
+        $content = (string) $content;
         if ($name === 'description') {
             $this->description = $content;
         } elseif ($httpEquiv) {

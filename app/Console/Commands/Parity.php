@@ -335,6 +335,10 @@ class Parity extends Command
         $html = preg_replace('/\?v=\d+/', '?v=N', $html) ?? $html;
         // live counters that move between the two fetches (the trending tag "#1 . 476 opens")
         $html = preg_replace('/\b\d[\d.,]*\s+opens\b/', 'N opens', $html) ?? $html;
+        // the review form's timestamp (form_ts = time()) and the casino cards' provider line, which
+        // names one software provider drawn at random on every render (software_random_display)
+        $html = preg_replace('/name="form_ts" value="\d+"/', 'name="form_ts" value="FORM_TS"', $html) ?? $html;
+        $html = preg_replace('/(<div class="review-sub">)[^<]*?(\d+ software providers?<\/div>)/', '$1PROVIDER . $2', $html) ?? $html;
         $html = preg_replace('/\s+/', ' ', $html) ?? $html;
         $html = preg_replace('/>\s+</', '><', $html) ?? $html;
         // one tag per line so diffs stay readable

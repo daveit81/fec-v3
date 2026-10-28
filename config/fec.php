@@ -154,6 +154,17 @@ return [
             'sitename_pagetitles' => (int) env('FEC_LEGACY_SITENAME_PAGETITLES', 0),
         ],
 
+        // The review form of the casino pages (fec_render_review_form): the public Turnstile
+        // site key it prints and the limits it announces, from the live fec_review_config.php
+        // (not in the snapshot: it holds the secret key too, which only the submission endpoint
+        // on Joomla needs). Without the site key the form is not rendered, as on the live site.
+        'review' => [
+            'turnstile_site_key' => env('FEC_TURNSTILE_SITE_KEY', ''),
+            'min_length' => (int) env('FEC_REVIEW_MIN_LENGTH', 50),
+            'max_length' => (int) env('FEC_REVIEW_MAX_LENGTH', 3000),
+            'min_seconds_on_form' => (int) env('FEC_REVIEW_MIN_SECONDS_ON_FORM', 5),
+        ],
+
         // The plugins ported verbatim (site/plugins/<type>/<name>/<name>.php), with the params of
         // their rows in #__extensions: the content plugins run on every article's text
         // (onContentPrepare), the system plugin after the page is rendered (onAfterRender).

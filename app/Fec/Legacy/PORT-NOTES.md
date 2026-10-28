@@ -164,6 +164,17 @@ change a page, and those are reproduced one by one (none known yet). `feccanonic
 template switch is for com_easyblog, the country comes from Cloudflare's header, the cookie is
 Joomla's login).
 
+`components/com_bonuses/fec_review_config.php` is not the live file (excluded from the snapshot:
+it holds the Turnstile secret) but a small one of ours that defines the same constants the lib
+reads at include time from the environment (`fec.legacy.review`: the public site key the review
+form prints, the form's limits); without the site key `fec_render_review_form()` renders nothing,
+as on the live site. The form posts to `ajax_review_submit.php` on Joomla until phase 5.
+
+`JRoute` for a com_authors query the registry does not hold and the component's router gives no
+segment for (the FXShield report link of the casino pages, `view=fxreport`) answers what sh404SEF's
+default plugin answered: the component's name as the path and the leftover variables sorted
+(`/authors?casino_id=910&tmpl=component&view=fxreport`), never stored.
+
 `helpers/fxclock_widget.php` (verbatim since phase 3) loads the FXClock library from
 `/home/freeextr/fxclock/bootstrap.php`, outside the docroot and outside this repository, as it
 did on Joomla (`dirname(JPATH_SITE)` resolves elsewhere here, the absolute fallback is what
