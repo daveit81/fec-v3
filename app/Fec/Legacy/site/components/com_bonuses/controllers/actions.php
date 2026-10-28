@@ -2048,9 +2048,15 @@ class BonusesControllerActions extends JController
 	 */
 	private function jsonOut($ok, $message, $data = array())
 	{
-		while (ob_get_level())
+		// PORT: every buffer was closed here; the runner's own (level FEC_OB_BASE)
+		// is kept and emptied instead, the response is built from it.
+		while (ob_get_level() > (defined('FEC_OB_BASE') ? FEC_OB_BASE : 0))
 		{
 			ob_end_clean();
+		}
+		if (defined('FEC_OB_BASE') && ob_get_level() === FEC_OB_BASE)
+		{
+			ob_clean();
 		}
 
 		fec_header('Content-Type: application/json; charset=utf-8');

@@ -52,9 +52,11 @@ class LegacyCheck extends Command
             glob($base.'/views/*/view.*.php') ?: [],
         );
 
-        // every PHP file of the component must at least parse under this PHP
+        // every PHP file of the component must at least parse under this PHP (the
+        // ajax/ scripts are the desk's standalone endpoints: run by the runner as
+        // whole scripts, never included here)
         $parseFailed = 0;
-        foreach (array_merge($files, glob($base.'/views/*/tmpl/*.php') ?: [], glob($base.'/renders/*.php') ?: [], glob($base.'/modules/*.php') ?: [], [$base.'/'.substr($component, 4).'.php']) as $file) {
+        foreach (array_merge($files, glob($base.'/views/*/tmpl/*.php') ?: [], glob($base.'/renders/*.php') ?: [], glob($base.'/modules/*.php') ?: [], glob($base.'/ajax/*.php') ?: [], [$base.'/'.substr($component, 4).'.php']) as $file) {
             if (! is_file($file)) {
                 continue;
             }
@@ -106,7 +108,7 @@ class LegacyCheck extends Command
 
         // Joomla globals the code reaches for at run time (not at include time): every
         // J* constant and J* class named in the component must exist in the layer.
-        $allFiles = array_merge($files, glob($base.'/views/*/tmpl/*.php') ?: [], glob($base.'/renders/*.php') ?: [], glob($base.'/modules/*.php') ?: []);
+        $allFiles = array_merge($files, glob($base.'/views/*/tmpl/*.php') ?: [], glob($base.'/renders/*.php') ?: [], glob($base.'/modules/*.php') ?: [], glob($base.'/ajax/*.php') ?: []);
         $missing = $this->missingGlobals($allFiles);
         foreach ($missing as $name => $where) {
             $failed++;
@@ -114,7 +116,8 @@ class LegacyCheck extends Command
         }
 
         // The port rewrites (scripts/legacy-port.php) must have run on the copy: a sort left as
-        // PHP 8's is stable where PHP 5.6's was not, a bare header() never reaches the response.
+        // PHP 8's is stable where PHP 5.6's was not, a bare header() never reaches the response,
+        // an exit ends the process instead of the request.
         foreach ($this->unportedCalls($allFiles) as $where) {
             $failed++;
             $this->line('  <error>FAIL</error> '.$where.' is not rewritten (run php scripts/legacy-port.php on the component)');
@@ -124,8 +127,8 @@ class LegacyCheck extends Command
     }
 
     /**
-     * Calls the port rewrites (scripts/legacy-rewrite.inc.php: usort, asort, header...)
-     * should have replaced and did not.
+     * Calls the port rewrites (scripts/legacy-rewrite.inc.php: usort, asort, header,
+     * exit...) would still change: the same pass the port script runs, in check mode.
      *
      * @param  list<string>  $files
      * @return list<string> "file:line usort("
@@ -133,31 +136,13 @@ class LegacyCheck extends Command
     private function unportedCalls(array $files): array
     {
         require_once base_path('scripts/legacy-rewrite.inc.php');
-        $names = array_keys(FEC_PORT_REWRITES);
         $out = [];
         foreach ($files as $file) {
-            $tokens = token_get_all((string) file_get_contents($file));
             $rel = substr($file, strlen(Runtime::sitePath()) + 1);
-            foreach ($tokens as $i => $t) {
-                if (! is_array($t) || $t[0] !== T_STRING || ! in_array(strtolower($t[1]), $names, true)) {
-                    continue;
-                }
-                // a call: "(" next, no "->", "::", "function" or "\" before
-                $next = $i + 1;
-                while (isset($tokens[$next]) && is_array($tokens[$next]) && in_array($tokens[$next][0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
-                    $next++;
-                }
-                $prev = $i - 1;
-                while ($prev >= 0 && is_array($tokens[$prev]) && in_array($tokens[$prev][0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
-                    $prev--;
-                }
-                if (($tokens[$next] ?? null) !== '(') {
-                    continue;
-                }
-                if ($prev >= 0 && is_array($tokens[$prev]) && in_array($tokens[$prev][0], [T_OBJECT_OPERATOR, T_NULLSAFE_OBJECT_OPERATOR, T_DOUBLE_COLON, T_FUNCTION, T_NS_SEPARATOR, T_NEW], true)) {
-                    continue;
-                }
-                $out[] = $rel.':'.$t[2].' '.$t[1].'(';
+            $changes = [];
+            fec_port_rewrite((string) file_get_contents($file), $changes);
+            foreach ($changes as $c) {
+                $out[] = $rel.':'.$c['line'].' '.$c['from'].'(';
             }
         }
 

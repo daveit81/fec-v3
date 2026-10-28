@@ -37,7 +37,16 @@ on it). They are token based and idempotent.
   header on the Joomla application object, where the runner builds the response from; a status line
   or a response code sets the status; a Location header makes the response a 302 unless a 3xx status
   is set, as PHP does, the body kept (Joomla sent it too). 23 call sites: the JSON and download tasks
-  of com_authors, `actions.php`, `mobileapp.php`, `views/tc`, `views/ads`.
+  of com_authors, `actions.php`, `mobileapp.php`, `views/tc`, `views/ads`; 7 more in the desk scripts
+  of com_bonuses (`ajax/`).
+- `exit;` / `exit(...)` / `die(...)` as a statement become `jexit(...)`: exit ends the PHP process,
+  which under Joomla was the end of the request; here it would skip the response the runner builds
+  (headers, session, the layout) and kill a console run. `jexit()` throws the exception the runner
+  turns into the response of what was echoed so far; a string argument is printed first, as `exit`
+  printed it (an integer was the process status, nothing of the response). The guards
+  `defined('_JEXEC') or die(...)` are not statements and stay as written (they never fire). 4 call
+  sites: the three desk scripts of com_bonuses (`ajax/clicks_live.php`, `ftd_save.php`,
+  `ftd_import.php`), `modules/homeslidernew.php`.
 
 ## sh404SEF plugins (ported as classes, not copied)
 
@@ -72,9 +81,10 @@ plugin left them (`$dosef = false`).
   directory; here `JPATH_SITE` is the code and `JPATH_ROOT` the real `public_html`).
 
 - `components/com_bonuses/`: verbatim copy of the site component (phase 3) without the static
-  assets (`css/`, `js/`, `data/`: served from the live docroot), the standalone scripts (`ajax/`,
-  `chron/`, `scripts/`, `ajax_review_submit.php`: they keep running on Joomla by direct path until
-  phase 5), `admin/` and `sef_ext/` (the sh404SEF URL plugin, ported as a class of the layer
+  assets (`css/`, `js/`, `data/`: served from the live docroot), the standalone scripts (`chron/`,
+  `scripts/`, `ajax_review_submit.php`, the public `ajax/bonus_feedback.php` and
+  `ajax/bonus_reports.php`: they keep running on Joomla by direct path until phase 5), `admin/` and
+  `sef_ext/` (the sh404SEF URL plugin, ported as a class of the layer
   instead). `helpers/fec_common_lib.php`, `fec_fxrate.php`, `fec_blog.php` are the generated
   slices; `bonustypesarray.php` and `currenciesarray.php` the hand-edited copies above. One edit:
   `renders/filtersheaders.php` had two `default:` clauses in the `switch($filter)`; PHP 5 ran the
@@ -86,6 +96,26 @@ plugin left them (`$dosef = false`).
   `helpers/pagination.php` (Zebra_Pagination) `get_pages()`: `get_page()` calls it before the
   record counts are set, dividing `'' / ''`; PHP 5.6 silently gave 0, PHP 8 throws a TypeError on
   string operands, so the operands are cast and a zero divisor returns 0, as before.
+- `components/com_bonuses/` desk (step 6 of phase 3): the views `home`, `add`, `manage`, `clicks`
+  and `controllers/actions.php` (the 14 tasks) run as desk views (`fec.legacy.desk_views`, with
+  `com_bonuses.actions` for the tasks), gated as on the live site by `BonusesHelperBonus::authorized()`
+  (Joomla user 42, the account's `joomla_user_id` here). Not copied: `views/edit/` (the old editor,
+  `editb.php`, superseded by the `add` view): it includes the old MaxMind `geoip/geoip.inc` from the
+  docroot (outside the snapshot) and no desk page links `view=edit`; it stays on Joomla. Edits: `actions.php`
+  `jsonOut()` closed every output buffer before echoing the JSON (`while (ob_get_level())
+  ob_end_clean()`), which would also discard the runner's capture buffer; it now stops at
+  `FEC_OB_BASE` and empties that buffer instead (same effect: only the JSON is sent).
+- `components/com_bonuses/ajax/{clicks_live,ftd_save,ftd_import}.php`: the desk's standalone
+  endpoints (the click feed, the FTD entry and the StatsDrone CSV import), which the desk pages call
+  by their path (`/components/com_bonuses/ajax/<name>.php`). On the live site each one bootstrapped
+  Joomla itself (`define('_JEXEC')`, `JPATH_BASE` from `DOCUMENT_ROOT`, `includes/defines.php`,
+  `includes/framework.php`); here that head is replaced by the `_JEXEC` guard, the runner boots the
+  layer before including the script (`ComponentRunner::runScript()`, same path, `fec.legacy.desk_scripts`,
+  logged-in redazione only, writing connection, the answer is what the script echoed with the headers
+  and status it set), and `JLoader::register` points at `JPATH_COMPONENT` instead of
+  `JPATH_BASE . 'components/com_bonuses'`. `ftd_save.php` also redirected PHP's error log to a file
+  beside it (`ini_set('error_log', ...)`): dropped, errors go to Laravel's log. The scripts' `exit`
+  and `header()` are rewritten as everywhere (above).
 
 ## The legacy .htaccess, reproduced where it reaches our paths
 

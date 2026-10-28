@@ -42,13 +42,19 @@ class LegacyDeskController extends Controller
         foreach ($request->query() as $k => $v) {
             $query[(string) $k] = is_array($v) ? (string) json_encode($v) : (string) $v;
         }
+        // Joomla read option, view and task from the merged request: the desks'
+        // JavaScript posts them in the body as often as in the query (the bonus
+        // desk posts {option, task, ...} to a bare "index.php").
+        if ($request->isMethod('POST')) {
+            foreach (['option', 'view', 'task'] as $k) {
+                if (! isset($query[$k]) && is_string($request->input($k))) {
+                    $query[$k] = (string) $request->input($k);
+                }
+            }
+        }
         $option = $query['option'] ?? '';
         if (! preg_match('/^com_[a-z0-9_]+$/', $option)) {
             abort(404);
-        }
-        // Joomla's task on a POST comes in the body ("task" input) as often as in the query.
-        if (! isset($query['task']) && $request->isMethod('POST') && is_string($request->input('task'))) {
-            $query['task'] = (string) $request->input('task');
         }
         $url = new ResolvedUrl('page', 'index.php', $query, null, null, null, null, 'index.php?'.http_build_query($query), 'index.php');
 
@@ -61,5 +67,28 @@ class LegacyDeskController extends Controller
         }
 
         return $runner->handle($request, $url);
+    }
+
+    /**
+     * A desk's standalone script, at the path the desk pages call it by on the
+     * live site: /components/<option>/ajax/<name>.php (fec.legacy.desk_scripts).
+     * A guest gets the login page, or the scripts' own JSON refusal when the
+     * call is the desk's JavaScript.
+     */
+    public function script(Request $request, ComponentRunner $runner, string $option, string $script): Response
+    {
+        $allowed = (array) (config('fec.legacy.desk_scripts', [])[$option] ?? []);
+        if (! in_array($script, $allowed, true)) {
+            abort(404);
+        }
+        if (! auth()->check()) {
+            if ($request->expectsJson() || $request->ajax() || $request->isMethod('POST')) {
+                return response()->json(['ok' => false, 'error' => 'unauthorized'], 403);
+            }
+
+            return redirect()->guest(route('login'));
+        }
+
+        return $runner->runScript($request, $option, $script);
     }
 }

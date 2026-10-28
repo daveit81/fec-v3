@@ -72,6 +72,60 @@ final class ComponentRunner implements PageHandler
         return $this->run($request, $url, $entry, true);
     }
 
+    /**
+     * One of a desk's standalone scripts (fec.legacy.desk_scripts: the live
+     * site's components/<option>/ajax/<name>.php, which bootstrapped Joomla
+     * itself and answered on its own, JSON or a whole page): included as a
+     * script under the layer, on the writing connection, for a logged-in
+     * member of the redazione; the response is what it echoed, with the
+     * headers and status it set, never the layout.
+     */
+    public function runScript(Request $request, string $option, string $script): Response
+    {
+        $allowed = (array) (config('fec.legacy.desk_scripts', [])[$option] ?? []);
+        $file = Runtime::sitePath().'/components/'.$option.'/ajax/'.$script.'.php';
+        if (! preg_match('/^com_[a-z0-9_]+$/', $option) || ! in_array($script, $allowed, true) || ! is_file($file)) {
+            abort(404);
+        }
+        if (! auth()->check()) {
+            abort(404);
+        }
+
+        Runtime::boot($option);
+        Factory::useRwConnection(true);
+        if (! defined('FEC_OB_BASE')) {
+            define('FEC_OB_BASE', ob_get_level() + 1);
+        }
+        Uri::reset();
+        Joomla\Route::reset();
+        $this->syncServerGlobals($request);
+
+        $level = ob_get_level();
+        ob_start();
+        LegacyErrors::begin($option.'/ajax/'.$script);
+        try {
+            require $file;
+        } catch (ExitException $e) {
+            // exit (jexit after the port) is how these scripts end most answers: what
+            // was echoed so far is the response
+        } catch (RedirectException $e) {
+            $this->discard($level);
+
+            return Redirects::to($request, $e->url, $e->status);
+        } catch (Throwable $e) {
+            $this->discard($level);
+            throw $e;
+        } finally {
+            LegacyErrors::end();
+        }
+        $body = '';
+        while (ob_get_level() > $level) {
+            $body = (string) ob_get_clean().$body;
+        }
+
+        return $this->raw($body, $request);
+    }
+
     private function run(Request $request, ResolvedUrl $url, string $entry, bool $rw): Response
     {
         $option = (string) $url->option();

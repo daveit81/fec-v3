@@ -177,12 +177,23 @@ return [
         // writing connection, skipped by fec:parity --option.
         'desk_views' => [
             'com_authors.dashboard', 'com_authors.blogdesk', 'com_authors.deskadd', 'com_authors.fxshieldadmin', 'com_authors.methodologyadmin', 'com_authors.verification',
-            // com_bonuses (phase 3): the bonus desk, gated to the dashboard user on the live site too
-            'com_bonuses.home', 'com_bonuses.add', 'com_bonuses.edit', 'com_bonuses.manage', 'com_bonuses.clicks',
+            // com_bonuses (phase 3): the bonus desk, gated to the dashboard user on the live
+            // site too; "actions" is the controller of its tasks (task=actions.save...). The
+            // old editor (view=edit) is not ported: dead on the live site, linked from nowhere.
+            'com_bonuses.home', 'com_bonuses.add', 'com_bonuses.manage', 'com_bonuses.clicks', 'com_bonuses.actions',
         ],
 
         // SEF paths of the desks (registry URLs): explicit routes in the web group, CSRF handled by the legacy token.
         'desk_paths' => ['methodology-admin', 'fxshield-admin', 'fxshield-verify'],
+
+        // The desks' standalone endpoints: components/<option>/ajax/<name>.php on the live
+        // site, scripts that bootstrapped Joomla themselves and that the desk pages call by
+        // that path (the click feed, the FTD entry and import of the clicks desk). Served at
+        // the same path on v3, to a logged-in member of the redazione, as whole scripts
+        // (ComponentRunner::runScript, raw output).
+        'desk_scripts' => [
+            'com_bonuses' => ['clicks_live', 'ftd_save', 'ftd_import'],
+        ],
 
         // The /desk home page: what the redazione can open on v3.
         'desks' => [
@@ -192,6 +203,10 @@ return [
             ['title' => 'Desk add (baseline)', 'url' => '/index.php?option=com_authors&view=deskadd', 'note' => 'Inserimento baseline FXShield'],
             ['title' => 'RTP dashboard', 'url' => '/index.php?option=com_authors&view=dashboard', 'note' => 'Database slot e RTP (utente 42)'],
             ['title' => 'Blog desk', 'url' => '/index.php?option=com_authors&view=blogdesk', 'note' => 'Editor del Casino Bonus Blog (post in jos_content con il nodo asset, meta in jos_fec_blog_meta)'],
+            ['title' => 'Bonus dashboard', 'url' => '/index.php?option=com_bonuses&view=home', 'note' => 'Overview del catalogo bonus: KPI, in scadenza, pending, modifiche recenti (utente 42)'],
+            ['title' => 'Bonus list', 'url' => '/index.php?option=com_bonuses&view=manage', 'note' => 'Lista bonus con filtri, toggle, duplica, ripristina, azioni bulk'],
+            ['title' => 'Add a bonus', 'url' => '/index.php?option=com_bonuses&view=add', 'note' => 'Form di inserimento/modifica bonus con welcome package FXRate'],
+            ['title' => 'Click report', 'url' => '/index.php?option=com_bonuses&view=clicks', 'note' => 'Click per brand e paese, feed live, FTD StatsDrone (import CSV da /components/com_bonuses/ajax/ftd_import.php)'],
         ],
     ],
 

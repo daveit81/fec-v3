@@ -50,3 +50,8 @@ Route::get('/desk', HomeController::class)->middleware('auth')->name('desk.home'
 foreach ((array) config('fec.legacy.desk_paths', []) as $path) {
     Route::match(['GET', 'POST'], '/'.trim((string) $path, '/'), [LegacyDeskController::class, 'sef']);
 }
+
+// The desks' standalone scripts (fec.legacy.desk_scripts), at the path the desk pages
+// call them by on the live site: /components/com_bonuses/ajax/clicks_live.php...
+Route::match(['GET', 'POST'], '/components/{option}/ajax/{script}.php', [LegacyDeskController::class, 'script'])
+    ->where(['option' => 'com_[a-z0-9_]+', 'script' => '[a-z0-9_]+']);

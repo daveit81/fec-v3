@@ -26,8 +26,10 @@ class AppServiceProvider extends ServiceProvider
         // their paths. Registered here, not in bootstrap/app.php, because the
         // configuration is loaded by the time the providers boot. "/" is where
         // /index.php?option=... lands (routes/web.php): the only POST it takes.
+        // The desks' standalone scripts (components/<option>/ajax/<name>.php) check
+        // the same token themselves (JSession::checkToken).
         PreventRequestForgery::except(array_merge(
-            ['/', 'index.php'],
+            ['/', 'index.php', 'components/*/ajax/*'],
             array_map(fn ($p) => trim((string) $p, '/'), (array) config('fec.legacy.desk_paths', [])),
         ));
     }

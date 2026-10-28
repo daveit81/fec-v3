@@ -30,10 +30,20 @@ if (! function_exists('jimport')) {
 }
 
 if (! function_exists('jexit')) {
-    /** Joomla's exit wrapper: in v3 a component must never terminate the request. */
-    function jexit(string $message = ''): never
+    /**
+     * Joomla's exit wrapper (exit($message)): in v3 a component must never
+     * terminate the request, the runner answers with what was echoed. The port
+     * rewrites every exit/die statement of the legacy code to this (see
+     * scripts/legacy-rewrite.inc.php): a string argument is printed, as exit
+     * prints it; an integer was the process exit status, nothing of the response.
+     */
+    function jexit(string|int|null $message = ''): never
     {
-        throw new ExitException($message);
+        if (is_string($message) && $message !== '') {
+            echo $message;
+        }
+
+        throw new ExitException(is_string($message) ? $message : '');
     }
 }
 

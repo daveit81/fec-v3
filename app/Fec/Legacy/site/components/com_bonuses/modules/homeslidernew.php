@@ -35,7 +35,7 @@ $datasoft = $totalsData;
 // Controlla se ci sono abbastanza elementi per estrarre 6 elementi casuali
 if (count($datasoft) < 6) {
     echo "Non ci sono abbastanza elementi nel file JSON per estrarre 6 elementi casuali.";
-    exit;
+    jexit();
 }
 
 // Ottieni 6 chiavi casuali dall'array

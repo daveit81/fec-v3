@@ -85,8 +85,17 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   different rows. Every `usort/uasort/asort/arsort` of the ported code is rewritten to
   `fec_php5_*` (`App\Fec\Legacy\Php5Sort`, the PHP 5.6 algorithm), and every bare `header()` to
   `fec_header()` (the header lands on the application object the runner builds the response from:
-  a `Location` set that way is a 302, as PHP made it), by the slicer and by
-  `php scripts/legacy-port.php <dir>` (run after every copy; `fec:legacy:check` fails on a call left behind).
+  a `Location` set that way is a 302, as PHP made it), and every `exit`/`die` statement to `jexit()`
+  (the exception the runner turns into the response of what was echoed; the `or die(...)` guards stay),
+  by the slicer and by `php scripts/legacy-port.php <dir>` (run after every copy; `fec:legacy:check`
+  fails on a call left behind).
+- The com_bonuses desk (views `home`, `add`, `manage`, `clicks`, tasks `actions.*`) runs like the
+  com_authors desks, through `/index.php?option=com_bonuses&...` on the root route. Its pages call
+  three standalone scripts by path, `/components/com_bonuses/ajax/{clicks_live,ftd_save,ftd_import}.php`
+  (on the live site they bootstrapped Joomla themselves): `fec.legacy.desk_scripts` lists them, a web
+  route serves them at the same path to a logged-in user and `ComponentRunner::runScript()` includes
+  the ported copy as a whole script (raw answer, the headers and status it set). Nothing of the desk
+  is SEF: the sh404SEF plugin never built URLs for it, so nothing is registered.
 
 ## Databases
 
