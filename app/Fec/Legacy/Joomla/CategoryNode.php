@@ -17,8 +17,8 @@ class CategoryNode
     /** @var array<int|string, CategoryNode> */
     private array $children = [];
 
-    /** @var list<string> */
-    private array $path = [];
+    /** @var list<string> the "id:alias" segments from the first level down (jos_categories has a "path" column of its own: a public property) */
+    private array $segments = [];
 
     public function __construct(object $row)
     {
@@ -34,7 +34,7 @@ class CategoryNode
     {
         $this->parent = $parent;
         $parent->children[$this->id] = $this;
-        $this->path = $this->id === 'root' ? [] : array_merge($parent->getPath(), [$this->id.':'.$this->alias]);
+        $this->segments = $this->id === 'root' ? [] : array_merge($parent->getPath(), [$this->id.':'.$this->alias]);
     }
 
     public function getParent(): ?CategoryNode
@@ -70,7 +70,7 @@ class CategoryNode
     /** @return list<string> "id:alias" from the first level down to this node */
     public function getPath(): array
     {
-        return $this->path;
+        return $this->segments;
     }
 
     public function getParams(): Registry
