@@ -24,7 +24,9 @@ DST="${FEC_V3_ROOT:-/home/freeextr/fecv3}/legacy"
 # Our code only: no Joomla core, no third-party extensions (JReviews, sh404SEF,
 # AcyMailing, Community Builder). Missing roots are reported, not fatal.
 # Never copied: fec_review_config.php (Turnstile key), fec-admin/fec_cofm_cron.php
-# (the cron key is in the file), the simplehtmldom library of com_tournaments.
+# (the cron key is in the file), the parsers of com_jackpots and com_tournaments
+# (every parser file defines the database password), the simplehtmldom library
+# of com_tournaments.
 ROOTS=(
   components/com_bonuses
   components/com_authors
@@ -95,7 +97,7 @@ for root in "${ROOTS[@]}"; do
       ! -path '*/conf/*' ! -path '*/cache/*' ! -path '*/logs/*' ! -path '*/tmp/*' \
       ! -name '*_bk*' ! -name '*_before_*' ! -name '*.bak' ! -name '*.orig' ! -name '*.log' \
       ! -name 'fec_review_config.php' ! -name 'fec_cofm_cron.php' \
-      ! -path '*/simplehtmldom/*' \
+      ! -path '*/simplehtmldom/*' ! -path '*/com_jackpots/parser/*' ! -path '*/com_tournaments/parser/*' \
       -print0 > "$list"
   n=0
   while IFS= read -r -d '' f; do
