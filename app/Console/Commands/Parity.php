@@ -338,7 +338,10 @@ class Parity extends Command
         // the review form's timestamp (form_ts = time()) and the casino cards' provider line, which
         // names one software provider drawn at random on every render (software_random_display)
         $html = preg_replace('/name="form_ts" value="\d+"/', 'name="form_ts" value="FORM_TS"', $html) ?? $html;
-        $html = preg_replace('/(<div class="review-sub">)[^<]*?(\d+ software providers?<\/div>)/', '$1PROVIDER . $2', $html) ?? $html;
+        // (the review cards and the directory's: "Relax Gaming <span ...>.</span> 75 software providers")
+        $html = preg_replace('/(<div class="(?:review-sub|cl-cofm-provider)">)(?:(?!<\/div>).)*?(\d+ software providers?<\/div>)/s', '$1PROVIDER . $2', $html) ?? $html;
+        // the jackpots' Jindex bars of the casino pages: the parsers rewrite jos_jackpots every few minutes
+        $html = preg_replace('/(<span class="cr-jpot-jindex-bar"><span style="width:)[\d.]+%/', '$1JINDEX%', $html) ?? $html;
         $html = preg_replace('/\s+/', ' ', $html) ?? $html;
         $html = preg_replace('/>\s+</', '><', $html) ?? $html;
         // one tag per line so diffs stay readable
