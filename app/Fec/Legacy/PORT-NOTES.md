@@ -186,7 +186,10 @@ settings of the live `config.sef.php` in `fec.legacy.sh404sef`. The title is the
 there) or 139; the canonical follows the five branches (an article's canonical rewritten to the
 relative `JRoute` of its own non-SEF URL, `/online-casinos/king-billy-casino`; a page with none
 gets its own URL at the top, the bare home on menu item 26 outside catid 8; more than one are all
-removed first). Measured on 28 Oct 2026 on the review, the clusters index, a cluster, a blog post
+removed first). "Menu item 26" is the item sh404SEF's router made active: the Itemid of the
+page's own non-SEF URL, none without one (the clusters are registered without an Itemid; the
+layer's menu falls back to the home, as mod_menu does for its active class, but the branches
+must not). Measured on 28 Oct 2026 on the review, the clusters index, a cluster, a blog post
 and the directory (`tests/Unit/Sh404sefPageTest.php`). The site-wide `canonical` system plugin is
 enabled in `#__extensions` but none of its raw-URI links reaches those pages: not reproduced.
 The other components keep `Sh404sefMetas` (the row only) and their own canonical, which is what

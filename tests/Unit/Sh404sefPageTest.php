@@ -29,13 +29,15 @@ final class Sh404sefPageTest extends TestCase
 
     public function test_clusters_index_without_canonical_gets_the_page_url(): void
     {
+        // registered without an Itemid: no active menu item on the live site
+        $this->assertSame([self::SITE.'/online-casinos/clusters/'], $this->canon([], '', null, 0, '/online-casinos/clusters/'));
         $this->assertSame([self::SITE.'/online-casinos/clusters/'], $this->canon([], '', 180, 0, '/online-casinos/clusters/'));
     }
 
     public function test_cluster_article_without_canonical_gets_the_page_url(): void
     {
         $this->assertSame([self::SITE.'/online-casinos/clusters/techsolutions'], $this->canon(
-            [], '/online-casinos/clusters/techsolutions', 180, 153, '/online-casinos/clusters/techsolutions'));
+            [], '/online-casinos/clusters/techsolutions', null, 153, '/online-casinos/clusters/techsolutions'));
     }
 
     public function test_blog_post_canonical_becomes_the_relative_route(): void

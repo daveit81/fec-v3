@@ -141,13 +141,18 @@ final class Sh404sefPage
             $shCanonical = (string) $row->canonical;
         }
 
-        $menu = Factory::getApplication()->getMenu()->getActive()?->id;
+        // The active item as sh404SEF's router left it: the Itemid of the page's own URL
+        // when the menu has it, none otherwise (classes/router.php sets it only then). The
+        // layer's menu falls back to the home, as mod_menu does for its "active" class; the
+        // live copy read getActive()->id, null without an Itemid, and so "not 26".
+        $itemid = JRequest::getInt('Itemid');
+        $menu = $itemid !== 0 && Factory::getApplication()->getMenu()->getItem($itemid) !== null ? $itemid : null;
         $page = request()->query('page');
 
         return self::canonicals(
             $doc->takeCanonicals(),
             $shCanonical,
-            $menu === null ? null : (int) $menu,
+            $menu,
             $catid,
             Uri::current(),
             is_scalar($page) ? (string) $page : null,
