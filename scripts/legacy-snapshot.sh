@@ -26,7 +26,8 @@ DST="${FEC_V3_ROOT:-/home/freeextr/fecv3}/legacy"
 # Never copied: fec_review_config.php (Turnstile key), fec-admin/fec_cofm_cron.php
 # (the cron key is in the file), the parsers of com_jackpots and com_tournaments
 # (every parser file defines the database password), the simplehtmldom library
-# of com_tournaments.
+# of com_tournaments, the data/ of com_jackpots (9.000 JSON files of jackpot
+# values, 223 MB: data written by the parsers, not code).
 ROOTS=(
   components/com_bonuses
   components/com_authors
@@ -98,6 +99,7 @@ for root in "${ROOTS[@]}"; do
       ! -name '*_bk*' ! -name '*_before_*' ! -name '*.bak' ! -name '*.orig' ! -name '*.log' \
       ! -name 'fec_review_config.php' ! -name 'fec_cofm_cron.php' \
       ! -path '*/simplehtmldom/*' ! -path '*/com_jackpots/parser/*' ! -path '*/com_tournaments/parser/*' \
+      ! -path '*/com_jackpots/data/*' \
       -print0 > "$list"
   n=0
   while IFS= read -r -d '' f; do
