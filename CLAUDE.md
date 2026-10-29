@@ -158,7 +158,7 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
 - `App\Fec\Url\Router::route($path)` decides every GET that no explicit route claims
   (`Route::fallback` → `FrontController`): the legacy `.htaccess` redirect lines under our paths
   first (`fec.legacy.htaccess_redirects`, `HtaccessRedirects`: the web server answered them before
-  Joomla; rewrite rules then mod_alias, as LiteSpeed orders them; since 29 Oct the whole live file
+  Joomla; mod_alias lines before rewrite rules, as LiteSpeed orders them; since 29 Oct the whole live file
   for the root switch, plus the decided 410s of login/CB/`jpots`, see PORT-NOTES), then sh404SEF's aliases (`jos_sh404sef_aliases`, `Sh404sefAliases`: checked before its own
   URLs, the request as sent and, with a query string, its path with and without the slash; the Location
   as sh404SEF wrote it, relative when the alias is a path, the stored SEF URL of any rank when it is a

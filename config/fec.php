@@ -223,11 +223,11 @@ return [
         // v3's) are named by what they match. Line 114 (allowed-countries/au|nz -> show&geo=) is an
         // internal rewrite: the registry holds both spellings of those two pages. Not reproduced: the
         // LiteSpeed cache rules (v3 pages are no-cache), the https redirect (Cloudflare), Joomla's own
-        // rules on /index.php (that file stays Joomla's: the root block leaves it out). The rewrite rules
-        // first, then mod_alias: on LiteSpeed a RewriteRule that answers ([G], [R=301], [F]) wins over a
-        // Redirect of the same path (the blog switch of 13 Oct: casino-bonus-blog/blogger/listings/peterg
-        // is 410, not the Redirect to /sitemap), while an internal rewrite does not stop the Redirect
-        // (28 Oct: /bonuses/free-cash under the v3 test block answered the Redirect).
+        // rules on /index.php (that file stays Joomla's: the root block leaves it out). Listed in file
+        // order; HtaccessRedirects answers the mod_alias lines (redirect, redirect-gone, match) before
+        // the mod_rewrite rules, as LiteSpeed does on the live server (29 Oct:
+        // /casino-bonus-blog/blogger/listings/peterg answers its Redirect to /sitemap, not the [G] above
+        // it; 28 Oct: /bonuses/free-cash answered its Redirect under the v3 rewrite).
         'htaccess_redirects' => [
             // 29 Oct, "FEC dead sections purge" (Aug 2026): the jReviews sections are 410
             ['gone', '^(online-casinos/(software|banking|countries|languages|currencies|type)|casino-reviews|reviews|countries)(/.*)?$'],
@@ -284,7 +284,7 @@ return [
             // string in their source (/jvcl/search?..., /microgaming-slots/categories/compare/?...,
             // /free-slots/categories/compare/?..., /content?nscode=...): mod_alias compares the path
             // only, they never match, and are left out.
-            ['gone', '^links_exchange(/.*)?$'],
+            ['redirect-gone', '/links_exchange'],
             ['redirect', '/video-poker-bonuses', 'https://www.freeextrachips.com/sitemap'],
             ['redirect', '/.well-known/apple-app-site-association', 'https://www.freeextrachips.com/sitemap'],
             ['redirect', '/online-casinos/craps.com-casino', 'https://www.freeextrachips.com/sitemap'],

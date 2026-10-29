@@ -61,9 +61,11 @@ class HtaccessRedirectsTest extends TestCase
             ['forbidden-query', 'base64_encode[^(]*\\([^)]*\\)'],
             ['forbidden-query', '(<|%3C)([^s]*s)+cript.*(>|%3E)', 'NC'],
             ['forbidden-query', 'GLOBALS(=|\\[|\\%[0-9A-Z]{0,2})'],
-            ['redirect', '/slots/tag', 'https://example.com/never'],
+            ['redirect', '/slots/tag/x', 'https://example.com/first'],
         ];
         $this->assertSame('gone', HtaccessRedirects::match('/slots/tag/powered-by-rival-gaming/', $rules)->kind);
+        // mod_alias before mod_rewrite, wherever the line sits (LiteSpeed)
+        $this->assertSame('https://example.com/first', HtaccessRedirects::match('/slots/tag/x', $rules)->target);
         $this->assertSame('gone', HtaccessRedirects::match('/bonuses/tag', $rules)->kind);
         $this->assertNull(HtaccessRedirects::match('/slots/tags', $rules));
         $this->assertNull(HtaccessRedirects::match('/slots/a/tag', $rules), 'only the second segment');
@@ -78,18 +80,22 @@ class HtaccessRedirectsTest extends TestCase
         $this->assertNull(HtaccessRedirects::match('/authors', $agent, '', 'Mozilla/5.0'));
     }
 
-    public function test_the_root_rules_answer_in_the_file_order(): void
+    public function test_the_root_rules_answer_mod_alias_first_then_mod_rewrite(): void
     {
         // a slice of fec.legacy.htaccess_redirects as of 29 Oct 2026, in its order
         $rules = [
             ['gone', '^(online-casinos/(software|banking|countries|languages|currencies|type)|casino-reviews|reviews|countries)(/.*)?$'],
             ['rewrite', '^blog-v2/(.+)$', '/blog/$1'],
+            ['rewrite', '^casino-bonus-blog/(latest(/page-[0-9]+)?|page-[0-9]+|categories(/.*)?)/?$', '/blog/'],
             ['gone', '^casino-bonus-blog/(tags|blogger|teamblog|archive|dashboard|login|register)(/.*)?$'],
             ['rewrite', '^casino-bonus-blog/(.+)$', '/blog/$1'],
             ['rewrite', '^(.*)\\.html$', '/$1'],
             ['gone', '^(log-in|login|create-an-account|view-user-profile|cb-[^/]+|jpots)(/.*)?$'],
+            ['match', '^/casino-bonus-blog/entry/(.*)', '/blog/$1'],
             ['redirect', '/reviews...', 'https://www.freeextrachips.com/'],
+            ['redirect-gone', '/links_exchange'],
             ['redirect', '/casino-bonus-blog/blogger/listings/peterg', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/casino-bonus-blog/categories/listings/no-deposit/feed/atom', 'https://www.freeextrachips.com/sitemap'],
             ['redirect', '/online-casinos/craps.com-casino', 'https://www.freeextrachips.com/sitemap'],
             ['redirect', '/home', 'https://www.freeextrachips.com/'],
         ];
@@ -100,8 +106,14 @@ class HtaccessRedirectsTest extends TestCase
         $this->assertSame('gone', $kind('/reviews/online-casino/casinouk.html'));
         $this->assertSame('gone', $kind('/online-casinos/software/netent'));
         $this->assertNull($kind('/online-casinos/softwares'));
-        // a RewriteRule that answers wins over a Redirect of the same path (13 Oct: 410)
-        $this->assertSame('gone', $kind('/casino-bonus-blog/blogger/listings/peterg'));
+        // a Redirect wins over the RewriteRules above it, [G] or [R=301] (LiteSpeed, 29 Oct)
+        $this->assertSame('https://www.freeextrachips.com/sitemap', $to('/casino-bonus-blog/blogger/listings/peterg'));
+        $this->assertSame('https://www.freeextrachips.com/sitemap', $to('/casino-bonus-blog/categories/listings/no-deposit/feed/atom'));
+        $this->assertSame('/blog/x', $to('/casino-bonus-blog/entry/x'));
+        $this->assertSame('gone', $kind('/casino-bonus-blog/blogger/listings/giggles7p'));
+        $this->assertSame('/blog/', $to('/casino-bonus-blog/categories/listings/no-deposit'));
+        $this->assertSame('gone', $kind('/links_exchange/x'));
+        $this->assertNull($kind('/links_exchanges'));
         $this->assertSame('/blog/a-post', $to('/casino-bonus-blog/a-post'));
         $this->assertSame('/blog/x', $to('/blog-v2/x'));
         $this->assertSame('/no_deposit', $to('/no_deposit.html'));

@@ -10,14 +10,21 @@ namespace App\Fec\Url;
  * request. The v3 block sits at the top of that file and rewrites to
  * /v3/index.php, whose own .htaccess (Laravel's) is the only one the second
  * pass reads: every rule below the block is skipped for the paths it routes.
- * So v3 answers them, in the file's order and with each directive's own
- * semantics, the targets exactly as written:
+ * So v3 answers them with each directive's own semantics, the targets exactly
+ * as written, in the order LiteSpeed applies them on the live server: the
+ * mod_alias lines first (Redirect, RedirectMatch, Redirect gone), in file
+ * order, wherever they sit in the file; then the mod_rewrite rules, in file
+ * order. Measured on 29 Oct 2026: /casino-bonus-blog/blogger/listings/peterg
+ * answers the Redirect to /sitemap, not the [G] RewriteRule above it, and
+ * .../no-deposit/feed/atom the Redirect, not the [R=301] to /blog/; on
+ * 28 Oct /bonuses/free-cash answered its Redirect under the v3 rewrite.
  *
  *   ['redirect', '/path', target]      mod_alias "Redirect 301": the source is a prefix of the
  *                                      request matched on whole segments ("/bonuses/free-cash"
  *                                      also matches "/bonuses/free-cash/x", never
  *                                      "/bonuses/free-cashier"); the rest of the path is
  *                                      appended to the target as is. 301.
+ *   ['redirect-gone', '/path']         mod_alias "Redirect gone": the same prefix match, 410 Gone.
  *   ['match', regex, target]           "RedirectMatch 301": the regex against the path with
  *                                      its leading slash, unanchored unless it anchors itself;
  *                                      $1..$9 in the target are the groups. 301.
@@ -33,6 +40,9 @@ namespace App\Fec\Url;
  */
 final class HtaccessRedirects
 {
+    /** The mod_alias directives: answered before any RewriteRule (LiteSpeed). */
+    private const MOD_ALIAS = ['redirect', 'redirect-gone', 'match'];
+
     /**
      * @param  list<array<int, string>>|null  $rules  default: fec.legacy.htaccess_redirects
      * @return ResolvedUrl|null kind "redirect" (301), "gone" (410) or "forbidden" (403), source "htaccess"
@@ -41,15 +51,23 @@ final class HtaccessRedirects
     {
         $path = '/'.ltrim(UrlRegistry::normalize($path), '/');
         $rules ??= (array) config('fec.legacy.htaccess_redirects', []);
+        $rules = array_values(array_filter($rules, fn ($r) => is_array($r) && count($r) >= 2));
+        // mod_alias first, then mod_rewrite, each in file order
+        $isAlias = fn (array $r): bool => in_array((string) $r[0], self::MOD_ALIAS, true);
+        $ordered = array_merge(array_filter($rules, $isAlias), array_filter($rules, fn ($r) => ! $isAlias($r)));
 
-        foreach ($rules as $rule) {
-            if (! is_array($rule) || count($rule) < 2) {
-                continue;
-            }
+        foreach ($ordered as $rule) {
             $type = (string) $rule[0];
             $source = (string) $rule[1];
             $third = (string) ($rule[2] ?? '');
 
+            if ($type === 'redirect-gone') {
+                if (self::aliasMatch($path, $source, '') !== null) {
+                    return new ResolvedUrl('gone', ltrim($path, '/'), [], null, null, null, null, null, 'htaccess');
+                }
+
+                continue;
+            }
             if ($type === 'gone') {
                 if (self::regexMatch(ltrim($path, '/'), $source, '') !== null) {
                     return new ResolvedUrl('gone', ltrim($path, '/'), [], null, null, null, null, null, 'htaccess');
