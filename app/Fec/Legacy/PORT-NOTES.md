@@ -405,6 +405,11 @@ script, outside sh404SEF: it answers on either host, as before.
 
 ## Known legacy behaviour reproduced on purpose (parity)
 
+- A path with an encoded "#" (`%23`, a link copied with its anchor) is looked up without it: the
+  live site answers `/online-casinos/tipbet-casino%23cd-search` with the review (200) and
+  `/bonuses/free-spins%23cd-primary-nav` with the alias of `bonuses/free-spins` (301), access log of
+  14-29 Oct 2026. `Router::withoutEncodedFragment()`, after the `.htaccess` rules (the web server
+  matched the whole path).
 - sh404SEF wrote a page title into the HTML as a preg replacement string: on a review (catid 8)
   the "Title and metas" row's title goes in unprotected, so "$1000 Free Play" shows as "00 Free
   Play" (`/online-casinos/eurofortune`: "$10" is an empty backreference); on the other pages its

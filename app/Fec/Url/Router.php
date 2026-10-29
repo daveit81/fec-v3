@@ -46,6 +46,9 @@ final class Router
             };
         }
 
+        // What sh404SEF looked up had no encoded "#": the path ends there.
+        $path = self::withoutEncodedFragment($path);
+
         // sh404SEF's aliases: checked before its own URLs (a path with an alias redirects
         // even when the registry holds it as a page), the Location as sh404SEF wrote it.
         if ($alias = Sh404sefAliases::match($path, $query)) {
@@ -138,6 +141,20 @@ final class Router
         }
 
         return new Decision('not_found', 404, $url);
+    }
+
+    /**
+     * A path with an encoded "#" (a bad link copied with its anchor: "%23cd-search")
+     * was looked up by sh404SEF without it: in the live access log of 14-29 Oct 2026
+     * /online-casinos/tipbet-casino%23cd-search answers 200 (the review) and
+     * /bonuses/free-spins%23cd-primary-nav 301 (the alias of bonuses/free-spins).
+     * The web server's own rules saw the whole path (they run before this).
+     */
+    public static function withoutEncodedFragment(string $path): string
+    {
+        $cut = stripos($path, '%23');
+
+        return $cut === false ? $path : substr($path, 0, $cut);
     }
 
     /** @return list<string> pattern names, for the probes. */
