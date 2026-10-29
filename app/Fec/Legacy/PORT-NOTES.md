@@ -331,8 +331,10 @@ file were added on 29 Oct 2026: the 410 of the dead jReviews sections (`online-c
 the blog switch (`blog-v2` and `casino-bonus-blog` to `/blog/`, its tags/blogger/feeds 410), the 301
 that strips `.html`, the mod_alias lines of the Joomla section (`/about-casino-bonuses`,
 `/casino-bonus-blog/entry/`, `/reviews...`), `Redirect gone /links_exchange`, the list of
-`redirect 301 ... /sitemap` (four lines carry a query string in their source: mod_alias compares the
-path only, they never match, left out), `/home` → `/`, `/new-casinos` → `/online-casinos`. One group
+old `redirect 301 ... /sitemap` (since 29 Oct `Redirect gone` here and in the live file, Davey's
+decision: `/sitemap` is a 404, article 714 is in the trash; the four lines with a query string in
+their source never matched, mod_alias compares the path only, and were dropped), `/home` → `/`,
+`/new-casinos` → `/online-casinos`. One group
 is not in the live file: Davey's decisions of 29 Oct (phase 4 doc, §3) make login, registration,
 Community Builder (`log-in`, `create-an-account`, `cb-*`, ...) and `/jpots` 410 on v3, and so the
 last jReviews pages and Joomla's front-end editing (see the root switch below), where the live site
