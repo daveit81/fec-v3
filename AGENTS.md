@@ -40,7 +40,12 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   `--option=com_x` walks the registry (`--view=`, `--where=type=nd`, `--sample=N --seed=S` for a
   component with thousands of URLs, `--headers-only` for the tc/ads redirects, `--bust` past the
   live cache). `fec:urls:htaccess --option=com_x --served=com_authors` ignores the URLs of the
-  components already on v3 when it chooses the prefixes.
+  components already on v3 when it chooses the prefixes. The root switch (phase 4, step 6):
+  `fec:urls:htaccess --root [--test]` prints the inverse block (everything to v3 but what Joomla
+  keeps: files, directories, `task=`/`option=` requests, `fec.legacy.root_keep`, the desk views;
+  `App\Fec\Url\RootSwitch`) with the registry counted by what v3 does with each view;
+  `fec:urls:replay <log>` routes a copy of the live access log through v3's router and lists the
+  paths whose status class would change.
 - sh404SEF's per-page "title and metas" (`jos_sh404sef_metas`, 49 rows for com_bonuses) are applied
   by the runner after the component, keyed on sh404SEF's current non-SEF URL (`Sh404sefMetas`: the
   registry's query plus the request's own variables, utm_*/gclid stripped, sorted; a page reached with a

@@ -320,6 +320,27 @@ Community Builder (`log-in`, `create-an-account`, `cb-*`, ...) and `/jpots` 410 
 site serves them from Joomla until the switch (deliberate parity diffs). The rules answer only when a
 request reaches v3: until the root block exists, the live site is unchanged.
 
+## The root switch (phase 4, step 6)
+
+The per-section blocks (`fec:urls:htaccess --option=...`) send a list of prefixes to v3; the root
+block sends **everything but what Joomla keeps** (`App\Fec\Url\RootSwitch`,
+`fec:urls:htaccess --root`): files and directories on disk (the web server serves them as now: the
+static assets, `/components/.../*.php` endpoints, `/api/`, `/og/`, `/administrator/`, `/v3/`),
+requests with `task=` or `option=` in the query string (the crons, the desks, non-SEF links), the
+registry URLs of the components and views in `fec.legacy.root_keep` and `fec.legacy.desk_views` (as
+the shortest prefixes no other canonical URL shares, exact paths otherwise) and the fixed paths of
+`root_keep.paths` (`/administrator`, `/index.php` with its path-info, `/dashboards/`). The home has
+its own rule (`^$`): the docroot is a directory, which the general rule leaves alone. `--test` gates
+both rules on `v3test=1`, the trial under the live hostname before the real switch.
+
+The command also counts the registry's canonical URLs by what v3 does with them: served (a handler
+in `Dispatcher`), answered by an `.htaccess` rule (`fec.legacy.htaccess_redirects`), kept on Joomla,
+**not ported** (v3 would answer 404: each such view needs a decision before the switch).
+`fec:urls:replay <log>` checks real traffic: every GET/HEAD of a copy of the live access log that
+the block would send to v3 is routed by v3's router (no rendering; the query string ignored) and its
+status class compared with the live one; the POSTs that would reach v3 are listed apart (the public
+fallback answers GET and HEAD only).
+
 ## sh404SEF's other tables
 
 - `jos_sh404sef_aliases` (721 rows, 27 under our paths): `App\Fec\Url\Sh404sefAliases`, checked by the

@@ -366,6 +366,17 @@ return [
             'com_bonuses.home', 'com_bonuses.add', 'com_bonuses.manage', 'com_bonuses.clicks', 'com_bonuses.actions',
         ],
 
+        // Phase 4, the root switch (App\Fec\Url\RootSwitch, fec:urls:htaccess --root): what stays on
+        // Joomla when every other path goes to v3. Besides files, directories, task=/option= requests
+        // and the desk views above: these components and views (their registry URLs, as prefixes no
+        // other URL shares) and these fixed paths (dashboards/: the React reviews desk, the Atlas
+        // dashboard and the other menu items under it).
+        'root_keep' => [
+            'options' => ['com_contactus', 'com_partnerdesk', 'com_fecsearch', 'com_fecapi'],
+            'views' => ['com_atlas.dashboard'],
+            'paths' => ['administrator', 'index.php', 'dashboards'],
+        ],
+
         // SEF paths of the desks (registry URLs): explicit routes in the web group, CSRF handled by the legacy token.
         'desk_paths' => ['methodology-admin', 'fxshield-admin', 'fxshield-verify'],
 

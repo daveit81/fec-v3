@@ -2,12 +2,14 @@
 
 namespace App\Console\Commands;
 
+use App\Fec\Url\RootSwitch;
 use App\Fec\Url\UrlRegistry;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
 /**
  * php artisan fec:urls:htaccess --option=com_authors [--test]
+ * php artisan fec:urls:htaccess --root [--test]
  *
  * Prints the block for the legacy public_html/.htaccess that sends a
  * section's public paths to the v3 app: the switch of the convivenza. Paths
@@ -20,10 +22,16 @@ use Illuminate\Support\Facades\DB;
  * the components already switched to v3: their URLs no longer block a
  * prefix ("bonuses/welcome-packages" is com_authors, so "bonuses" can be a
  * prefix of com_bonuses once com_authors is on v3; v3 routes both).
+ *
+ * --root prints the block of the root switch instead (App\Fec\Url\RootSwitch):
+ * every path to v3 but what Joomla keeps, with the registry's canonical URLs
+ * counted by what v3 does with them (served, answered by an .htaccess rule,
+ * kept on Joomla, not ported: those would be 404 on v3).
  */
 class UrlHtaccess extends Command
 {
     protected $signature = 'fec:urls:htaccess {--option= : Component (com_authors)}
+                            {--root : The root switch block: every path to v3 but what Joomla keeps}
                             {--served= : Components already served by v3, comma separated (com_authors): no conflict with their URLs}
                             {--test : Gate the rules on ?v3test=1 (pre-switch trial)}';
 
@@ -31,6 +39,10 @@ class UrlHtaccess extends Command
 
     public function handle(): int
     {
+        if ($this->option('root')) {
+            return $this->root();
+        }
+
         $option = (string) $this->option('option');
         if (! preg_match('/^com_[a-z0-9_]+$/', $option)) {
             $this->error('Give --option=com_x');
@@ -69,55 +81,7 @@ class UrlHtaccess extends Command
         }
 
         // Shortest exclusive prefix per path: no other component's URL equals it or lives under it.
-        $prefixes = [];
-        $exact = [];
-        foreach (array_keys($mine) as $path) {
-            $segments = explode('/', $path);
-            $found = null;
-            for ($n = 1; $n <= count($segments); $n++) {
-                $prefix = implode('/', array_slice($segments, 0, $n));
-                $clash = false;
-                foreach (array_keys($others) as $other) {
-                    if ($other === $prefix || str_starts_with($other, $prefix.'/')) {
-                        $clash = true;
-                        break;
-                    }
-                }
-                if (! $clash) {
-                    $found = $prefix;
-                    break;
-                }
-            }
-            if ($found !== null && $found !== $path) {
-                $prefixes[$found] = true;
-            } elseif ($found !== null) {
-                // the path itself is exclusive: a prefix if other own URLs live under it, exact otherwise
-                $deeper = false;
-                foreach (array_keys($mine) as $m) {
-                    if (str_starts_with($m, $path.'/')) {
-                        $deeper = true;
-                        break;
-                    }
-                }
-                if ($deeper) {
-                    $prefixes[$path] = true;
-                } else {
-                    $exact[$path] = true;
-                }
-            } else {
-                $exact[$path] = true;
-            }
-        }
-        // an exact path covered by a prefix is redundant
-        foreach (array_keys($exact) as $path) {
-            foreach (array_keys($prefixes) as $prefix) {
-                if ($path === $prefix || str_starts_with($path, $prefix.'/')) {
-                    unset($exact[$path]);
-                }
-            }
-        }
-        ksort($prefixes);
-        ksort($exact);
+        [$prefixes, $exact] = RootSwitch::prefixes($mine, $others);
 
         $quote = fn (string $p) => preg_quote($p, '#');
         // Requests carrying task= (snapshot crons, desk saves) stay on Joomla until those tasks are ported.
@@ -144,6 +108,32 @@ class UrlHtaccess extends Command
         $this->line(implode("\n", $lines));
         $this->comment(sprintf('%d prefix rule(s): %s', count($prefixes), implode(', ', array_keys($prefixes))));
         $this->comment(sprintf('%d exact path(s): %s', count($exact), implode(', ', array_keys($exact))));
+
+        return self::SUCCESS;
+    }
+
+    private function root(): int
+    {
+        $switch = RootSwitch::fromRegistry();
+
+        // what v3 does with the registry's canonical URLs, by option.view
+        $order = [RootSwitch::V3, RootSwitch::JOOMLA, RootSwitch::NOT_PORTED];
+        $classes = array_keys($switch->stats);
+        usort($classes, fn ($a, $b) => [array_search($a, $order, true) === false ? 9 : array_search($a, $order, true), $a]
+            <=> [array_search($b, $order, true) === false ? 9 : array_search($b, $order, true), $b]);
+        foreach ($classes as $class) {
+            $keys = $switch->stats[$class];
+            uasort($keys, fn ($a, $b) => $b[0] <=> $a[0]);
+            $this->info(sprintf('%s: %d URL(s)', $class, array_sum(array_map(fn ($k) => $k[0], $keys))));
+            $this->table(['option.view', 'URLs', 'samples'], array_map(
+                fn ($key, $v) => [$key, number_format($v[0]), implode('  ', $v[1])],
+                array_keys($keys), $keys
+            ));
+        }
+
+        $this->line(implode("\n", $switch->block((bool) $this->option('test'), date('Y-m-d'))));
+        $this->comment(sprintf('Joomla keeps %d prefix(es): %s', count($switch->prefixes), implode(', ', $switch->prefixes)));
+        $this->comment(sprintf('Joomla keeps %d exact path(s): %s', count($switch->exact), implode(', ', $switch->exact)));
 
         return self::SUCCESS;
     }
