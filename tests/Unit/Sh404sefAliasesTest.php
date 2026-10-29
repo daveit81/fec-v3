@@ -15,11 +15,33 @@ class Sh404sefAliasesTest extends TestCase
         'index.php?option=com_bonuses&Itemid=911&lang=en&type=sl&view=show' => 'bonuses/slots-bonuses',
         'index.php?option=com_bonuses&bid=3484&cid=923&lang=en&type=nd&view=details' => 'bonuses/casinomax/usd30-no-deposit-bonus-id3484',
         'index.php?option=com_jreviews&Itemid=911&lang=en' => 'no-deposit',
+        'index.php?option=com_content&Itemid=180&id=8&lang=en&view=category' => 'online-casinos',
     ];
 
-    private function target(string $newurl, string $path, string $query = ''): ?string
+    private function target(string $newurl, string $path, string $query = '', ?string $alias = null): ?string
     {
-        return Sh404sefAliases::target($newurl, $path, $query, fn (string $n) => self::REGISTRY[$n] ?? '');
+        return Sh404sefAliases::target($newurl, $path, $query, fn (string $n) => self::REGISTRY[$n] ?? '', $alias);
+    }
+
+    public function test_the_lookup_adds_the_path_spellings_only_with_a_query_string(): void
+    {
+        $this->assertSame(['online-casinos'], Sh404sefAliases::candidates('online-casinos'));
+        $this->assertSame(['online-casinos?b=2&a=1', 'online-casinos', 'online-casinos/'], Sh404sefAliases::candidates('online-casinos', 'b=2&a=1'));
+        $this->assertSame(['bonuses/?x=1', 'bonuses/'], Sh404sefAliases::candidates('bonuses/', 'x=1'));
+        $this->assertSame(['?x=1'], Sh404sefAliases::candidates('', 'x=1'));
+    }
+
+    public function test_a_com_content_target_keeps_the_request_variables_sorted(): void
+    {
+        $dir = 'index.php?option=com_content&Itemid=180&id=8&lang=en&view=category';
+        // 29 Oct 2026: the alias "online-casinos/" of the directory
+        $this->assertSame('https://www.freeextrachips.com/online-casinos?a=1&b=2', $this->target($dir, 'online-casinos', 'b=2&a=1', 'online-casinos/'));
+        $this->assertSame('https://www.freeextrachips.com/online-casinos?filters=crypto&sort=newest', $this->target($dir, 'online-casinos', 'sort=newest&filters=crypto', 'online-casinos/'));
+        // already the page, as sent: served
+        $this->assertNull($this->target($dir, 'online-casinos', 'sort=newest', 'online-casinos/'));
+        $this->assertNull($this->target($dir, 'online-casinos', 'filters=accepts_country,crypto&sort=newest', 'online-casinos/'));
+        // the slash spelling goes to the page
+        $this->assertSame('https://www.freeextrachips.com/online-casinos', $this->target($dir, 'online-casinos/', '', 'online-casinos/'));
     }
 
     public function test_a_path_target_is_sent_as_written_with_the_query_string(): void

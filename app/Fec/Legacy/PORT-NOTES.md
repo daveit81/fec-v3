@@ -276,7 +276,13 @@ there too.**
   router after the `.htaccess` rules and before the URL registry, with sh404SEF's behaviour read off
   the live site (a path target is the Location as written, relative, the request's query string
   appended; an `index.php` target is the SEF URL stored for that exact newurl of any rank, absolute,
-  no query, the home when none is stored; an alias of the requested page itself serves the page).
+  the home when none is stored; an alias of the requested page itself serves the page). Read again
+  in sh404SEF's code on 29 Oct 2026 (`_checkAliases`, `shCheckRedirect`): with a query string the
+  lookup also tries the path with and without the trailing slash (the alias sorting last wins), the
+  query goes into the non-SEF target and the target is routed: com_content (sh404SEF's own plugin)
+  keeps the variables it does not encode, sorted and decoded, com_bonuses' `sefGetLocation` drops
+  them; no redirect when the result is the requested URL as sent. The directory has the alias
+  `online-casinos/`: `/online-casinos?b=2&a=1` 301s to `?a=1&b=2`, `?sort=newest` is served.
 - `jos_sh404sef_metas` (810 rows, 49 for com_bonuses): `App\Fec\Legacy\Sh404sefMetas`, applied by
   the runner after the component on sh404SEF's current non-SEF URL (the page's own plus the
   request's query variables, see above; title, description, keywords, robots, canonical when

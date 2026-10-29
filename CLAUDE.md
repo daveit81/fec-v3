@@ -156,8 +156,11 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   (`Route::fallback` → `FrontController`): the legacy `.htaccess` redirect lines under our paths
   first (`fec.legacy.htaccess_redirects`, `HtaccessRedirects`: the web server answered them before
   Joomla), then sh404SEF's aliases (`jos_sh404sef_aliases`, `Sh404sefAliases`: checked before its own
-  URLs, the Location as sh404SEF wrote it, relative when the alias is a path, the stored SEF URL of
-  any rank when it is a query, the home when none is stored), then `jos_sh404sef_urls` (a known URL
+  URLs, the request as sent and, with a query string, its path with and without the slash; the Location
+  as sh404SEF wrote it, relative when the alias is a path, the stored SEF URL of any rank when it is a
+  query (a com_content one keeps the request's variables, sorted: `online-casinos?b=2&a=1` 301s to
+  `?a=1&b=2`), the home when none is stored, no redirect when that is the request itself), then
+  `jos_sh404sef_urls` (a known URL
   is served, or redirected to its stored spelling;
   the request's own slash spelling wins when both are stored), then the run-time patterns
   (`app/Fec/Url/Patterns`, e.g. `/bonuses/<casino>/<slug>-id<bid>`), then `jos_redirection` —
