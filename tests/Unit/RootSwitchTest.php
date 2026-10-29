@@ -49,6 +49,8 @@ final class RootSwitchTest extends TestCase
     {
         $switch = $this->sample();
         $this->assertFalse($switch->keeps('/'));
+        $this->assertTrue($switch->keeps('/', '', 'POST'));
+        $this->assertFalse($switch->keeps('/blog/', '', 'HEAD'));
         $this->assertFalse($switch->keeps('/', 'fbclid=x'));
         $this->assertTrue($switch->keeps('/', 'option=com_jackpots&task=data.update'));
         $this->assertTrue($switch->keeps('/online-casinos', 'x=1&task=save'));
@@ -68,7 +70,8 @@ final class RootSwitchTest extends TestCase
     public function test_the_block(): void
     {
         $block = implode("\n", $this->sample()->block(false, '2026-10-29'));
-        $this->assertStringContainsString("RewriteCond %{QUERY_STRING} !(^|&)(task|option)=\nRewriteRule ^$ /v3/index.php [L]", $block);
+        $this->assertStringContainsString("RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$\nRewriteCond %{QUERY_STRING} !(^|&)(task|option)=\nRewriteRule ^$ /v3/index.php [L]", $block);
+        $this->assertSame(2, substr_count($block, 'RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$'));
         $this->assertStringContainsString('RewriteCond %{REQUEST_URI} !^/(administrator|dashboards|index\.php)(/|$)', $block);
         $this->assertStringContainsString('RewriteCond %{REQUEST_URI} !^/(bonuses/desk|contactus|methodology\-admin)/?$', $block);
         $this->assertStringContainsString("RewriteCond %{REQUEST_FILENAME} !-d\nRewriteCond %{REQUEST_URI}", $block);

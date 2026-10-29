@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\DB;
  *   - files and directories on disk (the web server serves them, as now);
  *   - requests carrying task= or option= in the query string (crons, desks,
  *     non-SEF links: /index.php?option=com_jackpots&task=data.update...);
+ *   - every method but GET and HEAD (Joomla's login module and forms posted
+ *     to "/" or a SEF path with the task in the body; v3's public fallback
+ *     answers GET and HEAD only);
  *   - the registry URLs of the components and views that stay on Joomla
  *     (fec.legacy.root_keep: options, views, plus the desk views), as the
  *     shortest prefixes that no other registry URL shares;
@@ -200,8 +203,11 @@ final class RootSwitch
     }
 
     /** Does Joomla keep this request? The path as requested (leading slash or not), the raw query string. */
-    public function keeps(string $path, string $query = ''): bool
+    public function keeps(string $path, string $query = '', string $method = 'GET'): bool
     {
+        if (! in_array(strtoupper($method), ['GET', 'HEAD'], true)) {
+            return true;
+        }
         if ($query !== '' && preg_match('/(^|&)(task|option)=/', $query)) {
             return true;
         }
@@ -236,7 +242,7 @@ final class RootSwitch
     public function block(bool $test = false, string $date = ''): array
     {
         $quote = fn (string $p) => preg_quote($p, '#');
-        $cond = ['RewriteCond %{QUERY_STRING} !(^|&)(task|option)='];
+        $cond = ['RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$', 'RewriteCond %{QUERY_STRING} !(^|&)(task|option)='];
         if ($test) {
             $cond[] = 'RewriteCond %{QUERY_STRING} (^|&)v3test=1(&|$)';
         }
@@ -247,7 +253,7 @@ final class RootSwitch
             ? 'TEST: only with v3test=1 in the query string; drop the two v3test RewriteCond lines to switch for real'
             : 'Right below the per-section blocks (com_bonuses, com_authors, goto), which stay. Roll back: remove this block');
         $lines[] = '# Everything else goes to v3 where Joomla\'s catch-all took it (same REQUEST_URI condition)';
-        $lines[] = '# Joomla keeps: files and directories on disk, task= and option= requests, '.implode(', ', array_merge(
+        $lines[] = '# Joomla keeps: files and directories on disk, POST and other non-GET requests, task= and option= requests, '.implode(', ', array_merge(
             array_map(fn ($p) => '/'.$p.'/...', $this->prefixes),
             array_map(fn ($p) => '/'.$p, $this->exact),
         ));

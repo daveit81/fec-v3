@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Fec\Url\PageHandler;
 use App\Fec\Url\Redirects;
 use App\Fec\Url\Router;
+use App\Fec\Url\WwwRedirect;
 use App\Models\Fec\Article;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -41,6 +42,21 @@ class FrontController extends Controller
         // (getQueryString() normalises the order and the encoding).
         $rawQuery = (string) $request->server->get('QUERY_STRING', '');
         $decision = $router->route($request->getPathInfo(), $rawQuery !== '' ? $rawQuery : null, (string) $request->userAgent());
+
+        // sh404SEF's start-up: the bare domain goes to www (after the web server's own rules,
+        // before any alias or URL lookup), path and query string as sent.
+        if ($decision->url->source !== 'htaccess') {
+            $www = WwwRedirect::target(
+                (string) config('fec.site_url'),
+                $request->getHost(),
+                $request->getMethod(),
+                (string) $request->server->get('REQUEST_URI', '/'),
+                (string) $request->headers->get('X-Requested-With', ''),
+            );
+            if ($www !== null) {
+                return response('', 301, ['Location' => $www]);
+            }
+        }
 
         // What the web server itself answered for these paths (LiteSpeed's own error pages).
         if (in_array($decision->action, ['gone', 'forbidden'], true)) {

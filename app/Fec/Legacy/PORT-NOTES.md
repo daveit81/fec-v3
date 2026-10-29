@@ -316,8 +316,9 @@ that strips `.html`, the mod_alias lines of the Joomla section (`/about-casino-b
 `redirect 301 ... /sitemap` (four lines carry a query string in their source: mod_alias compares the
 path only, they never match, left out), `/home` → `/`, `/new-casinos` → `/online-casinos`. One group
 is not in the live file: Davey's decisions of 29 Oct (phase 4 doc, §3) make login, registration,
-Community Builder (`log-in`, `create-an-account`, `cb-*`, ...) and `/jpots` 410 on v3, where the live
-site serves them from Joomla until the switch (deliberate parity diffs). The rules answer only when a
+Community Builder (`log-in`, `create-an-account`, `cb-*`, ...) and `/jpots` 410 on v3, and so the
+last jReviews pages and Joomla's front-end editing (see the root switch below), where the live site
+serves them from Joomla until the switch (deliberate parity diffs). The rules answer only when a
 request reaches v3: until the root block exists, the live site is unchanged.
 
 ## The root switch (phase 4, step 6)
@@ -329,7 +330,8 @@ goto), which stay: they send their whole prefixes, a dot in the last segment inc
 (`/bonuses/goldbet.io-casino`). Joomla's catch-all (line 347 of the live file) only took a last
 segment without a dot or ending in `.php`, `.htm(l)`, `.feed`, `.pdf`, `.vcf`, `.raw`, plus
 `/component/`: the root block copies that `REQUEST_URI` condition, so `/.env` or a missing
-`/x/y.jpg` keeps the web server's 404, and keeps `/component/` on Joomla. What Joomla keeps: files
+`/x/y.jpg` keeps the web server's 404, and keeps `/component/` on Joomla. What Joomla keeps: every method but GET and HEAD (forms posted to `/` or
+to a SEF path with the task in the body; v3's public fallback answers GET and HEAD only), files
 and directories on disk (the web server serves them as now: the static assets,
 `/components/.../*.php` endpoints, `/api/`, `/og/`, `/administrator/`; a directory with rewrite rules
 of its own, `/fxclock/`, `/v3/`, is never read by the root file's rules at all), requests with
@@ -342,14 +344,27 @@ The home has its own rule (`^$`): the docroot is a directory, which the general 
 
 The command also counts the registry's canonical URLs by what v3 does with them: served (a handler
 in `Dispatcher`), answered by an `.htaccess` rule (`fec.legacy.htaccess_redirects`), kept on Joomla,
-**not ported** (v3 would answer 404: listed in full, each needs a decision before the switch).
+**not ported** (v3 would answer 404: listed in full, each needs a decision before the switch). Decided
+by Davey on 29 Oct: the jReviews pages still alive (`online-casinos/jurisdiction(s)/...`,
+`online-casinos/rabobank/`, `/jreviews`) and Joomla's front-end editing (`create-new-article` and its
+`<catid>/` and `f/` forms) are 410 on v3; `/freeextrachips-team` (com_contact) stays on Joomla.
 `fec:urls:replay <log>` checks real traffic: every GET/HEAD of a copy of the live access log that
-the block would send to v3 is routed by v3's router (the query string ignored; the T&C and ad-click
-views count as the redirects they answer when they run) and its status class compared with the
-live one; `--render=N` renders up to N of the paths that still differ, one process each, and
-compares the status v3 really answers. The POSTs that would reach v3 are listed apart (the public
-fallback answers GET and HEAD only). The log has no Host: a redirect the live site answers for
-another hostname shows as a difference.
+the block would send to v3 is routed by v3's router and its status class compared with the classes
+the live site answered for that path (a path asked on the bare domain answers 301 there, see below,
+and 200 or 404 on www: the log has no Host). A path apart is routed again with a query string the
+live site saw with its main status (the exploit filters, the aliases with a query); `--render=N`
+renders up to N of those still apart, one process each, for the status v3 really answers. The T&C
+and ad-click views count as the redirects they answer when they run, and are never rendered (a click
+is logged). What v3 answers with one of its `.htaccess` rules is listed apart from the rest.
+
+**The bare domain.** sh404SEF's start-up (`_checkDomain`, "enforce www") answered every request
+on `freeextrachips.com` with a 301 to the same URL on www, path and query string as sent, after the
+web server's own rules and before any alias or URL lookup, and only when `_canRedirectFrom()` allowed
+it (GET, no `tmpl=component`, `no_html=1`, `index2.php`, no XMLHttpRequest). The live access log
+shows it (PetalBot and scanners: 301, then 200 or 404 for the same path on www). `WwwRedirect`
+reproduces it in `FrontController`, for every answer that is not an `.htaccess` rule's; only the
+bare domain of `fec.site_url` moves (v3's own hostname never does). `/goto.php` was a standalone
+script, outside sh404SEF: it answers on either host, as before.
 
 ## sh404SEF's other tables
 

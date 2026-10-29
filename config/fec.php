@@ -254,6 +254,10 @@ return [
             // login, registration and Community Builder, and the jackpot pages of com_jackpots, are 410
             // (on the live site Joomla serves them until the root switch; its data.update task stays)
             ['gone', '^(log-in|login|create-an-account|lost-password|lost-user-name|edit-user-details|view-user-profile|view-your-user-details|forgotten-password|community|register|reset|remind|user-profile|cb-[^/]+|jpots)(/.*)?$'],
+            // Davey, 29 Oct (root switch): the jReviews pages still alive on the live site (200) go the
+            // way of the August purge, and Joomla's front-end editing (303 to the home or 403 there)
+            ['gone', '^(online-casinos/(jurisdictions?|rabobank)|jreviews)(/.*)?$'],
+            ['gone', '^([0-9]+/|f/([0-9]+/)?)?create-new-article(/.*)?$'],
             // 462 (^bonuses/free-spins$ -> free-spins/ [R=301]) is dead on the live site: it sits below
             // Joomla's catch-all RewriteRule (.* index.php [L]); the 301 the live site answers comes from
             // the sh404SEF alias "bonuses/free-spins" (Sh404sefAliases), which v3 reads from the table.
@@ -373,7 +377,8 @@ return [
         // dashboard and the other menu items under it; component/: Joomla's non-SEF paths, which its
         // catch-all routes whatever their extension).
         'root_keep' => [
-            'options' => ['com_contactus', 'com_partnerdesk', 'com_fecsearch', 'com_fecapi'],
+            // com_contact: /freeextrachips-team (Davey, 29 Oct)
+            'options' => ['com_contactus', 'com_contact', 'com_partnerdesk', 'com_fecsearch', 'com_fecapi'],
             'views' => ['com_atlas.dashboard'],
             'paths' => ['administrator', 'component', 'index.php', 'dashboards'],
         ],
