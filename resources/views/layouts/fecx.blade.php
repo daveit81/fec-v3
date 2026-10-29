@@ -14,6 +14,8 @@
     $assets = rtrim(config('fec.asset_base'), '/');
     $siteUrl = rtrim(config('fec.site_url'), '/');
     $gtm = config('app.env') === 'production' ? config('fec.gtm_id') : null;
+    // the home: the template's own assets are on the document, in the template's order (HomeTemplate)
+    $docHasTemplateAssets = isset($doc) && is_object($doc) && isset($doc->styleSheets) && array_key_exists(\App\Fec\Legacy\Joomla\Uri::base(true).'/css/fecv2.css', $doc->styleSheets);
 @endphp
 <!doctype html>
 <html lang="en-gb" dir="ltr">
@@ -62,12 +64,16 @@
   <link href="{{ $assets }}/favicon.ico" rel="shortcut icon" type="image/vnd.microsoft.icon" />
 @yield('head_links')
 @yield('head_styles')
+@unless ($docHasTemplateAssets)
   <link rel="stylesheet" href="{{ $assets }}/css/fecv2.css" type="text/css" />
   <link rel="stylesheet" href="{{ $assets }}/css/fec-edition.css" type="text/css" />
+@endunless
 @stack('head')
 @yield('head_scripts')
+@unless ($docHasTemplateAssets)
   <script src="{{ $assets }}/js/fecv2.js" type="text/javascript" defer="defer"></script>
   <script src="{{ $assets }}/js/scrollspy.js?v=1" type="text/javascript" defer="defer"></script>
+@endunless
   <script type="text/javascript">
 function do_nothing() { return; }
   </script>

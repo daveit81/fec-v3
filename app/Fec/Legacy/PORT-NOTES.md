@@ -169,7 +169,10 @@ component with its plugins (the home article's head stays, `fechome` processes i
 then `App\Fec\Legacy\HomeTemplate`, the `$isHome` branch of `templates/fecv2/index.php`: the
 title and description it set, its Open Graph and Twitter tags after the head (`head_after`), the
 sections in its order with its country and its fallback message (`sections()`, under
-`LegacyErrors`), "is-home" on the body, "fec-main--home" on `<main>`, no message container. Then
+`LegacyErrors`), "is-home" on the body, "fec-main--home" on `<main>`, no message container; the
+template's own stylesheets and scripts go on the document first (`templateAssets()`, lines 16-26
+and 72 of `index.php`) and the layout prints none of its fixed ones, so the sections' assets
+(`fec_fxrate.css`, `fxclock.css`, `fxclock.js`) follow them as on the live page. Then
 `Sh404sefPage` with the home's metas row (sh404SEF's home code) and the canonical branches (the
 bare home on menu item 26, given its slash by `feccanonicalfix`), then the system plugins. The
 status page keeps "/" on the development hostname (APP_URL), where `/__home` shows the home.

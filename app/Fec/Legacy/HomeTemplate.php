@@ -4,6 +4,7 @@ namespace App\Fec\Legacy;
 
 use App\Fec\Legacy\Joomla\Document;
 use App\Fec\Legacy\Joomla\Factory;
+use App\Fec\Legacy\Joomla\Uri;
 use Exception;
 
 /**
@@ -28,9 +29,27 @@ final class HomeTemplate
 
     public const OG_IMAGE_ALT = "FreeExtra \u{00b7} Chips \u{2014} Casino bonuses verified by real players";
 
+    /**
+     * Lines 16-26 and 72 of index.php, which every page runs before its own
+     * sections: the template's stylesheets and scripts. The component's assets
+     * came first on every other page (the component ran before the template)
+     * and the layout prints them from the document before its own fixed lines;
+     * on the home the sections run inside the template, after these, so the
+     * document holds the template's assets first and the layout prints no fixed
+     * line of its own (see layouts/fecx.blade.php).
+     */
+    public static function templateAssets(Document $doc): void
+    {
+        $doc->addStyleSheet(Uri::base(true).'/css/fecv2.css');
+        $doc->addScript(Uri::base(true).'/js/fecv2.js', 'text/javascript', true);
+        $doc->addScript(Uri::root(true).'/js/scrollspy.js?v=1', 'text/javascript', true);
+        $doc->addStyleSheet(Uri::base(true).'/css/fec-edition.css');
+    }
+
     /** Lines 74-99 of index.php: the homepage SEO overrides, set before the head is rendered. */
     public static function head(Document $doc): void
     {
+        self::templateAssets($doc);
         $doc->setTitle(self::TITLE);
         $doc->setMetaData('description', self::DESCRIPTION);
     }
