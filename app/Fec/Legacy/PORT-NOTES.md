@@ -169,7 +169,9 @@ files). `App\Fec\Legacy\MenuModule` is the module: its params from `jos_modules`
 `mod_menu` of the position, first by ordering), `getList()` = Joomla 2.5's `ModMenuHelper::getList()`
 (items of the menutype filtered by the guest's view levels as `JMenuSite::getItems()` did; component
 items linked as `index.php?Itemid=N`, which `JRoute` expands to the item's link as
-`JRouterSite::_createURI()` did; the `continue` of the separator branch is a `break` in PHP, so
+`JRouterSite::_createURI()` did, then looks up as sh404SEF stored it: the item's full link, or
+option and Itemid alone, as the jReviews item 426 "Casino Reviews" (`view=category`) is stored,
+`online-casinos` <- `index.php?option=com_jreviews&Itemid=426&lang=en`; the `continue` of the separator branch is a `break` in PHP, so
 separators get their title escaped and empty anchor attributes too), `render()` = `mod_menu.php`
 (`$active_id`, `$path` = the active item's tree, `$class_sfx`), the layout through
 `JModuleHelper::getLayoutPath()`. `JMenu` now builds each item's `tree` (parent's tree plus its id)

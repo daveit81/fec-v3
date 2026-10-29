@@ -58,11 +58,13 @@ class Route
         // JRouterSite::_createURI(): an Itemid without an option stands for that menu
         // item's link (setQuery($item->query), then setVar('Itemid')), as mod_menu's
         // "index.php?Itemid=N" links are built in SEF mode
+        $menuLink = null;
         if (! isset($query['option']) && isset($query['Itemid']) && is_numeric($query['Itemid'])) {
             $item = Factory::getApplication()->getMenu()->getItem((int) $query['Itemid']);
             if ($item !== null && ($item->query['option'] ?? '') !== '') {
                 $query = array_merge($item->query, ['Itemid' => (string) (int) $query['Itemid']]);
                 $url = 'index.php?'.http_build_query($query);
+                $menuLink = 'index.php?option='.$query['option'].'&Itemid='.$query['Itemid'].'&lang=en';
             }
         }
 
@@ -88,6 +90,12 @@ class Route
             // the stored row of that newurl whatever its rank; then the tolerant match
             $path = $registry->storedPath(Sh404sefMetas::sortUrl(self::withLang($url)))
                 ?? $registry->pathFor($url, true);
+            // a menu item's link that the component's sh404SEF plugin stored as option and
+            // Itemid alone: the jReviews item 426 ("Casino Reviews", view=category) is the row
+            // online-casinos <- index.php?option=com_jreviews&Itemid=426&lang=en
+            if ($path === null && $menuLink !== null) {
+                $path = $registry->storedPath(Sh404sefMetas::sortUrl($menuLink));
+            }
             if ($path !== null) {
                 return $path.$suffix;
             }
