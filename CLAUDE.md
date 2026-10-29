@@ -173,8 +173,9 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   `jos_sh404sef_urls` (a known URL
   is served, or redirected to its stored spelling;
   the request's own slash spelling wins when both are stored), then the run-time patterns
-  (`app/Fec/Url/Patterns`, e.g. `/bonuses/<casino>/<slug>-id<bid>`), then `jos_redirection` —
-  Joomla's redirect plugin only ever fired on a 404, so its rules apply to paths nobody else knows.
+  (`app/Fec/Url/Patterns`, e.g. `/bonuses/<casino>/<slug>-id<bid>`). `jos_redirection` (sh404SEF
+  1.x's table) is off (`fec.router.legacy_redirection`): no plugin of Joomla 2.5 reads it, the live
+  site answers 404 where its rules would redirect (checked 29 Oct 2026).
 - A ported view = one `PageHandler` class registered in `Dispatcher::HANDLERS` under `option.view`.
   Unregistered views answer 404 (with the decision shown on the dev hostname only).
 - Probes: `php artisan fec:urls:resolve <path>...` (`--json`) and `GET /__registry?path=` on `v3.`.

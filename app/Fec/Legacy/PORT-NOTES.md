@@ -393,8 +393,12 @@ script, outside sh404SEF: it answers on either host, as before.
   J2.5's `JURI::buildQuery()` wrote them (`urldecode(http_build_query())`): the directory's chips
   link `?filters=accepts_country,crypto`, not `%2C`; spaces become `%20` (JRoute::_).
 - `jos_redirection` has the schema of sh404SEF 1.x's URL table (cpt, rank, dateadd): it is that
-  old table, not a list of the desk's redirects; the router still consults it last, as the Joomla
-  redirect plugin did on a 404 (to be re-read in phase 4).
+  old table, not a list of the desk's redirects. Re-read in phase 4 (29 Oct 2026): no plugin of
+  Joomla 2.5 reads it (the enabled `shsef` and `jredirect` are Joomla 1.5 files, `plugins/system/
+  <name>.php`, which the 2.5 loader never includes), and the live site answers 404 where its rules
+  made v3 redirect (`/strategies/`, `/strategies/blackjack/`, three paths of the access log, to raw
+  `index.php?option=...` targets). The router no longer consults it (`fec.router.legacy_redirection`,
+  default false).
 
 - `jexit()`/`JApplication::close()` and `JApplication::redirect()` raise `ExitException` and
   `RedirectException`, both `Error`s: on the live site they ended the request, and the 213

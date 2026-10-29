@@ -14,7 +14,10 @@ use Throwable;
  *   0c. the home            "/" is the home menu item (jos_menu home = 1), never a row of the table
  *   1. jos_sh404sef_urls    canonical page, duplicate of a page, slash spelling, recorded 404
  *   2. run-time patterns    URL families sh404SEF never stored (bonus details)
- *   3. jos_redirection      the desk's 301s: Joomla's redirect plugin only fired on a 404
+ *   3. jos_redirection      off by default (fec.router.legacy_redirection): the table of sh404SEF 1.x,
+ *                           read by no plugin of Joomla 2.5 (shsef and jredirect are J1.5 files the
+ *                           2.5 loader never includes); on 29 Oct 2026 the live site answered 404
+ *                           where v3 answered its 301s (/strategies/, /strategies/blackjack/)
  *
  * Aliases (rank > 0) are served as pages, as the live Joomla does (checked
  * 25 Oct 2026: 200 with a self-referencing canonical); fec.router.alias_redirect
@@ -76,7 +79,7 @@ final class Router
             }
         }
 
-        if ($rule = $this->registry->redirectFor($path)) {
+        if (config('fec.router.legacy_redirection', false) && ($rule = $this->registry->redirectFor($path))) {
             return new Decision('redirect', 301, $rule, $rule->target);
         }
 

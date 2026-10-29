@@ -87,6 +87,13 @@ return [
         // canonical, so parity means false. true answers 301 to the rank-0
         // spelling instead: a phase 6 option, never during the convivenza.
         'alias_redirect' => filter_var(env('FEC_ROUTER_ALIAS_REDIRECT', false), FILTER_VALIDATE_BOOL),
+
+        // jos_redirection (3,840 rows, the URL table of sh404SEF 1.x) as a last resort for unknown
+        // paths. Dead on the live site: no plugin of Joomla 2.5 reads it (shsef and jredirect are
+        // Joomla 1.5 files the 2.5 loader never includes), and on 29 Oct 2026 the live site answered
+        // 404 where these rules made v3 answer 301 (/strategies/, /strategies/blackjack/ and three
+        // paths of the access log). Parity means false; the table stays for fec:urls:stats.
+        'legacy_redirection' => filter_var(env('FEC_ROUTER_LEGACY_REDIRECTION', false), FILTER_VALIDATE_BOOL),
     ],
 
     'legacy' => [
