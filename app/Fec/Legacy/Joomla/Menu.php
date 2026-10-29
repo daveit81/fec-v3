@@ -25,24 +25,66 @@ class Menu
     {
         if ($this->items === null) {
             $this->items = [];
-            foreach (MenuItem::query()->site()->orderBy('lft')->get() as $row) {
+            // JMenuSite::load(): published site items below the root, in tree order
+            foreach (MenuItem::query()->site()->where('parent_id', '>', 0)->orderBy('lft')->get() as $row) {
                 $this->items[(int) $row->id] = $this->toObject($row);
             }
+            $this->items = self::withTrees($this->items);
         }
 
         return $this->items;
     }
 
+    /**
+     * JMenuSite::load(): each item's tree is its parent's tree plus its own id
+     * (items arrive in lft order, parents first); an item whose parent is not
+     * loaded starts a tree of its own.
+     *
+     * @param  array<int, object>  $items
+     * @return array<int, object>
+     */
+    private static function withTrees(array $items): array
+    {
+        foreach ($items as $item) {
+            $parentTree = isset($items[$item->parent_id]) ? $items[$item->parent_id]->tree : [];
+            $parentTree[] = $item->id;
+            $item->tree = $parentTree;
+        }
+
+        return $items;
+    }
+
+    /**
+     * A menu over given items (tests): objects with the columns of toObject(),
+     * in tree order.
+     *
+     * @param  list<object>  $items
+     */
+    public static function fromItems(array $items): self
+    {
+        $menu = new self;
+        $menu->items = [];
+        foreach ($items as $item) {
+            $item->tree = [];
+            $menu->items[(int) $item->id] = $item;
+        }
+        $menu->items = self::withTrees($menu->items);
+
+        return $menu;
+    }
+
     private function toObject(MenuItem $row): object
     {
         $item = new \stdClass;
-        foreach (['id', 'menutype', 'title', 'alias', 'path', 'link', 'type', 'published', 'parent_id', 'level', 'component_id', 'ordering', 'access', 'home', 'language', 'note'] as $col) {
+        foreach (['id', 'menutype', 'title', 'alias', 'path', 'link', 'type', 'published', 'parent_id', 'level', 'component_id', 'ordering', 'access', 'home', 'language', 'note', 'browserNav', 'img', 'template_style_id'] as $col) {
             $item->{$col} = $row->{$col};
         }
         $item->id = (int) $item->id;
         $item->parent_id = (int) $item->parent_id;
         $item->level = (int) $item->level;
         $item->home = (int) $item->home;
+        $item->access = (int) $item->access;
+        $item->browserNav = (int) $item->browserNav;
         $item->params = new Registry((string) $row->params);
         $item->query = UrlRegistry::parseQuery((string) $row->link);
         // JMenuSite joined #__extensions for the component's element: the link's option

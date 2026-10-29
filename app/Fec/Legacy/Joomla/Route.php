@@ -55,6 +55,17 @@ class Route
         $fragment = (string) (parse_url($url, PHP_URL_FRAGMENT) ?? '');
         $suffix = $fragment !== '' ? '#'.$fragment : '';
 
+        // JRouterSite::_createURI(): an Itemid without an option stands for that menu
+        // item's link (setQuery($item->query), then setVar('Itemid')), as mod_menu's
+        // "index.php?Itemid=N" links are built in SEF mode
+        if (! isset($query['option']) && isset($query['Itemid']) && is_numeric($query['Itemid'])) {
+            $item = Factory::getApplication()->getMenu()->getItem((int) $query['Itemid']);
+            if ($item !== null && ($item->query['option'] ?? '') !== '') {
+                $query = array_merge($item->query, ['Itemid' => (string) (int) $query['Itemid']]);
+                $url = 'index.php?'.http_build_query($query);
+            }
+        }
+
         // com_content links carry Joomla's "id:alias" slugs (ContentHelperRoute builds
         // them, the blog and the reviews link that way); sh404SEF stored the numeric
         // ids, and so does the registry.

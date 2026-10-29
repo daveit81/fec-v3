@@ -67,6 +67,7 @@ final class Runtime
         'JModelLegacy' => Model::class,
         'JPlugin' => Plugin::class,
         'JPluginHelper' => PluginHelper::class,
+        'JModuleHelper' => ModuleHelper::class,
         'JDispatcher' => Dispatcher::class,
         'JCategories' => Categories::class,
         'JCategoryNode' => CategoryNode::class,

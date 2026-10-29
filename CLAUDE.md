@@ -120,6 +120,10 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   (`HomeTemplate`): `Router::home()` answers "/" on the live hostname, the status page keeps "/"
   on the development one (APP_URL), where `/__home` shows the home. com_atlas (public views only:
   the dashboard stays on Joomla) and com_tournaments are verbatim copies under `site/components/`.
+  The primary navigation is the live mod_menu module (`MenuModule`: `jos_modules` params, Joomla
+  2.5's `ModMenuHelper::getList()` over `jos_menu`, the fecv2 override under
+  `site/templates/fecv2/html/mod_menu/`); `partials/nav-static` is only the fallback
+  (`FEC_LEGACY_NAV_FROM_MENU=false` or a failure).
 - The com_bonuses desk (views `home`, `add`, `manage`, `clicks`, tasks `actions.*`) runs like the
   com_authors desks, through `/index.php?option=com_bonuses&...` on the root route. Its pages call
   three standalone scripts by path, `/components/com_bonuses/ajax/{clicks_live,ftd_save,ftd_import}.php`

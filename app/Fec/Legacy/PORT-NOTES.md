@@ -158,8 +158,24 @@ the category override: two includes used `JPATH_ROOT` for the lib and the blog h
 directory on Joomla); here they use `JPATH_SITE`, where the code is (`JPATH_ROOT` is the real
 docroot, which holds the unported lib). `article/home.php` is verbatim too: the home menu item may
 ask for it, and Joomla ran the home's component even though the template never printed its body.
-`article/default_withclock.php` (no article or menu item uses the layout) and the `com_users` and
-`mod_menu` overrides are not copied.
+`article/default_withclock.php` (no article or menu item uses the layout) and the `com_users`
+overrides are not copied.
+
+## The primary navigation (phase 4)
+
+The live site's only live module: `mod_menu` in the `fec_nav` position ("Fec Nav", menutype
+`mainmenu`), rendered by the fecv2 override `templates/fecv2/html/mod_menu/` (copied verbatim, four
+files). `App\Fec\Legacy\MenuModule` is the module: its params from `jos_modules` (the published
+`mod_menu` of the position, first by ordering), `getList()` = Joomla 2.5's `ModMenuHelper::getList()`
+(items of the menutype filtered by the guest's view levels as `JMenuSite::getItems()` did; component
+items linked as `index.php?Itemid=N`, which `JRoute` expands to the item's link as
+`JRouterSite::_createURI()` did; the `continue` of the separator branch is a `break` in PHP, so
+separators get their title escaped and empty anchor attributes too), `render()` = `mod_menu.php`
+(`$active_id`, `$path` = the active item's tree, `$class_sfx`), the layout through
+`JModuleHelper::getLayoutPath()`. `JMenu` now builds each item's `tree` (parent's tree plus its id)
+and leaves out the root, as `JMenuSite::load()` did. The module's cache is not reproduced.
+`partials/nav-static` (the snapshot of 25 Oct 2026) stays as the fallback: `fec.legacy.nav_from_menu`
+= false (`FEC_LEGACY_NAV_FROM_MENU`) or a failure of the module serves it.
 
 ## The home (phase 4, step 2)
 

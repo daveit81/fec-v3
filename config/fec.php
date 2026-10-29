@@ -377,6 +377,11 @@ return [
             'com_bonuses.home', 'com_bonuses.add', 'com_bonuses.manage', 'com_bonuses.clicks', 'com_bonuses.actions',
         ],
 
+        // The primary navigation from jos_menu (App\Fec\Legacy\MenuModule: mod_menu of the fec_nav
+        // position through the fecv2 override); false serves the snapshot of 25 Oct 2026.
+        'nav_from_menu' => filter_var(env('FEC_LEGACY_NAV_FROM_MENU', true), FILTER_VALIDATE_BOOL),
+        'nav_position' => 'fec_nav',
+
         // Phase 4, the root switch (App\Fec\Url\RootSwitch, fec:urls:htaccess --root): what stays on
         // Joomla when every other path goes to v3. Besides files, directories, task=/option= requests
         // and the desk views above: these components and views (their registry URLs, as prefixes no
