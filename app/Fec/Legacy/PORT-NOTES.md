@@ -300,6 +300,13 @@ there too.**
   old table, not a list of the desk's redirects; the router still consults it last, as the Joomla
   redirect plugin did on a 404 (to be re-read in phase 4).
 
+- `jexit()`/`JApplication::close()` and `JApplication::redirect()` raise `ExitException` and
+  `RedirectException`, both `Error`s: on the live site they ended the request, and the 213
+  `catch (Exception $e)` of the legacy code never saw them. As `RuntimeException`s they were
+  caught: the blog listing's try/catch swallowed the guard's 301 of `/blog/feed/rss` (the live site
+  renders the feed URLs as the HTML listing, whose guard sends them to `/blog`) and printed
+  "Blog temporarily unavailable" with a 200 (29 Oct 2026).
+
 ## Known legacy behaviour reproduced on purpose (parity)
 
 - sh404SEF wrote a page title into the HTML as a preg replacement string: on a review (catid 8)

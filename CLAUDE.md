@@ -90,7 +90,9 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   `fec_php5_*` (`App\Fec\Legacy\Php5Sort`, the PHP 5.6 algorithm), and every bare `header()` to
   `fec_header()` (the header lands on the application object the runner builds the response from:
   a `Location` set that way is a 302, as PHP made it), and every `exit`/`die` statement to `jexit()`
-  (the exception the runner turns into the response of what was echoed; the `or die(...)` guards stay),
+  (the exception the runner turns into the response of what was echoed; the `or die(...)` guards stay;
+  `ExitException` and `RedirectException` are `Error`s, so a legacy `catch (Exception $e)` never stops
+  them, as nothing stopped exit on the live site),
   by the slicer and by `php scripts/legacy-port.php <dir>` (run after every copy; `fec:legacy:check`
   fails on a call left behind).
 - Phase 4 (the root): `site/components/com_content/` is our port of Joomla's core component
