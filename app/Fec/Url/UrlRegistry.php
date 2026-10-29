@@ -135,6 +135,21 @@ final class UrlRegistry
         return $tolerant ? $this->pathForTolerant($newurl) : null;
     }
 
+    /**
+     * The SEF path sh404SEF's getSefUrlFromDatabase() read for a non-SEF URL
+     * spelled as it stored them: the row of that exact newurl whatever its
+     * rank, the oldest first (no ORDER BY, the newurl index). A query whose
+     * SEF URL already belonged to another one when sh404SEF first built it
+     * keeps that spelling in every link: five casino pages built while their
+     * article had no title are "bonuses/" (rank > 0) to this day.
+     */
+    public function storedPath(string $newurl): ?string
+    {
+        $old = $this->db()->table('sh404sef_urls')->where('newurl', $newurl)->orderBy('id')->value('oldurl');
+
+        return $old !== null ? '/'.ltrim((string) $old, '/') : null;
+    }
+
     private function pathForTolerant(string $newurl): ?string
     {
         $want = self::significant(self::parseQuery($newurl));

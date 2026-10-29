@@ -3,6 +3,7 @@
 namespace App\Fec\Legacy\Joomla;
 
 use App\Fec\Legacy\Sef\Sh404sef;
+use App\Fec\Legacy\Sh404sefMetas;
 use App\Fec\Url\UrlRegistry;
 use Throwable;
 
@@ -10,7 +11,9 @@ use Throwable;
  * JRoute::_() the way sh404SEF answered it on the live site: a Joomla query
  * ("index.php?option=...") becomes the SEF path stored in jos_sh404sef_urls
  * ("/authors/davey"), site-relative with a leading slash. Lookup order:
- * exact newurl, tolerant (parameter order, lang, Itemid, "id:alias"), then
+ * sh404SEF's own (the query with "lang=en", sorted: the stored row of that
+ * newurl of any rank), exact newurl, tolerant (parameter order, lang, Itemid,
+ * "id:alias"), then
  * the port of the component's sh404SEF plugin (App\Fec\Legacy\Sef, which also
  * records the new URL in the registry), then the ported component router
  * (<Com>BuildRoute), then the raw query as a last resort. Anything that does
@@ -69,7 +72,11 @@ class Route
         }
 
         try {
-            $path = app(UrlRegistry::class)->pathFor($url, true);
+            $registry = app(UrlRegistry::class);
+            // sh404SEF's own lookup first: the query with "lang=en", sorted by shSortUrl(),
+            // the stored row of that newurl whatever its rank; then the tolerant match
+            $path = $registry->storedPath(Sh404sefMetas::sortUrl(self::withLang($url)))
+                ?? $registry->pathFor($url, true);
             if ($path !== null) {
                 return $path.$suffix;
             }
@@ -98,6 +105,17 @@ class Route
         }
 
         return '/index.php?'.self::buildQuery($query).$suffix;
+    }
+
+    /** shSefRelToAbs(): "&lang=en" on a query without a language (before sorting it). */
+    private static function withLang(string $url): string
+    {
+        $url = explode('#', str_replace('&amp;', '&', $url), 2)[0];
+        if (preg_match('/(&|\?)lang=[^&]*/i', $url)) {
+            return $url;
+        }
+
+        return $url.(str_contains($url, '?') ? '&' : '?').'lang=en';
     }
 
     /**

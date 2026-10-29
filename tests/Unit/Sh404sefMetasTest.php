@@ -80,6 +80,20 @@ final class Sh404sefMetasTest extends TestCase
         $this->assertSame('index.php&lang=en', Sh404sefMetas::sortUrl('index.php&lang=en'));
     }
 
+    public function test_jroute_looks_a_link_up_as_sh404sef_spelled_it(): void
+    {
+        $withLang = new \ReflectionMethod(Route::class, 'withLang');
+        // the details view's casino link: "lang=en" added, sorted, as the stored newurl of cashy-casino
+        $this->assertSame(
+            'index.php?option=com_bonuses&cid=1243&lang=en&view=casino',
+            Sh404sefMetas::sortUrl($withLang->invoke(null, 'index.php?option=com_bonuses&cid=1243&view=casino'))
+        );
+        $this->assertSame(
+            'index.php?option=com_content&Itemid=180&id=8&lang=en&view=category',
+            Sh404sefMetas::sortUrl($withLang->invoke(null, 'index.php?option=com_content&amp;view=category&amp;id=8&amp;Itemid=180#top'))
+        );
+    }
+
     public function test_jroute_query_strings_are_decoded_as_jur_built_them(): void
     {
         $this->assertSame('filters=accepts_country,crypto&sort=newest', Route::buildQuery(['filters' => 'accepts_country,crypto', 'sort' => 'newest']));

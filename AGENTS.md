@@ -51,7 +51,9 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   (`JRequest::checkToken`), so their paths are excluded from Laravel's CSRF middleware.
 - Joomla's non-SEF entry `/index.php?option=...` reaches Laravel as the path `/` (the front controller
   is stripped from the URI): the root route hands every request with `option=` to `LegacyDeskController`,
-  GET and POST, so a `Route::match(..., '/index.php')` never matches. `JRoute::_()` appends to the SEF
+  GET and POST, so a `Route::match(..., '/index.php')` never matches. `JRoute::_()` looks a link up as
+  sh404SEF did first (`lang=en` added, `shSortUrl` order, the stored row of that newurl whatever its rank,
+  oldest first: five casino pages are linked as `/bonuses/` that way), then tolerantly; it appends to the SEF
   path the variables the registry URL does not encode (`/methodology-admin?edit=fxcheck`, `start=`), as
   sh404SEF did, decoded as J2.5's `JURI::buildQuery()` wrote them (`?filters=accepts_country,crypto`);
   a variable no stored URL carries (`?fbclid=`) is matched on the identifiers alone; messages enqueued before a redirect are flashed in the session and rendered as Joomla's

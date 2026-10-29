@@ -281,6 +281,12 @@ there too.**
   the runner after the component on sh404SEF's current non-SEF URL (the page's own plus the
   request's query variables, see above; title, description, keywords, robots, canonical when
   non-empty; Open Graph fields left to the lib).
+- `JRoute` looks a link up as sh404SEF's `shSefRelToAbs()` did before anything else: `lang=en`
+  added when missing, sorted by `shSortUrl()`, then the stored row of that exact newurl whatever its
+  rank, the oldest first (`getSefUrlFromDatabase()`: no ORDER BY). Five casino pages were first
+  built while their article had no title and got "bonuses/" (rank > 0); the live site links them
+  so (the breadcrumb of `/bonuses/cashy-casino/25percent-cashback-bonus-id9671`, 29 Oct 2026),
+  and so does v3. sh404SEF's URL cache, consulted before the table, is not reproduced.
 - Query strings that `JRoute` appends (the variables sh404SEF did not store) are decoded, as
   J2.5's `JURI::buildQuery()` wrote them (`urldecode(http_build_query())`): the directory's chips
   link `?filters=accepts_country,crypto`, not `%2C`; spaces become `%20` (JRoute::_).
