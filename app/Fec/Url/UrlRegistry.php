@@ -3,6 +3,7 @@
 namespace App\Fec\Url;
 
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -144,17 +145,12 @@ final class UrlRegistry
         // Candidates share every variable of the wanted query (decorations apart), so the
         // first pass sees the right row even for a component with thousands of URLs: with
         // option alone, com_bonuses has 17k rows and the first 500 never held the one.
-        $q = $this->db()->table('sh404sef_urls')
-            ->where('rank', 0)
-            ->where('newurl', 'like', '%option='.$want['option'].'%');
-        foreach ($want as $key => $value) {
-            if ($key === 'option' || $value === '' || in_array($key, self::DECORATION_KEYS, true) || in_array($key, self::LEFTOVER_KEYS, true) || ! preg_match('/^[A-Za-z0-9_.:-]+$/', (string) $value)) {
-                continue;
-            }
-            $q->where('newurl', 'like', '%'.$key.'='.$value.'%');
+        // None: a variable no stored URL carries (a visitor's "?fbclid=" on the page's own
+        // query, which sh404SEF's meta plugin routed for the canonical): the identifiers alone.
+        $candidates = $this->candidates($want, false);
+        if ($candidates->isEmpty()) {
+            $candidates = $this->candidates($want, true);
         }
-
-        $candidates = $q->orderBy('id')->limit(2000)->get(['oldurl', 'newurl']);
         foreach ($candidates as $row) {
             if (self::significant(self::parseQuery((string) $row->newurl)) === $want) {
                 return '/'.ltrim((string) $row->oldurl, '/');
@@ -181,11 +177,39 @@ final class UrlRegistry
                     unset($extra['limitstart']);
                 }
 
-                return $extra === [] ? $path : $path.'?'.http_build_query($extra);
+                // sh404SEF appended them through JURI, whose buildQuery() decodes the values
+                // ("?filters=accepts_country,crypto", not "%2C")
+                return $extra === [] ? $path : $path.'?'.urldecode(http_build_query($extra, '', '&'));
             }
         }
 
         return null;
+    }
+
+    /**
+     * Rank-0 rows of the wanted option whose newurl carries each of the wanted
+     * variables (decorations and leftovers apart; with $identityOnly, only the
+     * identifying ones), oldest first.
+     *
+     * @param  array<string, string>  $want
+     * @return Collection<int, object>
+     */
+    private function candidates(array $want, bool $identityOnly): Collection
+    {
+        $q = $this->db()->table('sh404sef_urls')
+            ->where('rank', 0)
+            ->where('newurl', 'like', '%option='.$want['option'].'%');
+        foreach ($want as $key => $value) {
+            if ($key === 'option' || $value === '' || in_array($key, self::DECORATION_KEYS, true) || in_array($key, self::LEFTOVER_KEYS, true) || ! preg_match('/^[A-Za-z0-9_.:-]+$/', (string) $value)) {
+                continue;
+            }
+            if ($identityOnly && ! in_array($key, self::IDENTITY_KEYS, true)) {
+                continue;
+            }
+            $q->where('newurl', 'like', '%'.$key.'='.$value.'%');
+        }
+
+        return $q->orderBy('id')->limit(2000)->get(['oldurl', 'newurl']);
     }
 
     /** Query variables that identify a page on their own (with option and view). */

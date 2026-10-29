@@ -40,6 +40,8 @@ class Route
         }
 
         $path = self::$memo[$url] ??= self::resolve($url);
+        // JRoute::_() replaced the spaces a decoded query string left
+        $path = preg_replace('/\s/u', '%20', $path) ?? $path;
 
         return $xhtml ? str_replace('&', '&amp;', $path) : $path;
     }
@@ -95,7 +97,19 @@ class Route
             return $built.$suffix;
         }
 
-        return '/index.php?'.http_build_query($query).$suffix;
+        return '/index.php?'.self::buildQuery($query).$suffix;
+    }
+
+    /**
+     * JURI::buildQuery() of Joomla 2.5, through which every query string of a
+     * routed URL went: http_build_query() decoded again ("filters=a,b", not
+     * "a%2Cb"; a space stays a space and JRoute::_() then writes it "%20").
+     *
+     * @param  array<string, mixed>  $vars
+     */
+    public static function buildQuery(array $vars): string
+    {
+        return urldecode(http_build_query($vars, '', '&'));
     }
 
     /**
@@ -131,7 +145,7 @@ class Route
         }
         $path = '/'.implode('/', array_map('rawurlencode', array_map('strval', $segments)));
         if ($vars !== []) {
-            $path .= '?'.http_build_query($vars);
+            $path .= '?'.self::buildQuery($vars);
         }
 
         return $path;
@@ -151,6 +165,6 @@ class Route
         ksort($vars, SORT_STRING);
         $path = '/'.substr($option, 4);
 
-        return $vars !== [] ? $path.'?'.http_build_query($vars) : $path;
+        return $vars !== [] ? $path.'?'.self::buildQuery($vars) : $path;
     }
 }

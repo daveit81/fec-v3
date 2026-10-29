@@ -250,6 +250,8 @@ return [
             ['redirect', '/bonuses/sports-and-casino/', 'https://www.freeextrachips.com/bonuses/slots-and-casino/'], // 546
             ['redirect', '/bonuses/high-roller-bonus', 'https://www.freeextrachips.com/bonuses/high-roller-bonuses'], // 547
             ['redirect', '/bonuses/free-cash', 'https://www.freeextrachips.com/bonuses/no-deposit-casinos'], // 558
+            // phase 4: the directory's old "newest" path (the search box once linked it)
+            ['redirect', '/online-casinos/newest', 'https://www.freeextrachips.com/online-casinos'], // 565
             // 28 Oct 2026: the methodology hub linked its six page-kind topics under /methodology/<slug>,
             // which the methodology view refuses (404); sh404SEF registered those URLs (rank 0) and they
             // were crawled. The hub now routes them to the page view; these 301s send the registered

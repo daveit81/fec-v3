@@ -46,11 +46,19 @@ use Throwable;
  * is enabled in #__extensions but none of its links reaches the live pages
  * (28 Oct 2026: the review page carries the override's tag rewritten in place,
  * the clusters index sh404SEF's at the top): it is not reproduced.
+ * The row and the plugin's canonical start from sh404SEF's current non-SEF
+ * URL, the registry's query with the request's own variables on top
+ * (Sh404sefMetas::currentNonSefUrl): "/online-casinos?sort=newest" finds no
+ * row and keeps the plugin's title ("Online Casinos"), a review reached with
+ * "?fbclid=..." carries it in its canonical; the tracking variables (utm_*,
+ * gclid) are stripped from both.
  * The home is the home menu item's article with the template's head on top
  * (HomeTemplate): its metas row is the one under sh404SEF's home code and no
- * prefix or suffix goes around its title. Not reproduced: the multi-page
- * article titles (no article has page breaks) and the "featured" view (no
- * page uses it).
+ * prefix or suffix goes around its title, as long as the request has no query
+ * string (sh404SEF compared the current non-SEF URL with the home link, and
+ * on "/?x=y" that URL is "index.php?x=y": no row, the plugin's title of the
+ * home article). Not reproduced: the multi-page article titles (no article
+ * has page breaks) and the "featured" view (no page uses it).
  */
 final class Sh404sefPage
 {
@@ -68,13 +76,18 @@ final class Sh404sefPage
      * Applies the rewrite to the document and returns the page's canonicals,
      * in page order (an inserted one first). Empty: the page has none.
      *
+     * @param  array<string, mixed>  $request  the request's query variables
      * @return list<string>
      */
-    public static function content(Document $doc, ResolvedUrl $url, bool $isHome = false): array
+    public static function content(Document $doc, ResolvedUrl $url, bool $isHome = false, array $request = []): array
     {
         $cfg = (array) config('fec.legacy.sh404sef', []);
-        // the home's "Title and metas" row is stored under sh404SEF's home code, not its URL
-        $row = Sh404sefMetas::row($isHome ? self::homepageCode() : $url->newurl);
+        $current = Sh404sefMetas::currentNonSefUrl($url->newurl, $request, $isHome);
+        $key = Sh404sefMetas::lookupKey($url->newurl, $request, $isHome);
+        // the home's "Title and metas" row is stored under sh404SEF's home code, not its URL;
+        // it is the home for sh404SEF when the key is the home link itself (no query string)
+        $isHome = $isHome && $key !== null && $key === trim((string) $url->newurl);
+        $row = Sh404sefMetas::row($isHome ? self::homepageCode() : $key);
 
         $view = JRequest::getCmd('view');
         $id = JRequest::getInt('id');
@@ -90,8 +103,8 @@ final class Sh404sefPage
         $customRobots = ($tmpl === 'component' && $print !== 0) ? 'noindex, nofollow' : null;
         $shCanonical = '';
         if ($view !== 'featured') {
-            if ($view === 'article' && $url->newurl !== null) {
-                $nonSef = str_replace(['format=pdf', 'print=1'], '', $url->newurl);
+            if ($view === 'article' && $current !== null) {
+                $nonSef = str_replace(['format=pdf', 'print=1'], '', Sh404sefMetas::stripTracking($current));
                 $shCanonical = Route::_($nonSef);
             }
             $title = self::contentSlugs($view, $id, $layout, $cfg);

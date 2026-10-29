@@ -211,6 +211,15 @@ and the directory (`tests/Unit/Sh404sefPageTest.php`). The site-wide `canonical`
 enabled in `#__extensions` but none of its raw-URI links reaches those pages: not reproduced.
 The other components keep `Sh404sefMetas` (the row only) and their own canonical, which is what
 the same branches give on their pages (no meta plugin, one canonical of their own).
+The row and the meta plugin's canonical start from sh404SEF's current non-SEF URL: the
+registry's query with the request's own variables on top (`parseRule` merged them), rebuilt by
+JURI, `&lang=en` added, the tracking variables of sh404SEF's configuration stripped (utm_*,
+gclid, fb_xd_*, hitcount; not fbclid), sorted by `shSortUrl`. Measured on 29 Oct 2026:
+`/online-casinos?sort=newest`, `?start=50` and `?filters=crypto` carry the plugin's title
+"Online Casinos" and no description on the live site, the row's only on the plain URL. On the
+home with a query string the router passed the request's variables alone, so sh404SEF did not
+see the home there (no home row, the plugin's title of the home article): reproduced, to be
+confirmed by the parity of `/?fbclid=` and `/?utm_source=`.
 
 `plugins/system/sef/sef.php` is our port of Joomla's core SEF system plugin (2.5.28, the
 original's regexes): on the finished page every `href="index.php?..."` written literally (the
@@ -261,8 +270,12 @@ there too.**
   appended; an `index.php` target is the SEF URL stored for that exact newurl of any rank, absolute,
   no query, the home when none is stored; an alias of the requested page itself serves the page).
 - `jos_sh404sef_metas` (810 rows, 49 for com_bonuses): `App\Fec\Legacy\Sh404sefMetas`, applied by
-  the runner after the component on the page's own non-SEF URL (title, description, keywords,
-  robots, canonical when non-empty; Open Graph fields left to the lib).
+  the runner after the component on sh404SEF's current non-SEF URL (the page's own plus the
+  request's query variables, see above; title, description, keywords, robots, canonical when
+  non-empty; Open Graph fields left to the lib).
+- Query strings that `JRoute` appends (the variables sh404SEF did not store) are decoded, as
+  J2.5's `JURI::buildQuery()` wrote them (`urldecode(http_build_query())`): the directory's chips
+  link `?filters=accepts_country,crypto`, not `%2C`; spaces become `%20` (JRoute::_).
 - `jos_redirection` has the schema of sh404SEF 1.x's URL table (cpt, rank, dateadd): it is that
   old table, not a list of the desk's redirects; the router still consults it last, as the Joomla
   redirect plugin did on a 404 (to be re-read in phase 4).

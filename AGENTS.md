@@ -42,8 +42,9 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   live cache). `fec:urls:htaccess --option=com_x --served=com_authors` ignores the URLs of the
   components already on v3 when it chooses the prefixes.
 - sh404SEF's per-page "title and metas" (`jos_sh404sef_metas`, 49 rows for com_bonuses) are applied
-  by the runner after the component, keyed on the page's own non-SEF URL (`Sh404sefMetas`), as the
-  live site applies them last.
+  by the runner after the component, keyed on sh404SEF's current non-SEF URL (`Sh404sefMetas`: the
+  registry's query plus the request's own variables, utm_*/gclid stripped, sorted; a page reached with a
+  query string of its own, "?sort=newest", finds no row), as the live site applies them last.
 - Public pages are stateless (routes/stateless.php fallback, no cookies). Desks need the redazione
   login (`/desk/login`: password + emailed code; accounts via `fec:user:create`), run on `fec_rw`,
   see `JFactory::getUser()` as the account's `joomla_user_id`, and keep Joomla's own token check
@@ -52,7 +53,8 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   is stripped from the URI): the root route hands every request with `option=` to `LegacyDeskController`,
   GET and POST, so a `Route::match(..., '/index.php')` never matches. `JRoute::_()` appends to the SEF
   path the variables the registry URL does not encode (`/methodology-admin?edit=fxcheck`, `start=`), as
-  sh404SEF did; messages enqueued before a redirect are flashed in the session and rendered as Joomla's
+  sh404SEF did, decoded as J2.5's `JURI::buildQuery()` wrote them (`?filters=accepts_country,crypto`);
+  a variable no stored URL carries (`?fbclid=`) is matched on the identifiers alone; messages enqueued before a redirect are flashed in the session and rendered as Joomla's
   `#system-message` block (empty container on public pages).
 - `JTable::getInstance('Content')` is `Joomla\Table` + `Tables\Content`/`Tables\Asset` with Joomla 2.5
   semantics: bind only known columns, `check()` (title, alias, dates, meta), `store()` stamps

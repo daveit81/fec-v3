@@ -227,14 +227,16 @@ final class ComponentRunner implements PageHandler
         }
 
         // sh404SEF's per-page title and metas, applied last on the live site (after the
-        // component and the template), keyed on the page's own non-SEF URL. On a
-        // com_content page the whole page rewrite of the live copy (its meta plugin's
-        // title, the canonical branches): it decides the page's canonicals too.
+        // component and the template), keyed on the page's current non-SEF URL (the
+        // registry's query with the request's own variables). On a com_content page the
+        // whole page rewrite of the live copy (its meta plugin's title, the canonical
+        // branches): it decides the page's canonicals too.
         $sh404Canonicals = null;
+        $query = $request->query();
         if ($option === 'com_content') {
-            $sh404Canonicals = Sh404sefPage::content($doc, $url, $home);
+            $sh404Canonicals = Sh404sefPage::content($doc, $url, $home, $query);
         } else {
-            Sh404sefMetas::apply($doc, $url->newurl);
+            Sh404sefMetas::apply($doc, $url->newurl, $query);
         }
 
         if ($tmpl === 'component') {
