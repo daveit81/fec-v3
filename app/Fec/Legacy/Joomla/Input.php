@@ -35,9 +35,13 @@ class Input
         return Request::getBool($name, $default);
     }
 
-    public function getFloat(string $name, float $default = 0.0): float
+    /**
+     * JInput::getFloat(): the default as given when the variable is absent (the
+     * tournaments feed asks for null), the float filter otherwise.
+     */
+    public function getFloat(string $name, mixed $default = 0.0): mixed
     {
-        return Request::getFloat($name, $default);
+        return Request::getVar($name, $default, 'default', 'float');
     }
 
     public function getRaw(string $name, mixed $default = null): mixed

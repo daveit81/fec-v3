@@ -77,7 +77,12 @@ class Zebra_Pagination
 
     public function get_pages()
     {
-        return @ceil($this->_properties['records'] / $this->_properties['records_per_page']);
+        // PORT: get_page() calls this before records()/records_per_page() are set ('' / ''): PHP 5.6
+        // gave 0 (division by zero, silenced), PHP 8 throws on string operands. Same result, explicitly
+        // (as in com_bonuses' copy of the class).
+        $records = (int) $this->_properties['records'];
+        $perPage = (int) $this->_properties['records_per_page'];
+        return $perPage > 0 ? ceil($records / $perPage) : 0;
     }
 
     public function labels($previous = '&laquo;', $next = '&raquo;')

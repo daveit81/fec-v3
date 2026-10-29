@@ -158,6 +158,15 @@ final class ComponentRunner implements PageHandler
         JRequest::seed($seed);
         Factory::getApplication()->getMenu()->activateFor($url->query);
         $this->syncServerGlobals($request);
+        // JApplication::route(): JRequest::set($router_vars, 'get', false) wrote the variables
+        // the router decoded into $_GET and $_REQUEST, without overwriting the request's own
+        // (the tournaments feed and com_bonuses' renders read $_GET['type'], ['view'] directly)
+        foreach ($url->query as $k => $v) {
+            if (! array_key_exists($k, $_REQUEST)) {
+                $_GET[$k] = $v;
+                $_REQUEST[$k] = $v;
+            }
+        }
 
         $body = '';
         $level = ob_get_level();
@@ -428,6 +437,12 @@ final class ComponentRunner implements PageHandler
         }
         if (! isset($_SERVER['HTTPS']) && $request->isSecure()) {
             $_SERVER['HTTPS'] = 'on';
+        }
+        // A console run (parity, snapshots) has no $_GET of its own: legacy code reads it
+        // directly (Zebra_Pagination's ?page=, the tournaments feed's filter links).
+        if (app()->runningInConsole()) {
+            $_GET = $request->query->all();
+            $_REQUEST = $_GET + $request->request->all();
         }
     }
 

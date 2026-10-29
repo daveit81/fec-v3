@@ -192,6 +192,16 @@ start-up, so the links carry no `index.php/`). com_tournaments' show view render
 (procedural markup after the class) over the `tournaments` table the parser crons write; its URLs
 are in the registry (`tournaments`, `tournaments/freeroll/`, `tournaments/with-fee/`), its sh404SEF
 plugin (`sef_ext/com_tournaments.php`) is not ported: the registry holds every spelling its links use.
+Not copied: `helpers/pagination.php`, an older Zebra_Pagination nobody includes (a second
+declaration of the class). One edit, the one com_bonuses' Zebra copy has: `paginationnew.php`
+`get_pages()` divided `'' / ''` when `get_page()` ran before `records()` (0 on PHP 5.6, a TypeError
+on PHP 8: the page answered 500). The layer's `JInput::getFloat()` returns the default as given
+when the variable is absent (the feed asks for `null`, then tests `!== null`), as JInput did. The
+runner now does what `JApplication::route()` did with the router's variables, `JRequest::set($vars,
+'get', false)`: they go into `$_GET` and `$_REQUEST` unless the request carries them itself (the
+feed's quick chips compare `$_GET` minus option/view/Itemid with their presets, so `lang=en` is
+there on the live site; com_bonuses' renders read `$_GET['type']`, `['view']`); a console run
+(parity) starts from the request's own `$_GET`, which Zebra reads for `?page=`.
 
 ## Plugins (phase 4)
 
