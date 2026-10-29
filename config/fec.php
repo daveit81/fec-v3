@@ -219,22 +219,48 @@ return [
         // rewrites those paths to v3, whose own .htaccess is the only one the second pass reads, so the
         // router answers them first with each directive's semantics
         // (App\Fec\Url\HtaccessRedirects). File order, targets as written; the line numbers are those
-        // of the file on 27 Oct 2026. Line 114 (allowed-countries/au|nz -> show&geo=) is an internal
-        // rewrite: the registry holds both spellings of those two pages. Not reproduced: the LiteSpeed
-        // cache rules (lines 52-101: v3 pages are no-cache) and line 111 (410 on old sections, none
-        // under our paths). mod_rewrite runs before mod_alias, and the file lists the rewrite rules first.
+        // of the file on 27 Oct 2026, the rules added on 29 Oct (for the root switch: every path will be
+        // v3's) are named by what they match. Line 114 (allowed-countries/au|nz -> show&geo=) is an
+        // internal rewrite: the registry holds both spellings of those two pages. Not reproduced: the
+        // LiteSpeed cache rules (v3 pages are no-cache), the https redirect (Cloudflare), Joomla's own
+        // rules on /index.php (that file stays Joomla's: the root block leaves it out). The rewrite rules
+        // first, then mod_alias: on LiteSpeed a RewriteRule that answers ([G], [R=301], [F]) wins over a
+        // Redirect of the same path (the blog switch of 13 Oct: casino-bonus-blog/blogger/listings/peterg
+        // is 410, not the Redirect to /sitemap), while an internal rewrite does not stop the Redirect
+        // (28 Oct: /bonuses/free-cash under the v3 test block answered the Redirect).
         'htaccess_redirects' => [
+            // 29 Oct, "FEC dead sections purge" (Aug 2026): the jReviews sections are 410
+            ['gone', '^(online-casinos/(software|banking|countries|languages|currencies|type)|casino-reviews|reviews|countries)(/.*)?$'],
             ['gone', '^[^/]+/tag(/.*)?$'], // 112: every "<section>/tag/..." path is 410
             ['rewrite', '^bonuses/no-deposit-casinos/allowed-countries/(?!(?:au|nz)/?$)', '/bonuses/no-deposit-casinos'], // 115
+            // 29 Oct, the blog switch of 13 Oct (EasyBlog -> com_content, /casino-bonus-blog -> /blog)
+            ['rewrite', '^blog-v2/?$', '/blog/'],
+            ['rewrite', '^blog-v2/(.+)$', '/blog/$1'],
+            ['rewrite', '^casino-bonus-blog/(latest(/page-[0-9]+)?|page-[0-9]+|categories(/.*)?)/?$', '/blog/'],
+            ['gone', '^casino-bonus-blog/(tags|blogger|teamblog|archive|dashboard|login|register)(/.*)?$'],
+            ['gone', '^casino-bonus-blog/(.+/)?feed(/.*)?$'],
+            ['rewrite', '^casino-bonus-blog/nolimit-city-brings-more-chaos-and-bigger-wins-with-punk-rocker-2-slot/?$', '/blog/nolimit-city-unleashes-more-chaos-and-bigger-wins-with-punk-rocker-2-slot'],
+            ['rewrite', '^casino-bonus-blog/?$', '/blog/'],
+            ['rewrite', '^casino-bonus-blog/(.+)$', '/blog/$1'],
+            // 29 Oct, Joomla section: "RewriteCond %{THE_REQUEST} \.html" + "^(.*)\.html$ /$1 [R=301]"
+            ['rewrite', '^(.*)\.html$', '/$1'],
             // 301-305: Joomla's stock exploit filters (403), every path
             ['forbidden-query', 'base64_encode[^(]*\([^)]*\)'],
             ['forbidden-query', '(<|%3C)([^s]*s)+cript.*(>|%3E)', 'NC'],
             ['forbidden-query', 'GLOBALS(=|\[|\%[0-9A-Z]{0,2})'],
             ['forbidden-query', '_REQUEST(=|\[|\%[0-9A-Z]{0,2})'],
             ['forbidden-agent', 'AppEngine'], // 345-346
+            // Not in the live file: Davey's decisions of 29 Oct for the root switch (phase 4 doc, §3):
+            // login, registration and Community Builder, and the jackpot pages of com_jackpots, are 410
+            // (on the live site Joomla serves them until the root switch; its data.update task stays)
+            ['gone', '^(log-in|login|create-an-account|lost-password|lost-user-name|edit-user-details|view-user-profile|view-your-user-details|forgotten-password|community|register|reset|remind|user-profile|cb-[^/]+|jpots)(/.*)?$'],
             // 462 (^bonuses/free-spins$ -> free-spins/ [R=301]) is dead on the live site: it sits below
             // Joomla's catch-all RewriteRule (.* index.php [L]); the 301 the live site answers comes from
             // the sh404SEF alias "bonuses/free-spins" (Sh404sefAliases), which v3 reads from the table.
+            // 29 Oct, the mod_alias lines of the Joomla section
+            ['match', '/about-casino-bonuses(.*)', '/bonuses/$1'],
+            ['match', '^/casino-bonus-blog/entry/(.*)', '/blog/$1'],
+            ['redirect', '/reviews...', 'https://www.freeextrachips.com/'],
             ['match', '/bonuses/ads/(.*)', '/bonuses/ctr/$1'], // 468
             // Davey, 27 Oct 2026: the exclusive filter page goes to the hub (the same RedirectMatch
             // goes into the live file next to line 468, so both halves answer alike)
@@ -253,6 +279,61 @@ return [
             ['redirect', '/bonuses/free-cash', 'https://www.freeextrachips.com/bonuses/no-deposit-casinos'], // 558
             // phase 4: the directory's old "newest" path (the search box once linked it)
             ['redirect', '/online-casinos/newest', 'https://www.freeextrachips.com/online-casinos'], // 565
+            // 29 Oct, the rest of the mod_alias lines, file order ("Redirect gone /links_exchange", the
+            // "redirect 301 ... /sitemap" list, /home, /new-casinos). Four lines of the list carry a query
+            // string in their source (/jvcl/search?..., /microgaming-slots/categories/compare/?...,
+            // /free-slots/categories/compare/?..., /content?nscode=...): mod_alias compares the path
+            // only, they never match, and are left out.
+            ['gone', '^links_exchange(/.*)?$'],
+            ['redirect', '/video-poker-bonuses', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/.well-known/apple-app-site-association', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/online-casinos/craps.com-casino', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/apple-app-site-association', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/400.shtml', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/online-casinos/cherry-red-casino', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/blackjack-bonuses', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/.well-known/assetlinks.json', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/online-casinos/win-a-day-casino.htmlWin', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/slots-bonuses', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/card-games/rules/pai-gow-rules', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/index/list-forums/casino-bonus-forum/', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/urllist.txt', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/table-games/rules/craps-rules', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/jvlinx/gambling_related_websites/index', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/casino-bonus-blog/categories/listings/no-deposit/feed/atom', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/online-casinos/super-slots-casino', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/online-casinos/fortune-reel-casino', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/images/easyblog_', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/whosonline', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/7-general-casino-discussion/page-2', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/table-games/rules/', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/card-games/rules/blackjack-switch-rules', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/casino-bonus-blog/categories/listings/casino-tournaments/feed/atom', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/online-casinos/del-rio-casino', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/online-casinos/millionaire-casino', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/casino-bonus-blog/blogger/listings/peterg', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/casino-bonus-blog/blogger/listings/giggles7p/Page-1', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/casino-bonus-blog/com_easyblog_sh404_view_search', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/f1x2games-casinos', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/prv/entry/coolcat-casino-new-100-free-chips', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/table/strategies/blackjack/', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/online-casinos/slots-oasis', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/casino-bonus-blog/categories/listings/coupon-codes/feed/atom', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/online-casinos/noiq-casino', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/jvlinx/index', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/casino-bonus-blog/html/Page-2', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/card-games/rules/baccarat-rules', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/prv-v15-379', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/card-games/rules/blackjack-surrender-rules', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/7-general-casino-discussion/266-sunshine', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/Casino-Bonus-Blog/entry/no-deposit/rialto-casino-is-now-live-on-fec-with-a-10-free-play-bonus-code', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/online-casinos/slots-ville', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/online-casinos/club-vegas-usa', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/online-casinos/rushmore-casino', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/banking/banking/paypal-casinos', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/online-casinos/index.php', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/home', 'https://www.freeextrachips.com/'],
+            ['redirect', '/new-casinos', 'https://www.freeextrachips.com/online-casinos'],
             // 28 Oct 2026: the methodology hub linked its six page-kind topics under /methodology/<slug>,
             // which the methodology view refuses (404); sh404SEF registered those URLs (rank 0) and they
             // were crawled. The hub now routes them to the page view; these 301s send the registered

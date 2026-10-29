@@ -78,6 +78,42 @@ class HtaccessRedirectsTest extends TestCase
         $this->assertNull(HtaccessRedirects::match('/authors', $agent, '', 'Mozilla/5.0'));
     }
 
+    public function test_the_root_rules_answer_in_the_file_order(): void
+    {
+        // a slice of fec.legacy.htaccess_redirects as of 29 Oct 2026, in its order
+        $rules = [
+            ['gone', '^(online-casinos/(software|banking|countries|languages|currencies|type)|casino-reviews|reviews|countries)(/.*)?$'],
+            ['rewrite', '^blog-v2/(.+)$', '/blog/$1'],
+            ['gone', '^casino-bonus-blog/(tags|blogger|teamblog|archive|dashboard|login|register)(/.*)?$'],
+            ['rewrite', '^casino-bonus-blog/(.+)$', '/blog/$1'],
+            ['rewrite', '^(.*)\\.html$', '/$1'],
+            ['gone', '^(log-in|login|create-an-account|view-user-profile|cb-[^/]+|jpots)(/.*)?$'],
+            ['redirect', '/reviews...', 'https://www.freeextrachips.com/'],
+            ['redirect', '/casino-bonus-blog/blogger/listings/peterg', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/online-casinos/craps.com-casino', 'https://www.freeextrachips.com/sitemap'],
+            ['redirect', '/home', 'https://www.freeextrachips.com/'],
+        ];
+        $kind = fn (string $path) => HtaccessRedirects::match($path, $rules)?->kind;
+        $to = fn (string $path) => HtaccessRedirects::match($path, $rules)?->target;
+
+        // the dead sections before the .html rule: casinouk's old canonical is a 410 at once
+        $this->assertSame('gone', $kind('/reviews/online-casino/casinouk.html'));
+        $this->assertSame('gone', $kind('/online-casinos/software/netent'));
+        $this->assertNull($kind('/online-casinos/softwares'));
+        // a RewriteRule that answers wins over a Redirect of the same path (13 Oct: 410)
+        $this->assertSame('gone', $kind('/casino-bonus-blog/blogger/listings/peterg'));
+        $this->assertSame('/blog/a-post', $to('/casino-bonus-blog/a-post'));
+        $this->assertSame('/blog/x', $to('/blog-v2/x'));
+        $this->assertSame('/no_deposit', $to('/no_deposit.html'));
+        $this->assertSame('gone', $kind('/log-in'));
+        $this->assertSame('gone', $kind('/cb-profile'));
+        $this->assertSame('gone', $kind('/jpots/mega-moolah'));
+        $this->assertNull($kind('/logins'));
+        $this->assertSame('https://www.freeextrachips.com/sitemap', $to('/online-casinos/craps.com-casino'));
+        $this->assertSame('https://www.freeextrachips.com/', $to('/home'));
+        $this->assertNull($kind('/homepage'));
+    }
+
     public function test_nothing_else_matches(): void
     {
         $this->assertNull($this->target('/bonuses/no-deposit-casinos'));

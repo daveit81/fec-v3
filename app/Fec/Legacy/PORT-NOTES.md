@@ -284,8 +284,8 @@ The v3 switch block sits at the top of `public_html/.htaccess` and rewrites the 
 the root one, so **every rule below the block is skipped for those paths** (verified on 27 Oct 2026
 with the test block: `/slots/tag/...`, `/authors?GLOBALS[x]=1`, `/authors?q=base64_encode(x)` all
 answered by PHP 8.4). `App\Fec\Url\HtaccessRedirects` answers them first, rule by rule with each
-directive's matching (`fec.legacy.htaccess_redirects`, rewrite rules before mod_alias, as the two
-modules run): the 410 of line 112 (`<section>/tag/...`), Joomla's exploit filters (403 on
+directive's matching (`fec.legacy.htaccess_redirects`, file order, the rewrite rules before
+mod_alias): the 410 of line 112 (`<section>/tag/...`), Joomla's exploit filters (403 on
 `base64_encode(`, `<script>`, `GLOBALS[`, `_REQUEST[` in the raw query string), the AppEngine
 user-agent 403, and the redirects under `bonuses/` (retired bonus types, `bonuses/ads/` to
 `bonuses/ctr/`, replaced bonuses, every country under `allowed-countries/` but au and nz, the
@@ -293,8 +293,28 @@ exclusive filter page to the hub). Only the rules that are effective on the live
 `RewriteRule` below Joomla's catch-all (`.* index.php [L]`, around line 340) never fires there
 (line 462, `bonuses/free-spins` → slash form: the live 301 is the sh404SEF alias); mod_alias
 `Redirect`/`RedirectMatch` lines fire wherever they are. Not reproduced: the LiteSpeed cache rules (v3 pages are
-no-cache). **When a rule is added to the live file and can match a path v3 serves, it is added
-there too.**
+no-cache), the https redirect (Cloudflare), Joomla's rules on `/index.php` (that file stays Joomla's
+at the root switch). **When a rule is added to the live file and can match a path v3 serves, it is
+added there too.**
+
+The order between the two modules, as LiteSpeed shows it: a `RewriteRule` that answers (`[G]`,
+`[R=301]`, `[F]`) wins over a `Redirect` of the same path (since the blog switch of 13 Oct,
+`/casino-bonus-blog/blogger/listings/peterg` is 410, not the `Redirect` to `/sitemap` further down),
+while an internal rewrite does not stop a `Redirect` (28 Oct: `/bonuses/free-cash` under the v3 test
+block answered the `Redirect`). Hence rewrite rules first, then mod_alias, each group in file order.
+
+For the root switch (every path but the ones Joomla keeps will be v3's) the rules of the rest of the
+file were added on 29 Oct 2026: the 410 of the dead jReviews sections (`online-casinos/software`,
+`banking`, `countries`, `languages`, `currencies`, `type`, `casino-reviews`, `reviews`, `countries`),
+the blog switch (`blog-v2` and `casino-bonus-blog` to `/blog/`, its tags/blogger/feeds 410), the 301
+that strips `.html`, the mod_alias lines of the Joomla section (`/about-casino-bonuses`,
+`/casino-bonus-blog/entry/`, `/reviews...`), `Redirect gone /links_exchange`, the list of
+`redirect 301 ... /sitemap` (four lines carry a query string in their source: mod_alias compares the
+path only, they never match, left out), `/home` → `/`, `/new-casinos` → `/online-casinos`. One group
+is not in the live file: Davey's decisions of 29 Oct (phase 4 doc, §3) make login, registration,
+Community Builder (`log-in`, `create-an-account`, `cb-*`, ...) and `/jpots` 410 on v3, where the live
+site serves them from Joomla until the switch (deliberate parity diffs). The rules answer only when a
+request reaches v3: until the root block exists, the live site is unchanged.
 
 ## sh404SEF's other tables
 
