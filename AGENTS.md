@@ -113,7 +113,8 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   live settings in `fec.legacy.sh404sef`; the other components keep `Sh404sefMetas`. The home is
   the home menu item's article run like any other with the template's `$isHome` branch on top
   (`HomeTemplate`): `Router::home()` answers "/" on the live hostname, the status page keeps "/"
-  on the development one (APP_URL), where `/__home` shows the home.
+  on the development one (APP_URL), where `/__home` shows the home. com_atlas (public views only:
+  the dashboard stays on Joomla) and com_tournaments are verbatim copies under `site/components/`.
 - The com_bonuses desk (views `home`, `add`, `manage`, `clicks`, tasks `actions.*`) runs like the
   com_authors desks, through `/index.php?option=com_bonuses&...` on the root route. Its pages call
   three standalone scripts by path, `/components/com_bonuses/ajax/{clicks_live,ftd_save,ftd_import}.php`

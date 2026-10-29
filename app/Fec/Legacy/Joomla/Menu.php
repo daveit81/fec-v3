@@ -45,6 +45,8 @@ class Menu
         $item->home = (int) $item->home;
         $item->params = new Registry((string) $row->params);
         $item->query = UrlRegistry::parseQuery((string) $row->link);
+        // JMenuSite joined #__extensions for the component's element: the link's option
+        $item->component = $item->type === 'component' ? (string) ($item->query['option'] ?? '') : null;
         $item->route = (string) $row->path;
         $item->tree = [];
 

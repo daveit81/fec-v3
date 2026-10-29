@@ -96,6 +96,8 @@ class Factory
             'robots' => (string) config('fec.legacy.meta.robots', ''),
             'sitename_pagetitles' => (int) config('fec.legacy.meta.sitename_pagetitles', 0),
             'sef' => '1',
+            // sh404SEF set it at start-up to 1 - shRewriteMode (0: URLs without index.php/)
+            'sef_rewrite' => '1',
         ]);
     }
 

@@ -177,6 +177,22 @@ and 72 of `index.php`) and the layout prints none of its fixed ones, so the sect
 bare home on menu item 26, given its slash by `feccanonicalfix`), then the system plugins. The
 status page keeps "/" on the development hostname (APP_URL), where `/__home` shows the home.
 
+## com_atlas and com_tournaments (phase 4, step 5)
+
+Both copied verbatim from the snapshot (`index.html` placeholders kept), with the mechanical
+rewrites. com_atlas serves its three public views on v3 (`operators`, `operator`, `changelog`:
+`/online-casinos/operators`, `/online-casinos/operators/<slug>`, `/online-casinos/operators/changelog`);
+the editorial dashboard (`dashboards/atlas-dashboard`, Itemid 1213, its AJAX tasks posted to that
+path with `task=dashboard.*`) is copied but not registered: it stays on Joomla, as the other
+`dashboards/` pages, until a later step. One edit: `controllers/dashboard.php` gateAndJson flushed
+every output buffer; it stops at `FEC_OB_BASE` (same edit as com_authors). The layer gained what
+`atlas_route()` reads: the menu items' `component` (the link's option, as JMenuSite joined
+`#__extensions`) and the configuration's `sef_rewrite` (1: sh404SEF sets it to 1 - shRewriteMode at
+start-up, so the links carry no `index.php/`). com_tournaments' show view renders at include time
+(procedural markup after the class) over the `tournaments` table the parser crons write; its URLs
+are in the registry (`tournaments`, `tournaments/freeroll/`, `tournaments/with-fee/`), its sh404SEF
+plugin (`sef_ext/com_tournaments.php`) is not ported: the registry holds every spelling its links use.
+
 ## Plugins (phase 4)
 
 `plugins/<type>/<name>/<name>.php` are verbatim copies of our plugins, run by the layer's
