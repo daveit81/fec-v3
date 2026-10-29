@@ -27,11 +27,7 @@ class ParityRender extends Command
     {
         $host = (string) parse_url((string) config('fec.site_url'), PHP_URL_HOST);
         $path = '/'.ltrim((string) $this->argument('path'), '/');
-        $request = Request::create('https://'.$host.$path, 'GET', [], [], [], [
-            'HTTP_USER_AGENT' => 'FEC-parity/1.0',
-            'HTTP_ACCEPT' => 'text/html',
-            'HTTP_CF_IPCOUNTRY' => '',
-        ]);
+        $request = self::makeRequest($host, $path);
         $kernel = app(Kernel::class);
         $response = $kernel->handle($request);
         $head = 'STATUS:'.$response->getStatusCode()."\n";
@@ -42,5 +38,23 @@ class ParityRender extends Command
         $kernel->terminate($request, $response);
 
         return self::SUCCESS;
+    }
+
+    /**
+     * The GET request of a public path as the web server hands it over:
+     * REQUEST_URI and QUERY_STRING as sent (Request::create() rebuilds them
+     * with http_build_query(), "a,b" becoming "a%2Cb"; JURI read them raw).
+     */
+    public static function makeRequest(string $host, string $path): Request
+    {
+        $request = Request::create('https://'.$host.$path, 'GET', [], [], [], [
+            'HTTP_USER_AGENT' => 'FEC-parity/1.0',
+            'HTTP_ACCEPT' => 'text/html',
+            'HTTP_CF_IPCOUNTRY' => '',
+        ]);
+        $request->server->set('REQUEST_URI', $path);
+        $request->server->set('QUERY_STRING', (string) (parse_url('https://'.$host.$path, PHP_URL_QUERY) ?? ''));
+
+        return $request;
     }
 }

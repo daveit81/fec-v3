@@ -35,12 +35,17 @@ final class Sh404sefMetas
      */
     public const TRACKING_VARS = ['utm_source', 'utm_medium', 'utm_term', 'utm_content', 'utm_id', 'utm_campaign', 'gclid', 'fb_xd_bust', 'fb_xd_fragment', 'hitcount'];
 
-    /** @param  array<string, mixed>  $request  the request's query variables */
-    public static function apply(Document $doc, ?string $newurl, array $request = []): void
+    /**
+     * Applies the row to the document; returns the canonical it wrote, if any
+     * (printed as written, past the core "sef" plugin: Sh404sefOutput).
+     *
+     * @param  array<string, mixed>  $request  the request's query variables
+     */
+    public static function apply(Document $doc, ?string $newurl, array $request = []): ?string
     {
         $row = self::row(self::lookupKey($newurl, $request));
         if ($row === null) {
-            return;
+            return null;
         }
 
         if (trim((string) $row->metatitle) !== '') {
@@ -58,7 +63,11 @@ final class Sh404sefMetas
         if (trim((string) $row->canonical) !== '') {
             $doc->headLinks = array_values(array_filter($doc->headLinks, fn ($l) => $l['relation'] !== 'canonical'));
             $doc->addHeadLink(trim((string) $row->canonical), 'canonical');
+
+            return trim((string) $row->canonical);
         }
+
+        return null;
     }
 
     /**

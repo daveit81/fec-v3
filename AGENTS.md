@@ -96,7 +96,9 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   the fecv2 overrides, which are verbatim under `site/templates/fecv2/html/com_content/` and found
   by `JView` on the theme path first). Joomla's plugins run through `JPlugin`/`JPluginHelper`/
   `JDispatcher` (`fec.legacy.plugins`: our `feccounts`, `fechome`, `feccanonicalfix`, `fecclustermeta`, verbatim under
-  `site/plugins/`; the runner's `afterRender()` is `onAfterRender` on the finished page);
+  `site/plugins/`, Joomla's core `sef`, and the layer's `sh404sef`, which holds sh404SEF's place in the order and
+  puts back the canonical it wrote past `sef`, as written: `Sh404sefOutput`; the runner's `afterRender()` is
+  `onAfterRender` on the finished page);
   `JCategories` is the published tree of `jos_categories`; `Application::getParams()` is
   `JSite::getParams()` (menu item params over the component's, `page_title` = the menu item's
   title); the component's options and the global metadata of `configuration.php` are config
@@ -163,7 +165,9 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
 - Probes: `php artisan fec:urls:resolve <path>...` (`--json`) and `GET /__registry?path=` on `v3.`.
 - A request that differs from the registry's spelling only by the trailing slash (`/bonuses` for
   the stored `bonuses/`) is a 301 to the stored spelling, as sh404SEF answered; a page's canonical is
-  the registry spelling, slash included. `JUri` keeps the request's trailing slash too.
+  the registry spelling, slash included. `JUri` keeps the request's trailing slash too, and its query
+  string as sent (`QUERY_STRING`, never Symfony's sorted and re-encoded `getQueryString()`);
+  `fec:parity` hands v3 the path's raw `REQUEST_URI`/`QUERY_STRING` as the web server does.
 - Aliases (rank > 0) are served as pages with a self-referencing canonical, as Joomla does
   (`FEC_ROUTER_ALIAS_REDIRECT=false` is parity; true is a phase 6 option).
 - Redirect targets (`index.php?...`) resolve to a SEF path exactly, then tolerantly (parameter

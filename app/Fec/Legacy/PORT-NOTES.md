@@ -218,8 +218,16 @@ gclid, fb_xd_*, hitcount; not fbclid), sorted by `shSortUrl`. Measured on 29 Oct
 `/online-casinos?sort=newest`, `?start=50` and `?filters=crypto` carry the plugin's title
 "Online Casinos" and no description on the live site, the row's only on the plain URL. On the
 home with a query string the router passed the request's variables alone, so sh404SEF did not
-see the home there (no home row, the plugin's title of the home article): reproduced, to be
-confirmed by the parity of `/?fbclid=` and `/?utm_source=`.
+see the home there (no home row, the plugin's title of the home article): reproduced, parity
+green on `/?fbclid=` and `/?utm_source=` (29 Oct 2026).
+sh404SEF wrote its canonical into the finished page after the core `sef` system plugin (ordering
+76 and 79): what it wrote was never made absolute. The "Title and metas" rows 344/345 give the
+casinouk review the relative canonical `reviews/online-casino/casinouk.html`, served so. v3
+decides the canonical before the layout, so the layout prints a canonical sh404SEF inserted or
+rewrote under a placeholder `sef` skips (`fecsh404sef:N`, a URL scheme to its regex) and the
+layer's system plugin `sh404sef` (`site/plugins/system/sh404sef`, ours, not a copy) puts it back
+in sh404SEF's place, before `feccanonicalfix` (`Sh404sefOutput`). A canonical of the page's own
+that sh404SEF left alone still goes through `sef`, as on the live site.
 
 `plugins/system/sef/sef.php` is our port of Joomla's core SEF system plugin (2.5.28, the
 original's regexes): on the finished page every `href="index.php?..."` written literally (the

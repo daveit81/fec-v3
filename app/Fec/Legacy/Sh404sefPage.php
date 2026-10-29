@@ -76,10 +76,14 @@ final class Sh404sefPage
      * Applies the rewrite to the document and returns the page's canonicals,
      * in page order (an inserted one first). Empty: the page has none.
      *
+     * $written: the first one is a canonical sh404SEF inserted or rewrote (the
+     * page prints it as written, past the core "sef" plugin: Sh404sefOutput),
+     * not one of the page's own it left alone.
+     *
      * @param  array<string, mixed>  $request  the request's query variables
      * @return list<string>
      */
-    public static function content(Document $doc, ResolvedUrl $url, bool $isHome = false, array $request = []): array
+    public static function content(Document $doc, ResolvedUrl $url, bool $isHome = false, array $request = [], ?bool &$written = null): array
     {
         $cfg = (array) config('fec.legacy.sh404sef', []);
         $current = Sh404sefMetas::currentNonSefUrl($url->newurl, $request, $isHome);
@@ -178,6 +182,7 @@ final class Sh404sefPage
             is_scalar($page) ? (string) $page : null,
             Uri::site(),
             $cfg,
+            $written,
         );
     }
 
@@ -192,12 +197,15 @@ final class Sh404sefPage
      * component put on the page ($existing, in page order): what the page
      * carries afterwards, an inserted one first.
      *
+     * $written tells whether the first one is sh404SEF's (inserted or rewritten).
+     *
      * @param  list<string>  $existing
      * @param  array<string, mixed>  $cfg
      * @return list<string>
      */
-    public static function canonicals(array $existing, string $shCanonical, ?int $menu, int $catid, string $base, ?string $page, string $site, array $cfg = []): array
+    public static function canonicals(array $existing, string $shCanonical, ?int $menu, int $catid, string $base, ?string $page, string $site, array $cfg = [], ?bool &$written = null): array
     {
+        $written = false;
         $count = count($existing);
         if ($count > 1 && ($cfg['remove_other_canonicals'] ?? true)) {
             $existing = [];
@@ -216,6 +224,10 @@ final class Sh404sefPage
             $insert[] = $base;
         } elseif ($shCanonical !== '') {
             $existing = array_fill(0, $count, $shCanonical);
+            $written = $count > 0;
+        }
+        if ($insert !== []) {
+            $written = true;
         }
 
         return array_values(array_merge($insert, $existing));

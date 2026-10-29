@@ -100,6 +100,7 @@ final class ComponentRunner implements PageHandler
         }
         Uri::reset();
         Joomla\Route::reset();
+        Sh404sefOutput::reset();
         $this->syncServerGlobals($request);
 
         $level = ob_get_level();
@@ -138,6 +139,7 @@ final class ComponentRunner implements PageHandler
         }
         Uri::reset();
         Joomla\Route::reset();
+        Sh404sefOutput::reset();
 
         // What Joomla's router + sh404SEF had put in the request: the Joomla
         // query of the resolved URL (option, view, slug, Itemid, ...) on top of
@@ -232,11 +234,13 @@ final class ComponentRunner implements PageHandler
         // whole page rewrite of the live copy (its meta plugin's title, the canonical
         // branches): it decides the page's canonicals too.
         $sh404Canonicals = null;
+        $sh404Written = false;
+        $rowCanonical = null;
         $query = $request->query();
         if ($option === 'com_content') {
-            $sh404Canonicals = Sh404sefPage::content($doc, $url, $home, $query);
+            $sh404Canonicals = Sh404sefPage::content($doc, $url, $home, $query, $sh404Written);
         } else {
-            Sh404sefMetas::apply($doc, $url->newurl, $query);
+            $rowCanonical = Sh404sefMetas::apply($doc, $url->newurl, $query);
         }
 
         if ($tmpl === 'component') {
@@ -252,9 +256,14 @@ final class ComponentRunner implements PageHandler
             $canonical = $sh404Canonicals[0] ?? null;
         } else {
             $canonical = $doc->canonical();
+            $sh404Written = $rowCanonical !== null && $canonical === $rowCanonical;
             if ($canonical === null && $url->canonical !== null) {
                 $canonical = Uri::site().$url->canonical;
             }
+        }
+        // sh404SEF wrote its canonical after the core "sef" plugin had run: as written
+        if ($canonical !== null && $sh404Written) {
+            $canonical = Sh404sefOutput::protect($canonical);
         }
 
         $messages = Factory::getApplication()->getMessageQueue();
@@ -296,12 +305,13 @@ final class ComponentRunner implements PageHandler
     private function afterRender(string $html): string
     {
         if (! PluginHelper::importPlugin('system')) {
-            return $html;
+            return Sh404sefOutput::restore($html);
         }
         Joomla\Response::setBody($html);
         Dispatcher::getInstance()->trigger('onAfterRender');
 
-        return (string) Joomla\Response::getBody();
+        // the "sh404sef" plugin put sh404SEF's canonical back; nothing may leave as a placeholder
+        return Sh404sefOutput::restore((string) Joomla\Response::getBody());
     }
 
     private function raw(string $body, Request $request): Response

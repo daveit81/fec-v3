@@ -173,10 +173,11 @@ return [
         'plugins' => [
             'content' => ['feccounts', 'fechome'],
             // in Joomla's order: the core SEF plugin (76: href="index.php?..." routed, relative
-            // src/href given the base), then after sh404SEF (79, App\Fec\Legacy\Sh404sefPage on
-            // the com_content pages) feccanonicalfix (86: the bare-host canonical sh404SEF writes
-            // on menu item 26 gets its slash) and fecclustermeta (87)
-            'system' => ['sef', 'feccanonicalfix', 'fecclustermeta'],
+            // src/href given the base), sh404SEF (79: the layer's "sh404sef", which puts back the
+            // canonical Sh404sefPage/Sh404sefMetas wrote, past "sef": Sh404sefOutput),
+            // feccanonicalfix (86: the bare-host canonical sh404SEF writes on menu item 26 gets
+            // its slash) and fecclustermeta (87)
+            'system' => ['sef', 'sh404sef', 'feccanonicalfix', 'fecclustermeta'],
         ],
 
         // sh404SEF's settings read by its page rewrite and its com_content meta plugin

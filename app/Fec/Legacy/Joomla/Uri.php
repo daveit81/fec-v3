@@ -42,8 +42,11 @@ class Uri
                 $site = self::site();
                 $request = request();
                 // getPathInfo() keeps a trailing slash (Laravel's path() trims it): sh404SEF
-                // URLs such as /bonuses/<casino>/ end with one and the pages echo it.
-                self::$current = new Uri($site.'/'.ltrim($request->getPathInfo(), '/').($request->getQueryString() !== null && $request->getQueryString() !== '' ? '?'.$request->getQueryString() : ''));
+                // URLs such as /bonuses/<casino>/ end with one and the pages echo it. The query
+                // string as the visitor sent it (JURI read REQUEST_URI): Symfony's
+                // getQueryString() sorts and re-encodes it ("filters=a,b" became "a%2Cb").
+                $qs = (string) $request->server->get('QUERY_STRING', '');
+                self::$current = new Uri($site.'/'.ltrim($request->getPathInfo(), '/').($qs !== '' ? '?'.$qs : ''));
             }
 
             return self::$current;

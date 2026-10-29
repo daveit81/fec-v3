@@ -69,6 +69,24 @@ final class Sh404sefPageTest extends TestCase
         $this->assertSame([], $this->canon([], '', 26, 0, '/somewhere'));
     }
 
+    public function test_written_tells_sh404sef_canonicals_from_the_page_own(): void
+    {
+        // the casinouk review: its "Title and metas" row's relative canonical replaces the override's
+        $out = Sh404sefPage::canonicals([self::SITE.'/online-casinos/casinouk'], 'reviews/online-casino/casinouk.html', null, 8, self::SITE.'/online-casinos/casinouk', null, self::SITE, [], $written);
+        $this->assertSame(['reviews/online-casino/casinouk.html'], $out);
+        $this->assertTrue($written);
+
+        Sh404sefPage::canonicals([], '', 180, 0, self::SITE.'/online-casinos/clusters/', null, self::SITE, [], $written);
+        $this->assertTrue($written);
+
+        // a category with its own canonical: left alone, the core "sef" plugin sees it
+        Sh404sefPage::canonicals([self::SITE.'/online-casinos'], '', 180, 0, self::SITE.'/online-casinos', null, self::SITE, [], $written);
+        $this->assertFalse($written);
+
+        Sh404sefPage::canonicals([], '', 26, 0, self::SITE.'/somewhere', null, self::SITE, [], $written);
+        $this->assertFalse($written);
+    }
+
     public function test_legacy_page_parameter_is_kept_on_an_inserted_category_canonical(): void
     {
         $this->assertSame([self::SITE.'/online-casinos/clusters/?page=3'], $this->canon([], '', 180, 0, '/online-casinos/clusters/', '3'));

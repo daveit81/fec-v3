@@ -7,7 +7,6 @@ use DOMDocument;
 use DOMXPath;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Http\Kernel;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Symfony\Component\Console\Formatter\OutputFormatter;
@@ -195,11 +194,7 @@ class Parity extends Command
     private function renderInProcess(string $path): array
     {
         $host = (string) parse_url((string) config('fec.site_url'), PHP_URL_HOST);
-        $request = Request::create('https://'.$host.$path, 'GET', [], [], [], [
-            'HTTP_USER_AGENT' => 'FEC-parity/1.0',
-            'HTTP_ACCEPT' => 'text/html',
-            'HTTP_CF_IPCOUNTRY' => '',
-        ]);
+        $request = ParityRender::makeRequest($host, $path);
         $kernel = app(Kernel::class);
         $response = $kernel->handle($request);
         $html = (string) $response->getContent();
