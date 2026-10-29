@@ -323,23 +323,33 @@ request reaches v3: until the root block exists, the live site is unchanged.
 ## The root switch (phase 4, step 6)
 
 The per-section blocks (`fec:urls:htaccess --option=...`) send a list of prefixes to v3; the root
-block sends **everything but what Joomla keeps** (`App\Fec\Url\RootSwitch`,
-`fec:urls:htaccess --root`): files and directories on disk (the web server serves them as now: the
-static assets, `/components/.../*.php` endpoints, `/api/`, `/og/`, `/administrator/`, `/v3/`),
-requests with `task=` or `option=` in the query string (the crons, the desks, non-SEF links), the
-registry URLs of the components and views in `fec.legacy.root_keep` and `fec.legacy.desk_views` (as
-the shortest prefixes no other canonical URL shares, exact paths otherwise) and the fixed paths of
-`root_keep.paths` (`/administrator`, `/index.php` with its path-info, `/dashboards/`). The home has
-its own rule (`^$`): the docroot is a directory, which the general rule leaves alone. `--test` gates
-both rules on `v3test=1`, the trial under the live hostname before the real switch.
+block sends **what Joomla's catch-all took, but what Joomla keeps** (`App\Fec\Url\RootSwitch`,
+`fec:urls:htaccess --root`). It goes right below the per-section blocks (com_bonuses, com_authors,
+goto), which stay: they send their whole prefixes, a dot in the last segment included
+(`/bonuses/goldbet.io-casino`). Joomla's catch-all (line 347 of the live file) only took a last
+segment without a dot or ending in `.php`, `.htm(l)`, `.feed`, `.pdf`, `.vcf`, `.raw`, plus
+`/component/`: the root block copies that `REQUEST_URI` condition, so `/.env` or a missing
+`/x/y.jpg` keeps the web server's 404, and keeps `/component/` on Joomla. What Joomla keeps: files
+and directories on disk (the web server serves them as now: the static assets,
+`/components/.../*.php` endpoints, `/api/`, `/og/`, `/administrator/`; a directory with rewrite rules
+of its own, `/fxclock/`, `/v3/`, is never read by the root file's rules at all), requests with
+`task=` or `option=` in the query string (the crons, the desks, non-SEF links), the registry URLs of
+the components and views in `fec.legacy.root_keep` and `fec.legacy.desk_views` (as the shortest
+prefixes no other canonical URL shares, exact paths otherwise) and the fixed paths of
+`root_keep.paths` (`/administrator`, `/component`, `/index.php` with its path-info, `/dashboards/`).
+The home has its own rule (`^$`): the docroot is a directory, which the general rule leaves alone.
+`--test` gates both rules on `v3test=1`, the trial under the live hostname before the real switch.
 
 The command also counts the registry's canonical URLs by what v3 does with them: served (a handler
 in `Dispatcher`), answered by an `.htaccess` rule (`fec.legacy.htaccess_redirects`), kept on Joomla,
-**not ported** (v3 would answer 404: each such view needs a decision before the switch).
+**not ported** (v3 would answer 404: listed in full, each needs a decision before the switch).
 `fec:urls:replay <log>` checks real traffic: every GET/HEAD of a copy of the live access log that
-the block would send to v3 is routed by v3's router (no rendering; the query string ignored) and its
-status class compared with the live one; the POSTs that would reach v3 are listed apart (the public
-fallback answers GET and HEAD only).
+the block would send to v3 is routed by v3's router (the query string ignored; the T&C and ad-click
+views count as the redirects they answer when they run) and its status class compared with the
+live one; `--render=N` renders up to N of the paths that still differ, one process each, and
+compares the status v3 really answers. The POSTs that would reach v3 are listed apart (the public
+fallback answers GET and HEAD only). The log has no Host: a redirect the live site answers for
+another hostname shows as a difference.
 
 ## sh404SEF's other tables
 

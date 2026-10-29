@@ -41,7 +41,7 @@ final class RootSwitchTest extends TestCase
         $stats = $this->sample()->stats;
         $this->assertSame(1, $stats[RootSwitch::V3]['com_atlas.operators'][0]);
         $this->assertSame(1, $stats[RootSwitch::JOOMLA]['com_atlas.dashboard'][0]);
-        $this->assertSame(['jpots'], $stats['htaccess gone']['com_jackpots.jackpots'][1]);
+        $this->assertSame(['jpots/'], $stats['htaccess gone']['com_jackpots.jackpots'][1]);
         $this->assertArrayNotHasKey(RootSwitch::NOT_PORTED, $stats);
     }
 
@@ -77,6 +77,25 @@ final class RootSwitchTest extends TestCase
 
         $test = implode("\n", $this->sample()->block(true, '2026-10-29'));
         $this->assertSame(2, substr_count($test, 'RewriteCond %{QUERY_STRING} (^|&)v3test=1(&|$)'));
+    }
+
+    public function test_only_what_joomla_s_catch_all_took_goes_to_v3(): void
+    {
+        $this->assertTrue(RootSwitch::catchAll('/'));
+        $this->assertTrue(RootSwitch::catchAll('/bonuses/'));
+        $this->assertTrue(RootSwitch::catchAll('/online-casinos/x'));
+        $this->assertTrue(RootSwitch::catchAll('/no_deposit.html'));
+        $this->assertTrue(RootSwitch::catchAll('/wp-login.php'));
+        $this->assertTrue(RootSwitch::catchAll('/blog/feed/rss'));
+        $this->assertTrue(RootSwitch::catchAll('/x.FEED'));
+        $this->assertFalse(RootSwitch::catchAll('/.env'));
+        $this->assertFalse(RootSwitch::catchAll('/images/missing.jpg'));
+        $this->assertFalse(RootSwitch::catchAll('/bonuses/goldbet.io-casino'));
+        $this->assertTrue(RootSwitch::catchAll('/bonuses/goldbet.io-casino/'));
+        $this->assertFalse(RootSwitch::catchAll('/online-casinos/craps%2Ecom-casino'), 'decoded, as REQUEST_URI');
+
+        $block = implode("\n", $this->sample()->block(false, '2026-10-29'));
+        $this->assertStringContainsString("RewriteCond %{QUERY_STRING} !(^|&)(task|option)=\nRewriteCond %{REQUEST_URI} (/[^.]*|\\.(php|html?|feed|pdf|vcf|raw))$ [NC]\nRewriteCond %{REQUEST_FILENAME} !-f", $block);
     }
 
     public function test_status_classes(): void

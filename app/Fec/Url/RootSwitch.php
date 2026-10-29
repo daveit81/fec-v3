@@ -17,6 +17,14 @@ use Illuminate\Support\Facades\DB;
  *   - a few fixed paths (fec.legacy.root_keep.paths: /administrator,
  *     /index.php and its path-info, menu items that are no registry URL).
  *
+ * Everything else goes to v3 only where Joomla's own catch-all took it
+ * (line 347 of the live file: a last segment without a dot, or ending in
+ * .php, .htm(l), .feed, .pdf, .vcf, .raw): a path like "/.env" or
+ * "/x/y.jpg" that is no file keeps the web server's 404 as now. The block
+ * goes right below the per-section blocks (com_bonuses, com_authors, goto),
+ * which stay as they are: they send their whole prefixes, dots included
+ * ("/bonuses/goldbet.io-casino").
+ *
  * fec:urls:htaccess --root prints the .htaccess block from this,
  * fec:urls:replay checks a slice of the live access log against it.
  */
@@ -27,6 +35,9 @@ final class RootSwitch
     public const V3 = 'v3';
 
     public const NOT_PORTED = 'not ported';
+
+    /** Joomla's catch-all (live .htaccess, line 347), without its "/component/" branch: that prefix stays on Joomla. */
+    public const CATCH_ALL = '(/[^.]*|\.(php|html?|feed|pdf|vcf|raw))$';
 
     /**
      * @param  list<string>  $prefixes  kept as "path" and "path/..."
@@ -87,8 +98,9 @@ final class RootSwitch
             }
             $stats[$class][$key] ??= [0, []];
             $stats[$class][$key][0]++;
-            if (count($stats[$class][$key][1]) < 3) {
-                $stats[$class][$key][1][] = $path;
+            // every not-ported URL is listed (each one needs a decision), three samples of the rest
+            if (count($stats[$class][$key][1]) < ($class === self::NOT_PORTED ? 200 : 3)) {
+                $stats[$class][$key][1][] = $oldurl; // as stored: the trailing slash matters
             }
         }
 
@@ -206,8 +218,16 @@ final class RootSwitch
         return in_array($path, $this->exact, true);
     }
 
+    /** Would Joomla's catch-all have taken this path (decoded, as REQUEST_URI)? The home always goes. */
+    public static function catchAll(string $path): bool
+    {
+        $path = '/'.ltrim(rawurldecode($path), '/');
+
+        return $path === '/' || preg_match('#'.self::CATCH_ALL.'#i', $path) === 1;
+    }
+
     /**
-     * The block for the top of public_html/.htaccess. The home has its own
+     * The block for public_html/.htaccess, right below the per-section blocks. The home has its own
      * rule (the docroot is a directory, which the second rule leaves alone).
      * $test gates both rules on v3test=1 (the trial under the live hostname).
      *
@@ -225,7 +245,8 @@ final class RootSwitch
         $lines[] = '# FEC v3 root switch - every path to the v3 app but what Joomla keeps (generated '.$date.' by fec:urls:htaccess --root)';
         $lines[] = '# '.($test
             ? 'TEST: only with v3test=1 in the query string; drop the two v3test RewriteCond lines to switch for real'
-            : 'Replaces the per-section blocks (com_authors, com_bonuses). Roll back: the backup of this file');
+            : 'Right below the per-section blocks (com_bonuses, com_authors, goto), which stay. Roll back: remove this block');
+        $lines[] = '# Everything else goes to v3 where Joomla\'s catch-all took it (same REQUEST_URI condition)';
         $lines[] = '# Joomla keeps: files and directories on disk, task= and option= requests, '.implode(', ', array_merge(
             array_map(fn ($p) => '/'.$p.'/...', $this->prefixes),
             array_map(fn ($p) => '/'.$p, $this->exact),
@@ -235,6 +256,7 @@ final class RootSwitch
         array_push($lines, ...$cond);
         $lines[] = 'RewriteRule ^$ /v3/index.php [L]';
         array_push($lines, ...$cond);
+        $lines[] = 'RewriteCond %{REQUEST_URI} '.self::CATCH_ALL.' [NC]';
         $lines[] = 'RewriteCond %{REQUEST_FILENAME} !-f';
         $lines[] = 'RewriteCond %{REQUEST_FILENAME} !-d';
         if ($this->prefixes !== []) {

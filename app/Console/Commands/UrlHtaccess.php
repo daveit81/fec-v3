@@ -125,6 +125,18 @@ class UrlHtaccess extends Command
             $keys = $switch->stats[$class];
             uasort($keys, fn ($a, $b) => $b[0] <=> $a[0]);
             $this->info(sprintf('%s: %d URL(s)', $class, array_sum(array_map(fn ($k) => $k[0], $keys))));
+            if ($class === RootSwitch::NOT_PORTED) {
+                // each one needs a decision before the switch: listed in full, one per line
+                $rows = [];
+                foreach ($keys as $key => $v) {
+                    foreach ($v[1] as $path) {
+                        $rows[] = [$key, $path];
+                    }
+                }
+                $this->table(['option.view', 'path'], $rows);
+
+                continue;
+            }
             $this->table(['option.view', 'URLs', 'samples'], array_map(
                 fn ($key, $v) => [$key, number_format($v[0]), implode('  ', $v[1])],
                 array_keys($keys), $keys
