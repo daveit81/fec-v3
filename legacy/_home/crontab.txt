@@ -1,0 +1,153 @@
+MAILTO="cron@freeextrachips.com"
+SHELL="/bin/bash"
+0 0,8 * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/frank/frank-engine.php >> /home/freeextr/logs/frank.log 2>&1
+
+SHELL="/bin/bash"
+7 * * * * /opt/alt/php56/usr/bin/php /home/freeextr/scripts/bonuses_autoexpire.php > /dev/null
+
+SHELL="/bin/bash"
+0 0 * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_tournaments/parser/sloto-upta-xml.php
+
+SHELL="/bin/bash"
+0 0 * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_tournaments/parser/miami-xml.php
+
+SHELL="/bin/bash"
+0 0 * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_tournaments/parser/redstag-json.php
+
+SHELL="/bin/bash"
+0 0 * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_tournaments/parser/lincoln-json.php
+
+SHELL="/bin/bash"
+*/10 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_jackpots/parser/sloto-rtg.php >/dev/null 2>&1 
+
+SHELL="/bin/bash"
+*/50 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_jackpots/parser/dnc-rival.php >/dev/null 2>&1
+
+SHELL="/bin/bash"
+*/5 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_jackpots/parser/microgaming.php >/dev/null 2>&1
+
+SHELL="/bin/bash"
+*/20 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_jackpots/parser/drake.php >/dev/null 2>&1
+
+SHELL="/bin/bash"
+*/10 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_jackpots/parser/slotsmillion.php >/dev/null 2>&1
+
+SHELL="/bin/bash"
+*/10 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_jackpots/parser/playtech.php >/dev/null 2>&1
+
+SHELL="/bin/bash"
+*/30 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_jackpots/parser/energy.php >/dev/null 2>&1
+
+SHELL="/bin/bash"
+*/20 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_jackpots/parser/paf.php >/dev/null 2>&1
+
+SHELL="/bin/bash"
+0,20 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_jackpots/parser/unibet.php >/dev/null 2>&1
+
+SHELL="/bin/bash"
+*/20 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_jackpots/parser/rtg.php >/dev/null 2>&1
+
+SHELL="/bin/bash"
+0,30 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_jackpots/parser/slotjoint.php >/dev/null 2>&1
+
+SHELL="/bin/bash"
+0 0 * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_tournaments/parser/riobet-json.php
+
+SHELL="/bin/bash"
+*/20 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_jackpots/parser/lvbet.php >/dev/null 2>&1
+
+SHELL="/bin/bash"
+*/5 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_jackpots/parser/slotland-bot.php >/dev/null 2>&1
+
+SHELL="/bin/bash"
+*/5 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_jackpots/parser/winaday-bot.php >/dev/null 2>&1
+
+SHELL="/bin/bash"
+*/5 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_jackpots/parser/slotland-scraper.php >/dev/null 2>&1
+
+SHELL="/bin/bash"
+*/20 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_jackpots/parser/intertops-bot.php >/dev/null 2>&1
+
+SHELL="/bin/bash"
+*/20 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_jackpots/parser/saucify-json.php >/dev/null 2>&1
+
+SHELL="/bin/bash"
+*/20 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_jackpots/parser/joefortune-json.php >/dev/null 2>&1
+
+SHELL="/bin/bash"
+*/20 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_jackpots/parser/bovada-json.php >/dev/null 2>&1
+
+SHELL="/bin/bash"
+*/20 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_jackpots/parser/cascafe-json.php >/dev/null 2>&1
+
+SHELL="/bin/bash"
+0 0 * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_tournaments/parser/everum-json.php
+
+SHELL="/bin/bash"
+0 0 * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_tournaments/parser/icc-json.php
+
+SHELL="/bin/bash"
+0 0 * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_tournaments/parser/liberty-json.php
+
+SHELL="/bin/bash"
+*/5 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_jackpots/parser/redstag.php >/dev/null 2>&1
+
+SHELL="/bin/bash"
+0,15 * * * * /usr/bin/flock -n /tmp/jackpots_update.lock /home/freeextr/bin/jackpots_update.sh >> /home/freeextr/cron_jackpots.log 2>&1
+
+SHELL="/bin/bash"
+0,30 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_tournaments/parser/mirax.php
+
+SHELL="/bin/bash"
+0,30 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_tournaments/parser/7bit.php
+
+SHELL="/bin/bash"
+0 0,12 * * * /opt/alt/php84/usr/bin/php /home/freeextr/scripts/sitemap-generator.php >> /home/freeextr/logs/sitemap-cron.log 2>&1
+
+SHELL="/bin/bash"
+0 2 * * 2 /opt/alt/php56/usr/bin/php /home/freeextr/cron/send_weekly_digest.php >> /home/freeextr/cron/digest.log 2>&1
+
+SHELL="/bin/bash"
+0 * * * * /opt/alt/php56/usr/bin/php /home/freeextr/public_html/cli/fec_generate_llmstxt.php
+
+5 23 * * * wget -qO- --no-check-certificate "https://170.249.222.58/fec-admin/fec_cofm_cron.php?mode=auto&key=<REDACTED>" --header="Host: www.freeextrachips.com"
+SHELL="/bin/bash"
+*/5 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/scripts/fecxbot_cron.php >> /home/freeextr/scripts/fecxbot.log
+
+SHELL="/bin/bash"
+30 0 * * 1 /opt/alt/php84/usr/bin/php /home/freeextr/public_html/frank/safety-engine.php >> /home/freeextr/logs/safety-engine.log 2>&1
+
+5 0 1 * * wget -qO- --no-check-certificate "https://170.249.222.58/fec-admin/fec_cofm_cron.php?mode=publish&key=<REDACTED>" --header="Host: www.freeextrachips.com" >/dev/null 2>&1
+0,30 * * * * wget -qO- --no-check-certificate "https://170.249.222.58/components/com_tournaments/parser/rocket.php?live=1" --header="Host: www.freeextrachips.com"
+0,30 * * * * wget -qO- --no-check-certificate "https://170.249.222.58/components/com_tournaments/parser/spinsamurai.php?live=1" --header="Host: www.freeextrachips.com"
+0,30 * * * * wget -qO- --no-check-certificate "https://170.249.222.58/components/com_tournaments/parser/wildfortune.php?live=1" --header="Host: www.freeextrachips.com" 
+SHELL="/bin/bash"
+15 3 * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/fec_cmp_build.php >> /home/freeextr/logs/fec_cmp_build.log 2>&1
+
+SHELL="/bin/bash"
+20 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/fxclock/cron/stats_rebuild.php
+
+SHELL="/bin/bash"
+40 3 * * * /opt/alt/php84/usr/bin/php /home/freeextr/fxclock/cron/autoclose.php
+
+SHELL="/bin/bash"
+10 4 * * * /opt/alt/php84/usr/bin/php /home/freeextr/fxclock/cron/purge.php
+
+SHELL="/bin/bash"
+*/15 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/fxclock/cron/followups.php
+
+SHELL="/bin/bash"
+*/5 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/fxclock/cron/txid_verify.php
+
+SHELL="/bin/bash"
+30 5 * * 0 /opt/alt/php84/usr/bin/php /home/freeextr/fxclock/cron/brands_sync.php
+
+10 6 1 * * curl -sk --resolve www.freeextrachips.com:443:170.249.222.58 "https://www.freeextrachips.com/authors?task=payoutindex.snapshot&key=<REDACTED>&_=$(date +\%s)" >> /home/freeextr/scripts/payout_index.log 2>&1
+20 6 1 1,4,7,10 * curl -sk --resolve www.freeextrachips.com:443:170.249.222.58 "https://www.freeextrachips.com/authors?task=licencewatch.snapshot&key=<REDACTED>&_=$(date +\%s)" >> /home/freeextr/scripts/licence_watch.log 2>&1
+SHELL="/bin/bash"
+40 6 * * 1 /opt/alt/php84/usr/bin/php /home/freeextr/cli/atlas_sentinel.php >/dev/null 2>&1
+
+SHELL="/bin/bash"
+* * * * * /opt/alt/php84/usr/bin/php /home/freeextr/fecv3/artisan schedule:run >/dev/null 2>&1
+
+15 4 * * 1 /usr/local/bin/php /home/freeextr/scripts/blog/fec_blog_slot_links.php --catid=154 --commit >> /home/freeextr/logs/blog-slot-links.log 2>&1

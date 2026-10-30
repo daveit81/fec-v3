@@ -231,7 +231,7 @@ if ($action !== '') {
 <div class="wrap">
   <header class="top">
     <h1>Clusters Admin</h1>
-    <a href="/fec_dashboard.php">&larr; Review dashboard</a>
+    <a href="/fec-admin/fec_dashboard.php">&larr; Review dashboard</a>
   </header>
   <p class="sub">Owner groups derived from <code>jr_owner</code>. Mark a group <strong>featured</strong> + give it a slug, save, then create its page.</p>
 

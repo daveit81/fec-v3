@@ -338,11 +338,14 @@ class AuthorsModelMethodology extends JModel
         $out['reports_recent']   = (int)$fx['reports_recent'];
         $out['casinos_covered']  = (int)$fx['casinos_covered'];
 
-        // Methodology counts from the registry
+        // Methodology counts from the registry (page-kind rows are the editorial
+        // pages' registry, not methodologies: the hub does not count them)
         $topics = $this->getTopics();
-        $out['methodologies_total'] = count($topics);
         $latest = '';
         foreach ($topics as $t) {
+            $kind = (isset($t['kind']) && $t['kind'] !== '') ? $t['kind'] : 'methodology';
+            if ($kind === 'page') continue;
+            $out['methodologies_total']++;
             if (!isset($t['status']) || $t['status'] !== 'live') continue;
             $out['methodologies_live']++;
             if (!empty($t['last_updated']) && $t['last_updated'] > $latest) {
