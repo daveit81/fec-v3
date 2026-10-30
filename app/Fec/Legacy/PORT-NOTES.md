@@ -502,6 +502,26 @@ page) is three public scripts like the endpoints above: head replaced, read only
 their links as on the live site, where sh404SEF answered from `/api/` and `fec_normalize_api_url()`
 removed that segment.
 
+## The redazione's desk files of fec-admin/ and the bounce webhook (phase 5)
+
+`fec-admin/fec_dashboard.php` (the React review dashboard's page), `fec-admin/fec_dash_api.php` (its JSON
+API: reviews, casino of the month, clusters, FXClock, Licence Watch, Atlas events, logo upload) and
+`fec-admin/fec_clusters.php` are verbatim under `site/fec-admin/`, served at their live paths to a logged-in
+member of the redazione (`fec.legacy.desk_files`, `LegacyDeskController::file()`,
+`ComponentRunner::runDeskFile()`); the files still admit only Joomla user 42 (the account's
+`joomla_user_id`) and check the token their page printed, so Laravel's CSRF check is skipped on their
+paths. Edits: the bootstrap heads (`chdir`, `_JEXEC`, `JPATH_BASE`, `includes/defines.php`,
+`framework.php`) are the `_JEXEC` guard with `$jroot = JPATH_ROOT` (the dashboard's bundle date, the
+files they serve), and the logo upload writes to `JPATH_ROOT . '/images/casino-logos/'` instead of
+`JPATH_SITE`. On the development hostname the pages' legacy asset paths (`/css/fec_dash.css`,
+`/js/fec_dash_app.js`) point at www (`DevAssets`); images the dashboard builds in JavaScript from data
+(logos) do not, and show broken there only. The lib slice "desk" holds what they call.
+`JDatabase::getAffectedRows()` now answers the last statement's changed rows (it answered 0).
+
+`webhook/bounce.php` (Resend's bounce and complaint webhook) is a public script like the endpoints
+above, head replaced; its Svix signature check reads the webhook secret from
+`/home/freeextr/conf/fec_resend.php`, as on the live site.
+
 ## Known legacy behaviour reproduced on purpose (parity)
 
 - A path with an encoded "#" (`%23`, a link copied with its anchor) is looked up without it: the

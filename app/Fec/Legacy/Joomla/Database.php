@@ -33,6 +33,8 @@ class Database
 
     private int $insertId = 0;
 
+    private int $affectedRows = 0;
+
     public function __construct(private readonly string $connection = 'fec')
     {
     }
@@ -93,6 +95,7 @@ class Database
             }
             $pdo = $this->connection()->getPdo();
             $affected = $this->connection()->affectingStatement($sql);
+            $this->affectedRows = (int) $affected;
             if (preg_match('/^\s*INSERT\b/i', $sql)) {
                 $this->insertId = (int) $pdo->lastInsertId();
             }
@@ -384,9 +387,10 @@ class Database
         return $escaped ? addslashes($this->errorMsg) : $this->errorMsg;
     }
 
+    /** Rows the last INSERT/UPDATE/DELETE changed (mysqli_affected_rows: changed, not matched). */
     public function getAffectedRows(): int
     {
-        return 0;
+        return $this->affectedRows;
     }
 
     public function transactionStart(): void

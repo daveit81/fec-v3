@@ -10270,7 +10270,7 @@ function close(asDismiss){
     return '<script type="application/ld+json">' . json_encode($payload, $flags) . '</script>';
   }
 
-// --- fec_parse_starlist  (source lines 11620-11632; slices: radice)
+// --- fec_parse_starlist  (source lines 11620-11632; slices: radice, desk)
   /**
    * Parse JReviews checkbox-format *slug1*slug2*slug3* into a clean slug array.
    * Empty input returns empty array. Whitespace trimmed per element.
@@ -10289,7 +10289,26 @@ function close(asDismiss){
     return $out;
   }
 
-// --- fec_get_fieldoptions_map  (source lines 11662-11731; slices: radice)
+// --- fec_build_starlist  (source lines 11643-11652; slices: desk)
+  /**
+   * Inverse of fec_parse_starlist: serialize a slug array into JReviews'
+   * *slug1*slug2*slug3* checkbox storage format (single-asterisk separators,
+   * leading + trailing asterisk). Empty array returns '' (NOT '**'), matching
+   * how JReviews stores an unset multi-value field.
+   * Slugs trimmed; empty entries dropped; order preserved.
+   */
+  function fec_build_starlist($arr) {
+    if (!is_array($arr)) return '';
+    $clean = array();
+    foreach ($arr as $v) {
+      $v = trim((string) $v);
+      if ($v !== '') $clean[] = $v;
+    }
+    if (empty($clean)) return '';
+    return '*' . implode('*', $clean) . '*';
+  }
+
+// --- fec_get_fieldoptions_map  (source lines 11662-11731; slices: radice, desk)
   /**
    * Batch-load fieldoptions for the named JReviews fields.
    * Returns: [fieldName => [slug => displayText, ...], ...]
@@ -12105,7 +12124,7 @@ function close(asDismiss){
     return $h;
   }
 
-// --- fec_sister_owner_norm  (source lines 13570-13574; slices: bonuses, radice)
+// --- fec_sister_owner_norm  (source lines 13570-13574; slices: bonuses, radice, desk)
   /** Normalize an owner string for grouping (mirror of the SQL expression). */
   function fec_sister_owner_norm($s) {
     $s = strtolower(trim((string)$s));
@@ -12113,7 +12132,7 @@ function close(asDismiss){
     return $s;
   }
 
-// --- fec_sister_node_color  (source lines 13582-13592; slices: bonuses, radice)
+// --- fec_sister_node_color  (source lines 13582-13592; slices: bonuses, radice, desk)
   /**
    * Node colour + status label from the jr_* flags. Returns array(hex, label).
    * Neutral grey when FEC_SISTER_COLOR is defined false.
@@ -12375,7 +12394,7 @@ function close(asDismiss){
          . $col . ",' ',''),'.',''),',',''),'&',''),'-',''),'(',''),')',''),'/',''))";
   }
 
-// --- fec_jr_network_exists  (source lines 13875-13885; slices: bonuses, radice)
+// --- fec_jr_network_exists  (source lines 13875-13885; slices: bonuses, radice, desk)
   /**
    * TRUE once the jr_network column exists on #__jreviews_content.
    * Deploy-order-safe: while the column is missing, everything degrades to
@@ -12393,7 +12412,7 @@ function close(asDismiss){
     return $has;
   }
 
-// --- fec_owner_effective_sql  (source lines 13894-13898; slices: radice)
+// --- fec_owner_effective_sql  (source lines 13894-13898; slices: radice, desk)
   /**
    * Raw SQL for the EFFECTIVE grouping owner (jc-aliased): the commercial
    * network when set, else the legal owner. Falls back to jr_owner alone
@@ -12405,7 +12424,7 @@ function close(asDismiss){
       : "jc.jr_owner";
   }
 
-// --- fec_get_casino_clusters  (source lines 13917-13986; slices: radice)
+// --- fec_get_casino_clusters  (source lines 13917-13986; slices: radice, desk)
   /**
    * Every owner group with >= 2 members, derived from jr_owner. Each entry:
    *   array('norm','label','count','members', 'slug'|null, 'featured'=>0|1)
@@ -17954,7 +17973,7 @@ function close(asDismiss){
     return $exists;
   }
 
-// --- fec_cofm_config  (source lines 19810-19818; slices: cli)
+// --- fec_cofm_config  (source lines 19810-19818; slices: cli, desk)
   /**
    * Central COFM configuration, shared by the cron and the dashboard API.
    * Edit target_countries to match your markets (lowercase ISO codes).
@@ -17969,13 +17988,13 @@ function close(asDismiss){
     );
   }
 
-// --- fec_cofm_period_now  (source lines 19822-19822; slices: radice, cli)
+// --- fec_cofm_period_now  (source lines 19822-19822; slices: radice, cli, desk)
   function fec_cofm_period_now() { return date('Y-m'); }
 
-// --- fec_cofm_period_next  (source lines 19825-19825; slices: cli)
+// --- fec_cofm_period_next  (source lines 19825-19825; slices: cli, desk)
   function fec_cofm_period_next() { return date('Y-m', strtotime('first day of next month')); }
 
-// --- fec_cofm_period_shift  (source lines 19829-19833; slices: cli)
+// --- fec_cofm_period_shift  (source lines 19829-19833; slices: cli, desk)
   // shift a 'YYYY-MM' period by N months (negative = past)
   function fec_cofm_period_shift($period, $months) {
     $ts = strtotime($period . '-01');
@@ -17983,7 +18002,7 @@ function close(asDismiss){
     return date('Y-m', strtotime(($months >= 0 ? '+' : '-') . abs((int) $months) . ' months', $ts));
   }
 
-// --- fec_cofm_elect  (source lines 19843-19909; slices: cli)
+// --- fec_cofm_elect  (source lines 19843-19909; slices: cli, desk)
   /**
    * Compute the COFM candidate + shortlist for a period/scope.
    * $opts: minFrank (default 8.0), rotationMonths (default 12), limit (default 5)
@@ -18085,7 +18104,7 @@ function close(asDismiss){
     return 0;
   }
 
-// --- fec_cofm_record_proposal  (source lines 19946-19981; slices: cli)
+// --- fec_cofm_record_proposal  (source lines 19946-19981; slices: cli, desk)
   /**
    * Upsert a proposal row (status=proposed) for period/scope, unless an
    * approved/published row already exists (never overwrite a human decision).
@@ -18128,7 +18147,7 @@ function close(asDismiss){
     return (bool) $db->insertObject('#__fec_cofm', $o);
   }
 
-// --- fec_cofm_publish_period  (source lines 19990-20019; slices: cli)
+// --- fec_cofm_publish_period  (source lines 19990-20019; slices: cli, desk)
   /**
    * Publish all proposed/approved rows for a period: set status=published and
    * write jr_cofmdate (= period first day) on each elected casino for the

@@ -91,4 +91,22 @@ class LegacyDeskController extends Controller
 
         return $runner->runScript($request, $option, $script);
     }
+
+    /**
+     * A desk file outside the components, at its live path (fec.legacy.desk_files:
+     * /fec-admin/fec_dashboard.php, its API, the clusters page). A guest gets the login
+     * page, or a JSON refusal when the call is the dashboard's JavaScript.
+     */
+    public function file(Request $request, ComponentRunner $runner): Response
+    {
+        if (! auth()->check()) {
+            if ($request->expectsJson() || $request->ajax() || $request->isMethod('POST') || str_contains($request->getPathInfo(), '_api')) {
+                return response()->json(['ok' => false, 'error' => 'forbidden'], 403);
+            }
+
+            return redirect()->guest(route('login'));
+        }
+
+        return $runner->runDeskFile($request, $request->getPathInfo());
+    }
 }

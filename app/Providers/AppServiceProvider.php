@@ -28,9 +28,12 @@ class AppServiceProvider extends ServiceProvider
         // /index.php?option=... lands (routes/web.php): the only POST it takes.
         // The desks' standalone scripts (components/<option>/ajax/<name>.php) check
         // the same token themselves (JSession::checkToken).
+        // The desk files of fec-admin/ check the Joomla token the dashboard page printed
+        // (fec_dash_check_csrf: the X-CSRF-Token header or the _token field).
         PreventRequestForgery::except(array_merge(
             ['/', 'index.php', 'components/*/ajax/*'],
             array_map(fn ($p) => trim((string) $p, '/'), (array) config('fec.legacy.desk_paths', [])),
+            array_map(fn ($p) => trim((string) $p, '/'), (array) config('fec.legacy.desk_files', [])),
         ));
     }
 }

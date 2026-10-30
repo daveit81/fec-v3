@@ -130,6 +130,68 @@ final class ComponentRunner implements PageHandler
     }
 
     /**
+     * One of the redazione's standalone desk files outside the components
+     * (fec.legacy.desk_files: the review dashboard of fec-admin/, its JSON API, the
+     * clusters page), which bootstrapped Joomla themselves and checked for Joomla user
+     * 42: included at the same path under the layer for a logged-in member of the
+     * redazione (JFactory::getUser() = the account's joomla_user_id), on the writing
+     * connection; the answer is what the file echoed, with the headers and status it
+     * set. On the development hostname the HTML's legacy asset paths point at www.
+     */
+    public function runDeskFile(Request $request, string $path): Response
+    {
+        $path = ltrim($path, '/');
+        $file = Runtime::sitePath().'/'.$path;
+        if (! in_array($path, (array) config('fec.legacy.desk_files', []), true) || ! is_file($file)) {
+            abort(404);
+        }
+        if (! auth()->check()) {
+            abort(404);
+        }
+
+        Runtime::boot('com_bonuses');
+        Factory::useRwConnection(true);
+        if (! defined('FEC_OB_BASE')) {
+            define('FEC_OB_BASE', ob_get_level() + 1);
+        }
+        Uri::reset();
+        Joomla\Route::reset();
+        Sh404sefOutput::reset();
+        $this->syncServerGlobals($request);
+
+        $level = ob_get_level();
+        ob_start();
+        LegacyErrors::begin($path);
+        try {
+            require $file;
+        } catch (ExitException $e) {
+            // exit (jexit after the port) ends their JSON answers
+        } catch (RedirectException $e) {
+            $this->discard($level);
+
+            return Redirects::to($request, $e->url, $e->status);
+        } catch (Throwable $e) {
+            $this->discard($level);
+            throw $e;
+        } finally {
+            LegacyErrors::end();
+        }
+        $body = '';
+        while (ob_get_level() > $level) {
+            $body = (string) ob_get_clean().$body;
+        }
+        $response = $this->raw($body, $request);
+
+        $live = strtolower((string) parse_url((string) config('fec.site_url'), PHP_URL_HOST));
+        if ($live !== '' && strtolower($request->getHost()) !== $live
+            && stripos((string) $response->headers->get('Content-Type'), 'text/html') === 0) {
+            $response->setContent(DevAssets::absolutize((string) $response->getContent(), (string) config('fec.asset_base')));
+        }
+
+        return $response;
+    }
+
+    /**
      * One of the live site's public standalone endpoints (fec.legacy.public_scripts:
      * r.php, subscribe.php, the bonus votes, the review submission), which bootstrapped
      * Joomla themselves and answered on their own: included at the same path under the

@@ -448,6 +448,18 @@ return [
             'api/search.php',
             'api/search_popular.php',
             'api/search_full.php',
+            'webhook/bounce.php',
+        ],
+
+        // Phase 5: the redazione's desk files outside the components, which bootstrapped
+        // Joomla themselves and admitted Joomla user 42 (site/<path>, head replaced). Served
+        // at the same path to a logged-in member of the redazione (ComponentRunner::
+        // runDeskFile, writing connection, raw output; Laravel's CSRF check skipped: they
+        // check the Joomla token the dashboard page printed).
+        'desk_files' => [
+            'fec-admin/fec_dashboard.php',
+            'fec-admin/fec_dash_api.php',
+            'fec-admin/fec_clusters.php',
         ],
 
         // The /desk home page: what the redazione can open on v3.

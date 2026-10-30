@@ -1,5 +1,5 @@
 {
-    "_comment": "Seeds per ported section: the legacy lib functions its views and the template call. scripts/lib-slice.php follows their calls and writes the closure into app/Fec/Legacy/site/components/com_bonuses/helpers/. \"editions\": the snapshot tasks of com_authors (Payout Index, Licence Watch) mail the desk through the lib. \"bonuses\": every lib function the public side of com_bonuses (views, renders, modules, component helpers) calls directly. \"radice\" (phase 4): the lib functions the fecv2 template calls for the home and that its com_content overrides call for the reviews, the directory, the clusters and the blog. \"endpoints\" (phase 5): the public standalone scripts (r.php, subscribe.php, bonus_feedback.php, ajax_review_submit.php): the newsletter click signature and GA4 ping, Resend, the vote report renderer, the review submission pipeline. \"cli\" (phase 5): the crontab scripts run by fec:legacy:cli (the weekly newsletter digest: its queries, its renderers, the click signature, Resend; the casino of the month: election, proposals, publication).",
+    "_comment": "Seeds per ported section: the legacy lib functions its views and the template call. scripts/lib-slice.php follows their calls and writes the closure into app/Fec/Legacy/site/components/com_bonuses/helpers/. \"editions\": the snapshot tasks of com_authors (Payout Index, Licence Watch) mail the desk through the lib. \"bonuses\": every lib function the public side of com_bonuses (views, renders, modules, component helpers) calls directly. \"radice\" (phase 4): the lib functions the fecv2 template calls for the home and that its com_content overrides call for the reviews, the directory, the clusters and the blog. \"endpoints\" (phase 5): the public standalone scripts (r.php, subscribe.php, bonus_feedback.php, ajax_review_submit.php): the newsletter click signature and GA4 ping, Resend, the vote report renderer, the review submission pipeline. \"cli\" (phase 5): the crontab scripts run by fec:legacy:cli (the weekly newsletter digest: its queries, its renderers, the click signature, Resend; the casino of the month: election, proposals, publication). \"desk\" (phase 5): the review dashboard of fec-admin/ and the clusters page (starlists, field options, clusters, casino of the month).",
     "slices": {
         "authors": [
             "fec_initials_from_name",
@@ -200,6 +200,19 @@
             "fec_cofm_elect",
             "fec_cofm_record_proposal",
             "fec_cofm_publish_period"
+        ],
+        "desk": [
+            "fec_build_starlist",
+            "fec_parse_starlist",
+            "fec_get_fieldoptions_map",
+            "fec_get_casino_clusters",
+            "fec_sister_node_color",
+            "fec_cofm_config",
+            "fec_cofm_elect",
+            "fec_cofm_period_next",
+            "fec_cofm_period_now",
+            "fec_cofm_publish_period",
+            "fec_cofm_record_proposal"
         ]
     }
 }

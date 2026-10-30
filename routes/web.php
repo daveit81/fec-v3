@@ -77,3 +77,9 @@ foreach ((array) config('fec.legacy.desk_paths', []) as $path) {
 $deskScripts = array_merge([], ...array_values(array_map(fn ($v) => (array) $v, (array) config('fec.legacy.desk_scripts', []))));
 Route::match(['GET', 'POST'], '/components/{option}/ajax/{script}.php', [LegacyDeskController::class, 'script'])
     ->where(['option' => 'com_[a-z0-9_]+', 'script' => $deskScripts === [] ? '(?!)' : implode('|', array_map(fn ($n) => preg_quote((string) $n, '/'), $deskScripts))]);
+
+// The desk files outside the components (fec.legacy.desk_files): the review dashboard
+// of fec-admin/, its JSON API, the clusters page, at their live paths.
+foreach ((array) config('fec.legacy.desk_files', []) as $deskFile) {
+    Route::match(['GET', 'POST'], '/'.ltrim((string) $deskFile, '/'), [LegacyDeskController::class, 'file']);
+}
