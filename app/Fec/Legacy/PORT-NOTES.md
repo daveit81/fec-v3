@@ -302,6 +302,10 @@ or without a comment. It took the latest 21 and put the commented ones first, so
 comment never reached the 7 lines while 7 comments stood among the 21. Same text live and here
 (the live file by `fec_ticker_fix.php`; here the `fec_php5_usort` of the old pick goes with it).
 
+The newsletter form's success line (`fec_render_email_capture_script`, "template" slice) also tells
+the reader to look in Spam or Promotions: Gmail files the confirmation mail there (Davey, 30 Oct 2026).
+Same text on the live lib (`fec_nl_spam_hint.php`) and here.
+
 `JDatabase::query()`/`execute()` of the layer answered the number of changed rows for a write and the
 rows for a read until 30 Oct (0090); Joomla 2.5 answered mysqli_query()'s result, true for any
 statement that ran. Our models test it with `if (!$db->query())`, so on v3 an unchanged save failed:

@@ -9100,7 +9100,7 @@ function fec_render_email_capture_script() {
               setStatus("You're already on the list — thanks!", 'success');
               done();
             } else {
-              setStatus('Check your inbox to confirm your subscription.', 'success');
+              setStatus('Check your inbox to confirm your subscription. Not there in a few minutes? Look in your Spam or Promotions folder and mark our email as not spam.', 'success');
               if (row)  row.style.display = 'none';
               if (cons) cons.style.display = 'none';
             }
