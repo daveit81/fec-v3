@@ -477,6 +477,7 @@ return [
             ['title' => 'Bonus list', 'url' => '/index.php?option=com_bonuses&view=manage', 'note' => 'Lista bonus con filtri, toggle, duplica, ripristina, azioni bulk'],
             ['title' => 'Add a bonus', 'url' => '/index.php?option=com_bonuses&view=add', 'note' => 'Form di inserimento/modifica bonus con welcome package FXRate'],
             ['title' => 'Click report', 'url' => '/index.php?option=com_bonuses&view=clicks', 'note' => 'Click per brand e paese, feed live, FTD StatsDrone (import CSV da /components/com_bonuses/ajax/ftd_import.php)'],
+            ['title' => 'Jackpot', 'url' => '/desk/jackpots', 'note' => 'Jackpot del tracker: pubblicato o nascosto nella sezione jackpot delle recensioni (riscritto in fase 5: il resto lo aggiorna il cron)'],
         ],
     ],
 

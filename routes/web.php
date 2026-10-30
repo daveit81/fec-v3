@@ -3,6 +3,7 @@
 use App\Fec\Legacy\ComponentRunner;
 use App\Fec\Url\Router;
 use App\Http\Controllers\Desk\HomeController;
+use App\Http\Controllers\Desk\JackpotsController;
 use App\Http\Controllers\Desk\LoginController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\LegacyDeskController;
@@ -62,6 +63,13 @@ Route::middleware('throttle:10,1')->group(function (): void {
 });
 Route::post('/desk/logout', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
 Route::get('/desk', HomeController::class)->middleware('auth')->name('desk.home');
+
+// Phase 5: the jackpot desk, rewritten (com_jackpots' desk wrote any column with no token;
+// here only "published", see App\Fec\Desk\JackpotsDesk).
+Route::middleware('auth')->group(function (): void {
+    Route::get('/desk/jackpots', [JackpotsController::class, 'index'])->name('desk.jackpots');
+    Route::post('/desk/jackpots/published', [JackpotsController::class, 'publish'])->name('desk.jackpots.publish');
+});
 
 // Ported desks: their SEF paths (fec.legacy.desk_paths); the non-SEF entry
 // (/index.php?option=..., GET and POST, task= included) is the root route above.

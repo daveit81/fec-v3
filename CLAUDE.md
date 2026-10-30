@@ -96,6 +96,10 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   `FEC_LEGACY_SCHEDULE_LLMSTXT` and `FEC_LEGACY_SCHEDULE_COFM`. The search API (`api/search*.php`) and the
   bounce webhook are more public scripts. The review dashboard of `fec-admin/` (page, JSON API, clusters page)
   is `fec.legacy.desk_files`: same paths, logged-in redazione, `ComponentRunner::runDeskFile()`.
+- The jackpot desk is rewritten, not ported (`/desk/jackpots`, `Desk\JackpotsController`,
+  `App\Fec\Desk\JackpotsDesk`): Laravel's CSRF and login, one column written, `jos_jackpots.published`
+  (what the reviews' jackpot section reads); name, currency and soft come from the tracker and
+  `fec:jackpots:update` rewrites them, the logo column and `jos_providers.restrictions` have no live reader.
 - Phase 3 (com_bonuses): the component is copied verbatim too (`PORT-NOTES.md` lists what is left
   out), its lib closure is the "bonuses" slice (197 functions), its nine public views are in
   `Dispatcher::HANDLERS`, `com_bonuses.ads` is a writing view (click log). Its URLs are built by the

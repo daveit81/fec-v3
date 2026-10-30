@@ -11,6 +11,26 @@
   body { margin: 0; font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f5f7; color: #1b1f24; }
   .desk { max-width: 420px; margin: 8vh auto; padding: 0 16px; }
   .desk--wide { max-width: 760px; }
+  .desk--full { max-width: 1240px; margin-top: 4vh; }
+  table.grid { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.grid th, table.grid td { text-align: left; padding: 7px 8px; border-top: 1px solid #eef0f2; vertical-align: middle; }
+  table.grid th { font-size: 12px; text-transform: uppercase; letter-spacing: .03em; color: #5c6670; border-top: 0; }
+  table.grid td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  table.grid tr.off td { color: #8a939c; }
+  table.grid form { margin: 0; }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 16px; }
+  .filters input[type=text] { width: 260px; }
+  .filters select, .filters input[type=text] { padding: 8px 10px; border: 1px solid #c9ced4; border-radius: 6px; font: inherit; background: #fff; }
+  .filters .btn { margin-top: 0; padding: 8px 14px; }
+  .btn--sm { margin-top: 0; padding: 4px 10px; font-size: 13px; }
+  .btn--off { background: #8a939c; }
+  .tag { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 12px; background: #eef0f2; color: #3c444c; }
+  .tag--good { background: #e8f5f1; color: #14523f; }
+  .tag--fair { background: #fff4dc; color: #7a5300; }
+  .tag--poor { background: #fdecec; color: #8a1f1f; }
+  .pager { display: flex; gap: 12px; align-items: center; margin-top: 16px; font-size: 14px; }
+  .pager a { color: #1d6f5f; font-weight: 600; text-decoration: none; }
+  .scroll { overflow-x: auto; }
   .card { background: #fff; border: 1px solid #e3e6ea; border-radius: 10px; padding: 24px 28px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
   h1 { font-size: 20px; margin: 0 0 4px; }
   .sub { color: #5c6670; margin: 0 0 20px; font-size: 14px; }
