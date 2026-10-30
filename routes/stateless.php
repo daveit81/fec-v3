@@ -25,6 +25,9 @@ foreach ((array) config('fec.legacy.public_scripts', []) as $script) {
     Route::match(['GET', 'HEAD', 'POST'], '/'.ltrim((string) $script, '/'), PublicScriptController::class);
 }
 
+// Phase 5: com_contact's page (contact 1) retires with the new contact form (Davey, 30 Oct 2026).
+Route::permanentRedirect('/freeextrachips-team', '/contactus/');
+
 // Phase 1 kernel: every other GET goes through the URL registry and the
 // run-time patterns (App\Fec\Url\Router) to a ported view or a 404. Public
 // pages: no session, no CSRF cookie, like the live site's anonymous pages.

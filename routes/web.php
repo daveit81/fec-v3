@@ -2,9 +2,11 @@
 
 use App\Fec\Legacy\ComponentRunner;
 use App\Fec\Url\Router;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\Desk\HomeController;
 use App\Http\Controllers\Desk\JackpotsController;
 use App\Http\Controllers\Desk\LoginController;
+use App\Http\Controllers\Desk\MessagesController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\LegacyDeskController;
 use App\Http\Controllers\RegistryController;
@@ -63,6 +65,17 @@ Route::middleware('throttle:10,1')->group(function (): void {
 });
 Route::post('/desk/logout', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
 Route::get('/desk', HomeController::class)->middleware('auth')->name('desk.home');
+
+// Phase 5: the contact form of /contactus/, rewritten for v3 (com_contactus and com_contact retire):
+// one form, the topic picks the mailbox (fec.contact.topics), a copy of every message in the desk.
+// Web group: Laravel's CSRF token and the messages after the redirect.
+Route::get('/contactus', [ContactController::class, 'show'])->name('contact');
+Route::post('/contactus', [ContactController::class, 'send'])->middleware('throttle:20,1')->name('contact.send');
+Route::middleware('auth')->group(function (): void {
+    Route::get('/desk/messages', [MessagesController::class, 'index'])->name('desk.messages');
+    Route::get('/desk/messages/{id}', [MessagesController::class, 'show'])->whereNumber('id')->name('desk.messages.show');
+    Route::post('/desk/messages/{id}/status', [MessagesController::class, 'status'])->whereNumber('id')->name('desk.messages.status');
+});
 
 // Phase 5: the jackpot desk, rewritten (com_jackpots' desk wrote any column with no token;
 // here only "published", see App\Fec\Desk\JackpotsDesk).

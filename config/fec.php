@@ -436,7 +436,9 @@ return [
         // catch-all routes whatever their extension).
         'root_keep' => [
             // com_contact: /freeextrachips-team (Davey, 29 Oct)
-            'options' => ['com_contactus', 'com_contact', 'com_partnerdesk', 'com_fecsearch', 'com_fecapi'],
+            // com_contactus and com_contact left the list on 30 Oct: /contactus/ is v3's contact form,
+            // /freeextrachips-team its 301 (routes/web.php, routes/stateless.php)
+            'options' => ['com_partnerdesk', 'com_fecsearch', 'com_fecapi'],
             'views' => ['com_atlas.dashboard'],
             'paths' => ['administrator', 'component', 'index.php', 'dashboards'],
         ],
@@ -493,7 +495,68 @@ return [
             ['title' => 'Click report', 'url' => '/index.php?option=com_bonuses&view=clicks', 'note' => 'Click per brand e paese, feed live, FTD StatsDrone (import CSV da /components/com_bonuses/ajax/ftd_import.php)'],
             ['title' => 'Jackpot', 'url' => '/desk/jackpots', 'note' => 'Jackpot del tracker: pubblicato o nascosto nella sezione jackpot delle recensioni (riscritto in fase 5: il resto lo aggiorna il cron)'],
             ['title' => 'Partner Desk', 'url' => '/index.php?option=com_partnerdesk&view=dashboard', 'note' => 'Proposte dei brand dal form "List your brand" (/index.php?option=com_partnerdesk): approva, rifiuta, note, bozza di fact sheet'],
+            ['title' => 'Messaggi', 'url' => '/desk/messages', 'note' => 'Copie dei messaggi del form di contatto /contactus/, per argomento e stato (ognuno arriva anche per mail alla sua casella)'],
         ],
+    ],
+
+    // The contact form of /contactus/ (phase 5, rewritten: com_contactus and com_contact retire;
+    // /freeextrachips-team redirects here). Each topic goes to its mailbox; "url" says whether
+    // the form asks for the page the message is about (required, optional, none). Every message
+    // is mailed and kept in contact_messages (framework database), listed at /desk/messages.
+    'contact' => [
+        'topics' => [
+            'correction' => [
+                'label' => 'Correction to a review or bonus',
+                'to' => 'corrections@freeextrachips.com',
+                'url' => 'required',
+                'hint' => 'Tell us what is wrong and, if you can, where the right information is: the operator\'s terms, a regulator\'s page. Corrections come before new content.',
+            ],
+            'tip' => [
+                'label' => 'Bonus or casino tip',
+                'to' => 'tips@freeextrachips.com',
+                'url' => 'optional',
+                'hint' => 'A bonus code that does not work, a new promotion, a casino problem other players should know about.',
+            ],
+            'editorial' => [
+                'label' => 'Editorial, press and contributors',
+                'to' => 'editorial@freeextrachips.com',
+                'url' => 'optional',
+                'hint' => 'Questions about our reviews and methods, press requests, pitches from writers.',
+            ],
+            'partnership' => [
+                'label' => 'Partnerships and advertising',
+                'to' => 'proposals@freeextrachips.com',
+                'url' => 'none',
+                'hint' => 'Operators and affiliate managers. Commercial relationships never decide our ratings or verdicts.',
+            ],
+            'payments' => [
+                'label' => 'Payments and invoices',
+                'to' => 'financial@freeextrachips.com',
+                'url' => 'none',
+                'hint' => 'Affiliate programme payments, invoices and commission statements.',
+            ],
+            'privacy' => [
+                'label' => 'Privacy and your data',
+                'to' => 'privacy@freeextrachips.com',
+                'url' => 'none',
+                'hint' => 'Access to, correction or deletion of your data (newsletter, player reports).',
+            ],
+            'site' => [
+                'label' => 'Problem with the website',
+                'to' => 'webmaster@freeextrachips.com',
+                'url' => 'optional',
+                'hint' => 'A page that does not load, a broken link, something that looks wrong.',
+            ],
+            'other' => [
+                'label' => 'Something else',
+                'to' => 'webmaster@freeextrachips.com',
+                'url' => 'none',
+                'hint' => '',
+            ],
+        ],
+        // fewer seconds between page and send is a robot; more messages from one address in an hour wait
+        'min_seconds' => (int) env('FEC_CONTACT_MIN_SECONDS', 4),
+        'per_hour' => (int) env('FEC_CONTACT_PER_HOUR', 5),
     ],
 
     'parity' => [

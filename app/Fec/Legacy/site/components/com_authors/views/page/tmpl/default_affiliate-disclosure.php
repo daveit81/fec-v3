@@ -198,7 +198,7 @@ $reviewerUrl = $reviewer ? JRoute::_('index.php?option=com_authors&view=author&s
             <p>Questions about this disclosure, our editorial process, or specific bonus listings:</p>
             <ul class="rg-family-tips">
                 <li><strong>Editorial corrections</strong> (outdated bonuses, wrong wagering numbers, broken links) &mdash; <a href="mailto:editorial@freeextrachips.com">editorial@freeextrachips.com</a></li>
-                <li><strong>Business and partnership inquiries</strong> &mdash; <a href="mailto:partnerships@freeextrachips.com">partnerships@freeextrachips.com</a></li>
+                <li><strong>Business and partnership inquiries</strong> &mdash; <a href="mailto:proposals@freeextrachips.com">proposals@freeextrachips.com</a></li>
                 <li><strong>General contact</strong> &mdash; <a href="mailto:webmaster@freeextrachips.com">webmaster@freeextrachips.com</a></li>
             </ul>
             <p>We respond to all editorial correspondence within five business days. Partnership inquiries receive a response only if the operator passes the exclusion screening described above.</p>

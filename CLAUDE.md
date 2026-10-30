@@ -100,6 +100,10 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   "List your brand" form (`/index.php?option=com_partnerdesk`, view `submit`) and its `task=send`
   (`fec.legacy.public_tasks`: no login, writing connection, the root route's session) and the desk views
   `dashboard`/`review`. The layer has JModelList (Joomla 2.5.28's) for its list.
+- The contact form of `/contactus/` is written for v3, not ported (`ContactController`,
+  `App\Fec\Contact\ContactForm`, `fec.contact.topics`: one mailbox per topic): web group, honeypot, encrypted
+  time stamp, Turnstile with the review form's keys, an hourly limit per address; every message is mailed
+  and kept in `contact_messages` (framework DB, `/desk/messages`). `/freeextrachips-team` 301s to it.
 - The jackpot desk is rewritten, not ported (`/desk/jackpots`, `Desk\JackpotsController`,
   `App\Fec\Desk\JackpotsDesk`): Laravel's CSRF and login, one column written, `jos_jackpots.published`
   (what the reviews' jackpot section reads); name, currency and soft come from the tracker and

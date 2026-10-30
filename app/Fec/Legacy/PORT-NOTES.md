@@ -571,6 +571,19 @@ list with `list_limit` 20, `getItems`/`getTotal`/`getStart`/`getPagination`, the
 `getUserStateFromRequest`) and JRequest's `uint` filter. On www the component stays on Joomla
 (`fec.legacy.root_keep`) until Joomla is switched off.
 
+## The contact form (phase 5, written for v3)
+
+Not a port: com_contactus (`/contactus/`, a third-party form) and com_contact (`/freeextrachips-team`,
+contact 1) retire (Davey, 30 Oct 2026). `/contactus/` is `ContactController` + `App\Fec\Contact\ContactForm`
+in the web group: one form whose topic picks the mailbox (`fec.contact.topics`: corrections@, tips@,
+editorial@, proposals@, financial@, privacy@, webmaster@), honeypot, an encrypted time stamp,
+Turnstile with the review form's keys (read from the live `fec_review_config.php`, never run), a limit
+of messages per address per hour, every message kept in `contact_messages` (framework database) and
+mailed From `FEC_LEGACY_MAILFROM` with Reply-To the sender; `/desk/messages` lists them.
+`/freeextrachips-team` is a 301 to `/contactus/` (routes/stateless.php); both left
+`fec.legacy.root_keep`. Same day, on the live file and here alike: the Affiliate Disclosure gives
+proposals@ for business inquiries (it said partnerships@, which Davey opened too).
+
 ## Known legacy behaviour reproduced on purpose (parity)
 
 - A path with an encoded "#" (`%23`, a link copied with its anchor) is looked up without it: the
