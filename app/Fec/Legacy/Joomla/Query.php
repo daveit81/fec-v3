@@ -21,6 +21,10 @@ class Query implements Stringable
 
     private ?string $table = null;
 
+    private int $limit = 0;
+
+    private int $offset = 0;
+
     public function __construct(private readonly Database $db)
     {
     }
@@ -122,12 +126,26 @@ class Query implements Stringable
         return $this->add('set', $assignments);
     }
 
+    /**
+     * JDatabaseQueryLimitable::setLimit() of the MySQLi query (Joomla 2.5.28): a SELECT
+     * gets " LIMIT offset, limit" at the end (bonus_feedback.php's get_agg uses it).
+     */
+    public function setLimit(int $limit = 0, int $offset = 0): static
+    {
+        $this->limit = $limit;
+        $this->offset = $offset;
+
+        return $this;
+    }
+
     public function clear(?string $clause = null): static
     {
         if ($clause === null) {
             $this->parts = [];
             $this->type = '';
             $this->table = null;
+            $this->limit = 0;
+            $this->offset = 0;
         } else {
             unset($this->parts[$clause]);
         }
@@ -221,6 +239,9 @@ class Query implements Stringable
         }
         if (! empty($p['order'])) {
             $sql .= "\nORDER BY ".implode(',', $p['order']);
+        }
+        if ($this->type === 'select' && ($this->limit > 0 || $this->offset > 0)) {
+            $sql .= ' LIMIT '.$this->offset.', '.$this->limit;
         }
 
         return $sql;

@@ -72,5 +72,8 @@ foreach ((array) config('fec.legacy.desk_paths', []) as $path) {
 
 // The desks' standalone scripts (fec.legacy.desk_scripts), at the path the desk pages
 // call them by on the live site: /components/com_bonuses/ajax/clicks_live.php...
+// Only the desk's own names: the web routes are matched before the stateless ones, and
+// /components/com_bonuses/ajax/bonus_feedback.php is a public script (fec.legacy.public_scripts).
+$deskScripts = array_merge([], ...array_values(array_map(fn ($v) => (array) $v, (array) config('fec.legacy.desk_scripts', []))));
 Route::match(['GET', 'POST'], '/components/{option}/ajax/{script}.php', [LegacyDeskController::class, 'script'])
-    ->where(['option' => 'com_[a-z0-9_]+', 'script' => '[a-z0-9_]+']);
+    ->where(['option' => 'com_[a-z0-9_]+', 'script' => $deskScripts === [] ? '(?!)' : implode('|', array_map(fn ($n) => preg_quote((string) $n, '/'), $deskScripts))]);

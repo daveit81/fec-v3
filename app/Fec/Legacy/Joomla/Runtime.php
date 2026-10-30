@@ -71,6 +71,9 @@ final class Runtime
         'JDispatcher' => Dispatcher::class,
         'JCategories' => Categories::class,
         'JCategoryNode' => CategoryNode::class,
+        'JMail' => Mail::class,
+        'JLog' => Log::class,
+        'JDatabaseException' => DatabaseException::class,
     ];
 
     /** Bind the global names. Safe to call more than once; never loaded where a real Joomla runs. */

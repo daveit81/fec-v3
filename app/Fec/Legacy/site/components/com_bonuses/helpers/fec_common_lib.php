@@ -698,10 +698,10 @@ defined('_JEXEC') or die('Restricted access');
     }
   }
 
-// --- fec_reports_esc  (source lines 860-860; slices: bonuses)
+// --- fec_reports_esc  (source lines 860-860; slices: bonuses, endpoints)
   function fec_reports_esc($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 
-// --- fec_reports_time_ago  (source lines 864-880; slices: bonuses)
+// --- fec_reports_time_ago  (source lines 864-880; slices: bonuses, endpoints)
   function fec_reports_time_ago($sqlDate) {
     if (!$sqlDate) return '';
     $ts = strtotime((string)$sqlDate);
@@ -720,7 +720,7 @@ defined('_JEXEC') or die('Restricted access');
     return $years . ' year' . ($years === 1 ? '' : 's') . ' ago';
   }
 
-// --- fec_reports_render_item  (source lines 884-930; slices: bonuses)
+// --- fec_reports_render_item  (source lines 884-930; slices: bonuses, endpoints)
   function fec_reports_render_item($r) {
     $user = !empty($r['username']) ? (string)$r['username'] : 'Anonymous';
 
@@ -9142,7 +9142,7 @@ JS;
     return "<script>\n" . $js . "\n</script>";
 }
 
-// --- fec_resend_config  (source lines 10323-10336; slices: editions)
+// --- fec_resend_config  (source lines 10323-10336; slices: editions, endpoints)
 /**
  * Carica la config Resend dal file fuori webroot (cached static).
  *
@@ -9164,7 +9164,7 @@ function fec_resend_config() {
     return $config;
 }
 
-// --- fec_resend_send  (source lines 10360-10418; slices: editions)
+// --- fec_resend_send  (source lines 10360-10418; slices: editions, endpoints)
 /**
  * Manda un'email via API Resend.
  *
@@ -9533,6 +9533,74 @@ function close(asDismiss){
 
     return $html;
 }
+
+// --- fec_ga_config  (source lines 11303-11312; slices: endpoints)
+    function fec_ga_config() {
+        static $cache = null;
+        if ($cache !== null) return $cache;
+        $path = '/home/freeextr/conf/fec_ga.php';
+        if (!is_readable($path)) return $cache = array('measurement_id' => '', 'api_secret' => '');
+        $cfg = include $path;
+        if (!is_array($cfg)) $cfg = array();
+        $cache = array_merge(array('measurement_id' => '', 'api_secret' => ''), $cfg);
+        return $cache;
+    }
+
+// --- fec_nl_ga_track_click  (source lines 11320-11363; slices: endpoints)
+    /**
+     * Fire-and-forget GA4 Measurement Protocol event.
+     * Skipped silently if GA config is empty.
+     */
+    function fec_nl_ga_track_click($params) {
+        $cfg = fec_ga_config();
+        if (empty($cfg['measurement_id']) || empty($cfg['api_secret'])) return;
+
+        $subscriberId = isset($params['subscriber_id']) ? (int)$params['subscriber_id'] : 0;
+        $clientId = $subscriberId > 0
+            ? hash('sha256', 'fec_sub_' . $subscriberId)
+            : (isset($_COOKIE['_ga'])
+                ? preg_replace('/^GA1\.\d+\./', '', $_COOKIE['_ga'])
+                : bin2hex(openssl_random_pseudo_bytes(8)));
+
+        $payload = json_encode(array(
+            'client_id' => $clientId,
+            'user_id'   => $subscriberId > 0 ? 'sub_' . $subscriberId : null,
+            'events'    => array(array(
+                'name'   => 'newsletter_click',
+                'params' => array(
+                    'campaign_slug' => isset($params['campaign_slug']) ? $params['campaign_slug'] : '',
+                    'campaign_id'   => isset($params['campaign_id']) ? (int)$params['campaign_id'] : 0,
+                    'bid'           => isset($params['bid']) ? (int)$params['bid'] : 0,
+                    'country'       => isset($params['country']) ? strtolower($params['country']) : '',
+                    'url_label'     => isset($params['label']) ? $params['label'] : 'bonus',
+                    'engagement_time_msec' => 100,
+                ),
+            )),
+        ));
+
+        $url = 'https://www.google-analytics.com/mp/collect'
+             . '?measurement_id=' . urlencode($cfg['measurement_id'])
+             . '&api_secret=' . urlencode($cfg['api_secret']);
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, array(
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => $payload,
+            CURLOPT_HTTPHEADER     => array('Content-Type: application/json'),
+            CURLOPT_TIMEOUT        => 2,
+            CURLOPT_CONNECTTIMEOUT => 1,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ));
+        @curl_exec($ch);
+        curl_close($ch);
+    }
+
+// --- fec_nl_click_signature  (source lines 11367-11370; slices: endpoints)
+    function fec_nl_click_signature($campaign_id, $bid, $label) {
+        $secret = JFactory::getConfig()->get('secret');
+        return hash_hmac('sha256', (int)$campaign_id . '|' . (int)$bid . '|' . $label, $secret);
+    }
 
 // --- fec_render_home_jsonld  (source lines 11431-11549; slices: radice)
   function fec_render_home_jsonld($opts = array()) {
@@ -13659,6 +13727,541 @@ function close(asDismiss){
     $h .=   '</div>'; // .wrap
     $h .= '</section>';
     return $h;
+  }
+
+// --- fec_review_validate_submit  (source lines 15875-15945; slices: endpoints)
+  /**
+   * Server-side validation of form input. Mirrors the client-side checks
+   * but treats them as authoritative - never trust the browser.
+   *
+   * Returns:
+   *   valid   bool
+   *   errors  array<fieldName, errorMessage>
+   *   clean   array of normalized, trimmed values ready for insert/spam-check
+   */
+  function fec_review_validate_submit($rawInput) {
+    if (!is_array($rawInput)) $rawInput = array();
+    $errors = array();
+
+    // pid (casino content id, required FK)
+    $pid = isset($rawInput['pid']) ? (int) $rawInput['pid'] : 0;
+    if ($pid <= 0) {
+      $errors['pid'] = 'Missing casino reference.';
+    }
+
+    // vote — integer 1-5 (Phase 1; half-star is Phase 2 TODO)
+    $vote = isset($rawInput['vote']) ? (int) $rawInput['vote'] : 0;
+    if ($vote < 1 || $vote > 5) {
+      $errors['vote'] = 'Please select a rating from 1 to 5 stars.';
+    }
+
+    // username (pseudonym)
+    $username = trim((string)(isset($rawInput['username']) ? $rawInput['username'] : ''));
+    $unameLen = function_exists('mb_strlen') ? mb_strlen($username, 'UTF-8') : strlen($username);
+    if ($unameLen < 2 || $unameLen > 25) {
+      $errors['username'] = 'Display name must be 2-25 characters.';
+    }
+
+    // email
+    $email = strtolower(trim((string)(isset($rawInput['email']) ? $rawInput['email'] : '')));
+    $emailLen = strlen($email);
+    if ($emailLen === 0 || $emailLen > 100 || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+      $errors['email'] = 'Please provide a valid email address.';
+    }
+
+    // comments (body)
+    $comments = trim((string)(isset($rawInput['comments']) ? $rawInput['comments'] : ''));
+    $bodyLen = function_exists('mb_strlen') ? mb_strlen($comments, 'UTF-8') : strlen($comments);
+    $minLen = defined('FEC_REVIEW_MIN_LENGTH') ? FEC_REVIEW_MIN_LENGTH : 50;
+    $maxLen = defined('FEC_REVIEW_MAX_LENGTH') ? FEC_REVIEW_MAX_LENGTH : 3000;
+    if ($bodyLen < $minLen) {
+      $errors['comments'] = 'Review must be at least ' . $minLen . ' characters.';
+    } elseif ($bodyLen > $maxLen) {
+      $errors['comments'] = 'Review must be at most ' . $maxLen . ' characters.';
+    }
+
+    // optional fields
+    $title = trim((string)(isset($rawInput['title']) ? $rawInput['title'] : ''));
+    $titleLen = function_exists('mb_strlen') ? mb_strlen($title, 'UTF-8') : strlen($title);
+    if ($titleLen > 255) {
+      $errors['title'] = 'Title is too long (max 255 characters).';
+    }
+
+    $location = trim((string)(isset($rawInput['location']) ? $rawInput['location'] : ''));
+    $locLen = function_exists('mb_strlen') ? mb_strlen($location, 'UTF-8') : strlen($location);
+    if ($locLen > 50) {
+      $errors['location'] = 'Location is too long (max 50 characters).';
+    }
+
+    $showLocation = !empty($rawInput['show_location']) ? 1 : 0;
+
+    return array(
+      'valid'  => empty($errors),
+      'errors' => $errors,
+      'clean'  => array(
+        'pid'           => $pid,
+        'vote'          => $vote,
+        'username'      => $username,
+        'email'         => $email,
+        'comments'      => $comments,
+        'title'         => $title,
+        'location'      => $location,
+        'show_location' => $showLocation,
+      ),
+    );
+  }
+
+// --- fec_review_check_spam_signals  (source lines 15967-16046; slices: endpoints)
+  /**
+   * Runs the 7-layer anti-spam check. Returns flags + a hard/soft verdict.
+   *
+   * Layers:
+   *   1. Honeypot field (rawInput['website_url'] must be empty)
+   *   2. Timing (rawInput['form_ts']; submit < N sec after load = bot)
+   *   3. Cloudflare Turnstile token verify (server-side via siteverify)
+   *   4. Rate limit per IP global (24h)
+   *   5. Rate limit per IP per casino (24h)
+   *   6. URL detector in body (soft)
+   *   7. Bad-word filter in body/title/username (soft)
+   *
+   * Layers 1-5 trigger reject=true (silent fail, no INSERT, no email,
+   * log to throttle table with status='spam'). Layers 6-7 trigger
+   * queue_only=true (still INSERT in queue, but flagged for closer
+   * moderator look; will gate future Phase 1.5 auto-promotion logic).
+   */
+  function fec_review_check_spam_signals($cleanInput, $rawInput, $ip, $db) {
+    if (!is_array($cleanInput)) $cleanInput = array();
+    if (!is_array($rawInput))   $rawInput   = array();
+
+    $signals   = array();
+    $reject    = false;
+    $queueOnly = false;
+
+    // 1. Honeypot
+    $honeypot = isset($rawInput['website_url']) ? trim((string) $rawInput['website_url']) : '';
+    if ($honeypot !== '') {
+      $signals[] = 'honeypot_tripped';
+      $reject = true;
+    }
+
+    // 2. Timing
+    $formTs = isset($rawInput['form_ts']) ? (int) $rawInput['form_ts'] : 0;
+    $minSec = defined('FEC_REVIEW_MIN_SECONDS_ON_FORM') ? FEC_REVIEW_MIN_SECONDS_ON_FORM : 5;
+    if ($formTs <= 0) {
+      $signals[] = 'timing_missing';
+      $reject = true;
+    } elseif ((time() - $formTs) < $minSec) {
+      $signals[] = 'timing_too_fast:' . (time() - $formTs) . 's';
+      $reject = true;
+    }
+
+    // 3. Turnstile verify
+    $cfToken = isset($rawInput['cf_turnstile_token']) ? (string) $rawInput['cf_turnstile_token'] : '';
+    if ($cfToken === '') {
+      $signals[] = 'turnstile_missing';
+      $reject = true;
+    } else {
+      $tsResult = _fec_turnstile_verify($cfToken, $ip);
+      if (!$tsResult['success']) {
+        $signals[] = 'turnstile_failed:' . implode(',', $tsResult['errors']);
+        $reject = true;
+      }
+    }
+
+    // 4. Rate limit per IP global
+    $maxIp24h = defined('FEC_REVIEW_MAX_PER_IP_24H') ? FEC_REVIEW_MAX_PER_IP_24H : 3;
+    $ipCount = _fec_rate_check_ip($db, $ip);
+    if ($ipCount >= $maxIp24h) {
+      $signals[] = 'rate_limit_ip_global:' . $ipCount;
+      $reject = true;
+    }
+
+    // 5. Rate limit per IP per casino
+    $maxIpCasino24h = defined('FEC_REVIEW_MAX_PER_IP_CASINO_24H') ? FEC_REVIEW_MAX_PER_IP_CASINO_24H : 1;
+    $pid = isset($cleanInput['pid']) ? (int) $cleanInput['pid'] : 0;
+    if ($pid > 0) {
+      $ipPidCount = _fec_rate_check_ip_casino($db, $ip, $pid);
+      if ($ipPidCount >= $maxIpCasino24h) {
+        $signals[] = 'rate_limit_ip_casino:' . $ipPidCount;
+        $reject = true;
+      }
+    }
+
+    // 6. URL detector (soft, queue-only)
+    $body = isset($cleanInput['comments']) ? (string) $cleanInput['comments'] : '';
+    if (preg_match('#(https?://|www\.[a-z0-9]|[a-z0-9-]+\.(?:com|net|org|io|biz|info|xyz|ru|cn)\b)#i', $body)) {
+      $signals[] = 'url_in_body';
+      $queueOnly = true;
+    }
+
+    // 7. Bad-word filter (soft, queue-only)
+    $combined = $body . ' '
+              . (isset($cleanInput['title'])    ? $cleanInput['title']    : '') . ' '
+              . (isset($cleanInput['username']) ? $cleanInput['username'] : '');
+    if (_fec_review_bad_words_match($combined)) {
+      $signals[] = 'bad_word_match';
+      $queueOnly = true;
+    }
+
+    return array(
+      'signals'    => $signals,
+      'reject'     => $reject,
+      'queue_only' => $queueOnly,
+    );
+  }
+
+// --- fec_review_insert  (source lines 16062-16125; slices: endpoints)
+  /**
+   * INSERTs the review into jos_jreviews_comments and logs the attempt
+   * to jos_fec_review_throttle. Always sets published=0 (queue) in
+   * Phase 1 - staff approves via the JReviews admin UI; cron 'frupdater'
+   * then picks up the published flag and recalcs frankvalue.
+   *
+   * Refuses to write if $spamResult['reject'] is true (defensive: the
+   * controller should never reach here in that case, but belt + braces).
+   *
+   * Returns the new review id (int) or false on failure.
+   */
+  function fec_review_insert($db, $cleanInput, $ip, $spamResult) {
+    if (!is_array($cleanInput)) return false;
+    if (is_array($spamResult) && !empty($spamResult['reject'])) {
+      // Defensive: never write a row that has been hard-rejected
+      return false;
+    }
+
+    // Resolve userid from Joomla session (anonymous default = 0)
+    $userid = 0;
+    if (class_exists('JFactory')) {
+      $u = JFactory::getUser();
+      if ($u && $u->id > 0) $userid = (int) $u->id;
+    }
+
+    $nowSql = class_exists('JFactory') ? JFactory::getDate()->toSql() : date('Y-m-d H:i:s');
+
+    $row = (object) array(
+      'pid'                  => (int) $cleanInput['pid'],
+      'mode'                 => 'com_content',
+      'created'              => $nowSql,
+      'modified'             => '0000-00-00 00:00:00',
+      'userid'               => $userid,
+      'name'                 => '',
+      'username'             => isset($cleanInput['username']) ? $cleanInput['username'] : '',
+      'email'                => isset($cleanInput['email'])    ? $cleanInput['email']    : '',
+      'location'             => isset($cleanInput['location']) ? $cleanInput['location'] : '',
+      'title'                => isset($cleanInput['title'])    ? $cleanInput['title']    : '',
+      'vote'                 => (float)(isset($cleanInput['vote']) ? $cleanInput['vote'] : 0),
+      'comments'             => isset($cleanInput['comments']) ? $cleanInput['comments'] : '',
+      'author'               => 0,
+      'published'            => 0,
+      'ipaddress'            => substr((string) $ip, 0, 45),
+      'posts'                => 0,
+      'vote_total'           => 0,
+      'vote_helpful'         => 0,
+      'owner_reply_text'     => '',
+      'owner_reply_created'  => '0000-00-00 00:00:00',
+      'owner_reply_approved' => 0,
+      'owner_reply_note'     => '',
+      'review_note'          => '',
+      'show_location'        => (int)(isset($cleanInput['show_location']) ? $cleanInput['show_location'] : 0),
+      'subscribed'           => 0,
+    );
+
+    try {
+      $ok = $db->insertObject('#__jreviews_comments', $row, 'id');
+    } catch (Exception $e) {
+      error_log('fec_review_insert failed: ' . $e->getMessage());
+      return false;
+    }
+    if (!$ok) {
+      error_log('fec_review_insert failed: ' . $db->getErrorMsg());
+      return false;
+    }
+
+    $reviewId = (int) $row->id;
+    $signals = is_array($spamResult) && isset($spamResult['signals']) ? $spamResult['signals'] : array();
+
+    _fec_review_throttle_log($db, $ip, (int) $cleanInput['pid'],
+        isset($cleanInput['email']) ? $cleanInput['email'] : '',
+        'queued', $signals, $reviewId);
+
+    return $reviewId;
+  }
+
+// --- fec_review_log_spam  (source lines 16138-16143; slices: endpoints)
+  /**
+   * Logs a rejected attempt (silent fail) to the throttle table.
+   * No INSERT into jos_jreviews_comments.
+   *
+   * Keeps a paper trail for audit / rule tuning. The caller (controller)
+   * still returns a "success" response to the client so bots cannot probe
+   * which anti-spam layer caught them.
+   */
+  function fec_review_log_spam($db, $cleanInput, $ip, $spamResult) {
+    $pid = is_array($cleanInput) && isset($cleanInput['pid']) ? (int) $cleanInput['pid'] : 0;
+    $email = is_array($cleanInput) && isset($cleanInput['email']) ? $cleanInput['email'] : '';
+    $signals = is_array($spamResult) && isset($spamResult['signals']) ? $spamResult['signals'] : array();
+    return _fec_review_throttle_log($db, $ip, $pid, $email, 'spam', $signals, 0);
+  }
+
+// --- fec_review_send_moderation_email  (source lines 16155-16208; slices: endpoints)
+  /**
+   * Send notification email to the moderation team when a new review
+   * is queued. Uses Joomla's built-in mailer (JFactory::getMailer()).
+   *
+   * Returns the boolean from mailer->Send(). Non-fatal on failure -
+   * the review is still in the queue and visible via admin UI.
+   */
+  function fec_review_send_moderation_email($db, $reviewId) {
+    $reviewId = (int) $reviewId;
+    if ($reviewId <= 0) return false;
+
+    $sql = 'SELECT r.*, c.title AS casino_title '
+         . 'FROM ' . $db->quoteName('#__jreviews_comments') . ' r '
+         . 'LEFT JOIN ' . $db->quoteName('#__content') . ' c ON c.id = r.pid '
+         . 'WHERE r.id = ' . $reviewId;
+    $db->setQuery($sql);
+    $row = $db->loadObject();
+    if (!$row) return false;
+
+    $modEmail = defined('FEC_REVIEW_MOD_EMAIL') ? FEC_REVIEW_MOD_EMAIL : 'webmaster@freeextrachips.com';
+
+    $casinoTitle = isset($row->casino_title) ? (string) $row->casino_title : ('pid=' . $row->pid);
+    $voteStr = rtrim(rtrim(number_format((float) $row->vote, 1, '.', ''), '0'), '.');
+    if ($voteStr === '') $voteStr = '0';
+
+    $subject = '[FEC Review Queue] ' . $voteStr . '/5 on ' . $casinoTitle;
+
+    $body  = "New player review submitted, awaiting moderation.\n\n";
+    $body .= "Casino: " . $casinoTitle . " (pid=" . (int) $row->pid . ")\n";
+    $body .= "Rating: " . $voteStr . "/5\n";
+    $body .= "Reviewer: " . $row->username . " <" . $row->email . ">\n";
+    $body .= "IP: " . $row->ipaddress . "\n";
+    $body .= "Location: " . ($row->location !== '' ? $row->location : '(not provided)') . "\n";
+    $body .= "Submitted: " . $row->created . "\n";
+    if ((int) $row->userid > 0) {
+      $body .= "Joomla user ID: " . (int) $row->userid . "\n";
+    }
+    $body .= "\n";
+    if ($row->title !== '') {
+      $body .= "Title: " . $row->title . "\n\n";
+    }
+    $body .= "Review body:\n";
+    $body .= str_repeat('-', 60) . "\n";
+    $body .= $row->comments . "\n";
+    $body .= str_repeat('-', 60) . "\n\n";
+    $body .= "Moderate via Joomla admin -> JReviews -> Comments,\n";
+    $body .= "or directly: /administrator/index.php?option=com_jreviewslisting&view=jrcomments";
+
+    if (!class_exists('JFactory')) return false;
+
+    try {
+      $mailer = JFactory::getMailer();
+      $mailer->addRecipient($modEmail);
+      $mailer->setSubject($subject);
+      $mailer->setBody($body);
+      return (bool) $mailer->Send();
+    } catch (Exception $e) {
+      error_log('fec_review_send_moderation_email failed: ' . $e->getMessage());
+      return false;
+    }
+  }
+
+// --- _fec_turnstile_verify  (source lines 16225-16289; slices: endpoints)
+  /**
+   * POST to Cloudflare's siteverify endpoint to validate a Turnstile
+   * token received from the client.
+   *
+   * Returns array('success' => bool, 'errors' => array of CF error codes).
+   * Network/parsing failures fail closed (success=false).
+   *
+   * Prefers cURL when available (faster + better error handling); falls
+   * back to stream_context_create() with file_get_contents().
+   */
+  function _fec_turnstile_verify($token, $remoteIp) {
+    if (!defined('FEC_TURNSTILE_SECRET_KEY')
+        || FEC_TURNSTILE_SECRET_KEY === ''
+        || FEC_TURNSTILE_SECRET_KEY === 'PASTE_SECRET_KEY_HERE') {
+      return array('success' => false, 'errors' => array('config_missing'));
+    }
+    $token = trim((string) $token);
+    if ($token === '') {
+      return array('success' => false, 'errors' => array('empty_token'));
+    }
+
+    $postFields = array(
+      'secret'   => FEC_TURNSTILE_SECRET_KEY,
+      'response' => $token,
+    );
+    if ($remoteIp !== '') $postFields['remoteip'] = $remoteIp;
+
+    $verifyUrl = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+    $rsp = false;
+
+    if (function_exists('curl_init')) {
+      $ch = curl_init($verifyUrl);
+      curl_setopt($ch, CURLOPT_POST, true);
+      curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postFields));
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+      curl_setopt($ch, CURLOPT_TIMEOUT, 6);
+      curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+      curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+      $rsp = curl_exec($ch);
+      $err = curl_error($ch);
+      curl_close($ch);
+      if ($rsp === false) {
+        error_log('_fec_turnstile_verify curl error: ' . $err);
+      }
+    } else {
+      $ctx = stream_context_create(array(
+        'http' => array(
+          'method'        => 'POST',
+          'header'        => "Content-Type: application/x-www-form-urlencoded\r\n",
+          'content'       => http_build_query($postFields),
+          'timeout'       => 6,
+          'ignore_errors' => true,
+        ),
+      ));
+      $rsp = @file_get_contents($verifyUrl, false, $ctx);
+    }
+
+    if ($rsp === false || $rsp === null) {
+      return array('success' => false, 'errors' => array('network_fail'));
+    }
+
+    $data = @json_decode($rsp, true);
+    if (!is_array($data)) {
+      return array('success' => false, 'errors' => array('invalid_response'));
+    }
+
+    if (!empty($data['success'])) {
+      return array('success' => true, 'errors' => array());
+    }
+
+    return array(
+      'success' => false,
+      'errors'  => isset($data['error-codes']) ? (array) $data['error-codes'] : array('unknown'),
+    );
+  }
+
+// --- _fec_rate_check_ip  (source lines 16302-16310; slices: endpoints)
+  /**
+   * Count attempts from this IP in the last 24h that resulted in a
+   * QUEUED or PUBLISHED review (i.e. legitimate-looking traffic).
+   *
+   * Spam-rejected attempts are NOT counted toward the rate limit -
+   * otherwise bots could lock out legitimate users from the same NAT
+   * by flooding spam first.
+   */
+  function _fec_rate_check_ip($db, $ip) {
+    $sql = 'SELECT COUNT(*) FROM ' . $db->quoteName('#__fec_review_throttle')
+         . ' WHERE ' . $db->quoteName('ip') . ' = ' . $db->quote($ip)
+         . '   AND ' . $db->quoteName('attempt_at') . ' >= DATE_SUB(NOW(), INTERVAL 24 HOUR)'
+         . '   AND ' . $db->quoteName('status') . ' IN ('
+         .       $db->quote('queued') . ', ' . $db->quote('published') . ')';
+    $db->setQuery($sql);
+    return (int) $db->loadResult();
+  }
+
+// --- _fec_rate_check_ip_casino  (source lines 16319-16328; slices: endpoints)
+  /**
+   * Same as _fec_rate_check_ip but scoped to a single casino (pid).
+   * One legit review per IP per casino per 24h.
+   */
+  function _fec_rate_check_ip_casino($db, $ip, $pid) {
+    $sql = 'SELECT COUNT(*) FROM ' . $db->quoteName('#__fec_review_throttle')
+         . ' WHERE ' . $db->quoteName('ip') . ' = ' . $db->quote($ip)
+         . '   AND ' . $db->quoteName('pid') . ' = ' . (int) $pid
+         . '   AND ' . $db->quoteName('attempt_at') . ' >= DATE_SUB(NOW(), INTERVAL 24 HOUR)'
+         . '   AND ' . $db->quoteName('status') . ' IN ('
+         .       $db->quote('queued') . ', ' . $db->quote('published') . ')';
+    $db->setQuery($sql);
+    return (int) $db->loadResult();
+  }
+
+// --- _fec_review_bad_words_match  (source lines 16341-16363; slices: endpoints)
+  /**
+   * Substring match against a curated list of spam-pattern words for
+   * the online casino review context. Returns true if ANY match found.
+   *
+   * Aim for high precision (low false positives) - false-flag a
+   * legitimate review and the user thinks the form is broken. Better
+   * to let some borderline cases through to manual queue.
+   */
+  function _fec_review_bad_words_match($text) {
+    if (!is_string($text) || $text === '') return false;
+    $haystack = function_exists('mb_strtolower') ? mb_strtolower($text, 'UTF-8') : strtolower($text);
+
+    static $badWords = array(
+      // adult content
+      'porn', 'xxx adult', 'nude photo', 'escort service', 'sex chat',
+      // pharma spam
+      'viagra', 'cialis', 'kamagra', 'online pharmacy',
+      // common scam ad patterns
+      'free money easy', 'click here to win', 'visit my profile',
+      'check out my channel', 'subscribe to my', 'follow me on',
+      // crypto pump-dump (curated to avoid hitting legit btc casino reviews)
+      'pump and dump', 'pump-and-dump', 'guaranteed return', 'risk-free investment',
+      // generic spam markers
+      'best deal ever', 'limited time offer', 'act now',
+    );
+
+    foreach ($badWords as $word) {
+      if (strpos($haystack, $word) !== false) return true;
+    }
+    return false;
+  }
+
+// --- _fec_review_client_ip  (source lines 16375-16388; slices: endpoints)
+  /**
+   * Real client IP, CloudFlare-aware. Joomla 2.5's input layer doesn't
+   * expose CF-Connecting-IP, so we read $_SERVER directly.
+   *
+   * Returns empty string if no IP can be resolved (won't crash, but the
+   * row will have an empty ip column - flag it for review by hand).
+   */
+  function _fec_review_client_ip() {
+    if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+      $ip = trim((string) $_SERVER['HTTP_CF_CONNECTING_IP']);
+      // Strip any list - take only the first IP
+      if (strpos($ip, ',') !== false) {
+        $ip = trim(substr($ip, 0, strpos($ip, ',')));
+      }
+      return substr($ip, 0, 45);
+    }
+    if (!empty($_SERVER['REMOTE_ADDR'])) {
+      return substr((string) $_SERVER['REMOTE_ADDR'], 0, 45);
+    }
+    return '';
+  }
+
+// --- _fec_review_throttle_log  (source lines 16400-16420; slices: endpoints)
+  /**
+   * Append a row to jos_fec_review_throttle. Used by both successful
+   * inserts (status='queued') and silent-fail attempts (status='spam').
+   *
+   * email_hash = SHA-1 of lowercased trimmed email - we don't store
+   * plain emails for rejected attempts (minimize PII surface for spam).
+   */
+  function _fec_review_throttle_log($db, $ip, $pid, $email, $status, $signals, $reviewId) {
+    $validStatus = array('queued', 'published', 'rejected', 'spam');
+    if (!in_array($status, $validStatus, true)) $status = 'rejected';
+
+    $row = (object) array(
+      'ip'           => substr((string) $ip, 0, 45),
+      'pid'          => (int) $pid,
+      'email_hash'   => sha1(strtolower(trim((string) $email))),
+      'attempt_at'   => class_exists('JFactory') ? JFactory::getDate()->toSql() : date('Y-m-d H:i:s'),
+      'status'       => $status,
+      'signals_json' => is_array($signals) ? json_encode($signals) : '[]',
+      'review_id'    => (int) $reviewId,
+    );
+
+    try {
+      return $db->insertObject('#__fec_review_throttle', $row, 'id');
+    } catch (Exception $e) {
+      error_log('_fec_review_throttle_log failed: ' . $e->getMessage());
+      return false;
+    }
   }
 
 // --- fec_render_review_form  (source lines 16462-16697; slices: radice)

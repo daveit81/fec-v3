@@ -101,6 +101,12 @@ class Factory
         ]);
     }
 
+    /** JFactory::getMailer(): a new JMail each time, as Joomla 2.5 cloned its mailer. */
+    public static function getMailer(): Mail
+    {
+        return new Mail;
+    }
+
     public static function getDate(mixed $time = 'now', mixed $tzOffset = null): Date
     {
         return new Date($time, $tzOffset);

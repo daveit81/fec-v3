@@ -418,6 +418,17 @@ return [
             'com_bonuses' => ['clicks_live', 'ftd_save', 'ftd_import'],
         ],
 
+        // Phase 5: the live site's public standalone endpoints, which bootstrapped Joomla
+        // themselves (site/<path>, head replaced, PORT-NOTES). Served at the same path on v3
+        // to anyone, stateless (ComponentRunner::runPublicScript, raw output, writing
+        // connection); on www each one moves with its own line in the legacy .htaccess.
+        'public_scripts' => [
+            'r.php',
+            'subscribe.php',
+            'components/com_bonuses/ajax/bonus_feedback.php',
+            'components/com_bonuses/ajax_review_submit.php',
+        ],
+
         // The /desk home page: what the redazione can open on v3.
         'desks' => [
             ['title' => 'Methodology admin', 'url' => '/methodology-admin', 'note' => 'Topic, pagine e metadati di /methodology e delle pagine editoriali'],

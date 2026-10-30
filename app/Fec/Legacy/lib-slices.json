@@ -1,5 +1,5 @@
 {
-    "_comment": "Seeds per ported section: the legacy lib functions its views and the template call. scripts/lib-slice.php follows their calls and writes the closure into app/Fec/Legacy/site/components/com_bonuses/helpers/. \"editions\": the snapshot tasks of com_authors (Payout Index, Licence Watch) mail the desk through the lib. \"bonuses\": every lib function the public side of com_bonuses (views, renders, modules, component helpers) calls directly. \"radice\" (phase 4): the lib functions the fecv2 template calls for the home and that its com_content overrides call for the reviews, the directory, the clusters and the blog.",
+    "_comment": "Seeds per ported section: the legacy lib functions its views and the template call. scripts/lib-slice.php follows their calls and writes the closure into app/Fec/Legacy/site/components/com_bonuses/helpers/. \"editions\": the snapshot tasks of com_authors (Payout Index, Licence Watch) mail the desk through the lib. \"bonuses\": every lib function the public side of com_bonuses (views, renders, modules, component helpers) calls directly. \"radice\" (phase 4): the lib functions the fecv2 template calls for the home and that its com_content overrides call for the reviews, the directory, the clusters and the blog. \"endpoints\" (phase 5): the public standalone scripts (r.php, subscribe.php, bonus_feedback.php, ajax_review_submit.php): the newsletter click signature and GA4 ping, Resend, the vote report renderer, the review submission pipeline.",
     "slices": {
         "authors": [
             "fec_initials_from_name",
@@ -174,6 +174,18 @@
             "fec_render_trending_section",
             "fec_render_trust_pulse_strip",
             "fec_vm_fetch_article"
+        ],
+        "endpoints": [
+            "fec_nl_click_signature",
+            "fec_nl_ga_track_click",
+            "fec_resend_send",
+            "fec_reports_render_item",
+            "fec_review_validate_submit",
+            "fec_review_check_spam_signals",
+            "fec_review_insert",
+            "fec_review_log_spam",
+            "fec_review_send_moderation_email",
+            "_fec_review_client_ip"
         ]
     }
 }

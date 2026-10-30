@@ -73,6 +73,7 @@ ROOTS=(
   fec_cmp_build.php
   fec_listing_v2.php
   webhook
+  api
 )
 
 # Phase 5: the crontab's entry points that still run on PHP 5.6 or through Joomla. Read from a

@@ -18,12 +18,23 @@ use Throwable;
  *   getErrorNum / getErrorMsg / getQuery(true) / replacePrefix /
  *   transactionStart / transactionCommit / transactionRollback
  *
- * Joomla 2.5 never throws from a query: it sets the error number and
- * message and returns null/false, and our models check getErrorNum().
- * Kept exactly so, with the exception logged.
+ * The pages run without exceptions: a failing query sets the error number
+ * and message and returns null/false, and our models check getErrorNum(),
+ * with the exception logged. Joomla 2.5.28's driver threw JDatabaseException
+ * instead (JError::$legacy off), and the standalone endpoints rely on it
+ * (bonus_feedback.php reads "Duplicate" in the message of a second vote):
+ * ComponentRunner::runPublicScript() turns throwing on for them.
  */
 class Database
 {
+    /** Throw DatabaseException (JDatabaseException) on a failing query, as Joomla 2.5.28 did. */
+    private static bool $throw = false;
+
+    public static function throwErrors(bool $on): void
+    {
+        self::$throw = $on;
+    }
+
     private string $sql = '';
 
     private int $errorNum = 0;
@@ -405,8 +416,12 @@ class Database
 
     private function fail(Throwable $e, string $sql): void
     {
-        $this->errorNum = (int) ($e->getCode() ?: 1);
+        $info = $e instanceof \PDOException ? ($e->errorInfo ?? null) : null;
+        $this->errorNum = (int) (is_array($info) && isset($info[1]) ? $info[1] : ($e->getCode() ?: 1));
         $this->errorMsg = $e->getMessage();
         error_log('legacy db ['.$this->connection.']: '.$e->getMessage().' -- '.mb_strimwidth(preg_replace('/\s+/', ' ', $sql) ?? $sql, 0, 300, '...'));
+        if (self::$throw) {
+            throw new DatabaseException($this->errorMsg.' SQL='.$sql, $this->errorNum, $e);
+        }
     }
 }

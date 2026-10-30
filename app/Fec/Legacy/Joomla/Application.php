@@ -27,6 +27,15 @@ class Application
         $this->input = new Input;
     }
 
+    /**
+     * JSite::initialise(): language, session, user and the system plugins' onAfterInitialise.
+     * The standalone endpoints (r.php, subscribe.php) call it before their work; none of them
+     * reads what it prepared, so nothing to do.
+     */
+    public function initialise(array $options = []): void
+    {
+    }
+
     public function getMenu(?string $name = null, array $options = []): Menu
     {
         return $this->menu ??= new Menu;

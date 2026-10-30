@@ -427,6 +427,39 @@ script, outside sh404SEF: it answers on either host, as before.
   renders the feed URLs as the HTML listing, whose guard sends them to `/blog`) and printed
   "Blog temporarily unavailable" with a 200 (29 Oct 2026).
 
+## The public standalone endpoints (phase 5)
+
+`r.php`, `subscribe.php`, `components/com_bonuses/ajax/bonus_feedback.php` and
+`components/com_bonuses/ajax_review_submit.php` are verbatim under `site/` at the same path
+(`fec.legacy.public_scripts`). Each one bootstrapped Joomla itself (`define('_JEXEC')`,
+`JPATH_BASE`, `includes/defines.php`, `includes/framework.php`, and `libraries/joomla/factory.php`
+for the votes): that head is replaced by the `_JEXEC` guard and the runner boots the layer before
+the include (`ComponentRunner::runPublicScript()`: anyone, stateless group, writing connection, the
+answer is what the script echoed with the headers, cookies and status it set). `JPATH_BASE` is the
+virtual docroot, so their `require_once JPATH_BASE . '/components/com_bonuses/helpers/fec_common_lib.php'`
+loads the lib slice ("endpoints": the click signature and GA4 ping, Resend, the vote report renderer,
+the review pipeline). Other edits: `bonus_feedback.php` assigned the application by reference
+(`$app =& JFactory::getApplication()`, a notice on PHP 8): plain assignment. The usual rewrites
+(`header()`, `exit`) apply.
+
+What the layer adds for them: `JApplication::initialise()` (does nothing: none of them reads what it
+prepared), `JDatabaseQuery::setLimit()` (the MySQLi query's `LIMIT offset, limit` on a SELECT),
+`JFactory::getMailer()`/`JMail` (the review moderation notice, through the application's mailer, From =
+`JFactory::getConfig()`'s mailfrom/fromname, i.e. MAIL_FROM_* of v3; Joomla used configuration.php's),
+`JLog` (an entry goes only to a logger registered with `addLogger()`; the CMS registered none for
+"newsletter", so `subscribe.php`'s failure lines, which carry the address, were never written and are
+not now), and Joomla 2.5.28's database exceptions: its MySQLi driver threw `JDatabaseException` on a
+failing query, and `bonus_feedback.php` tells a second vote by "Duplicate" in the exception's message
+(without it the aggregate would count the vote twice). The pages keep the layer's no-throw behaviour;
+`runPublicScript()` switches throwing on for the endpoints only (`Database::throwErrors()`).
+
+`components/com_bonuses/fec_review_config.php` (ours, see above) now reads the live file first, from
+the real docroot: the endpoint verifies Turnstile with the same secret and notifies the same moderation
+address as Joomla, and the key is rotated in one place. The secrets stay out of this repository.
+
+`freshtoken.php` stays on Joomla: it hands out Joomla's form token, which only Joomla's own forms check
+(none of the endpoints above does). The search endpoints (`api/search*.php`) come with the next snapshot.
+
 ## Known legacy behaviour reproduced on purpose (parity)
 
 - A path with an encoded "#" (`%23`, a link copied with its anchor) is looked up without it: the

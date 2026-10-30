@@ -129,6 +129,60 @@ final class ComponentRunner implements PageHandler
         return $this->raw($body, $request);
     }
 
+    /**
+     * One of the live site's public standalone endpoints (fec.legacy.public_scripts:
+     * r.php, subscribe.php, the bonus votes, the review submission), which bootstrapped
+     * Joomla themselves and answered on their own: included at the same path under the
+     * layer, for anyone, on the writing connection (they log clicks, votes, sign-ups and
+     * reviews), with Joomla 2.5.28's database exceptions (their try/catch blocks rely on
+     * them); the response is what the script echoed, with the headers, cookies and status
+     * it set. Never the layout, never Laravel's session.
+     */
+    public function runPublicScript(Request $request, string $path): Response
+    {
+        $path = ltrim($path, '/');
+        $file = Runtime::sitePath().'/'.$path;
+        if (! in_array($path, (array) config('fec.legacy.public_scripts', []), true) || ! is_file($file)) {
+            abort(404);
+        }
+
+        Runtime::boot('com_bonuses');
+        Factory::useRwConnection(true);
+        Joomla\Database::throwErrors(true);
+        if (! defined('FEC_OB_BASE')) {
+            define('FEC_OB_BASE', ob_get_level() + 1);
+        }
+        Uri::reset();
+        Joomla\Route::reset();
+        Sh404sefOutput::reset();
+        $this->syncServerGlobals($request);
+
+        $level = ob_get_level();
+        ob_start();
+        LegacyErrors::begin($path);
+        try {
+            require $file;
+        } catch (ExitException $e) {
+            // exit (jexit after the port) ends every answer of these scripts
+        } catch (RedirectException $e) {
+            $this->discard($level);
+
+            return Redirects::to($request, $e->url, $e->status);
+        } catch (Throwable $e) {
+            $this->discard($level);
+            throw $e;
+        } finally {
+            LegacyErrors::end();
+            Joomla\Database::throwErrors(false);
+        }
+        $body = '';
+        while (ob_get_level() > $level) {
+            $body = (string) ob_get_clean().$body;
+        }
+
+        return $this->raw($body, $request);
+    }
+
     private function run(Request $request, ResolvedUrl $url, string $entry, bool $rw): Response
     {
         $option = (string) $url->option();

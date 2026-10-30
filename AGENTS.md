@@ -81,6 +81,11 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   (`App\Fec\Legacy\JackpotsFold`); `--dry-run` compares with the table instead of writing.
   `scripts/legacy-snapshot.sh` copies the crontab's entry points when root passes a dump of the
   crontab (`FEC_CRONTAB`), with the crontab itself in `legacy/_home/crontab.txt`, keys redacted.
+- Phase 5 public endpoints (`fec.legacy.public_scripts`: `r.php`, `subscribe.php`, the bonus votes,
+  the review submission) are the live scripts verbatim at the same path (`routes/stateless.php`,
+  `PublicScriptController`, `ComponentRunner::runPublicScript()`): anyone, no Laravel session, writing
+  connection, Joomla 2.5.28's `JDatabaseException` switched on (`Database::throwErrors()`), raw answer.
+  The web route of the desk scripts matches only their own names, so it never shadows these.
 - Phase 3 (com_bonuses): the component is copied verbatim too (`PORT-NOTES.md` lists what is left
   out), its lib closure is the "bonuses" slice (197 functions), its nine public views are in
   `Dispatcher::HANDLERS`, `com_bonuses.ads` is a writing view (click log). Its URLs are built by the

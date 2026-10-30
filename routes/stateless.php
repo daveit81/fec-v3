@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\FrontController;
 use App\Http\Controllers\GotoController;
+use App\Http\Controllers\PublicScriptController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -17,6 +18,12 @@ use Illuminate\Support\Facades\Route;
 
 // Phase 1, first production route: the tracked affiliate redirect (parity with goto.php + com_shortlink).
 Route::get('/goto.php', GotoController::class)->name('goto');
+
+// Phase 5: the live site's public standalone endpoints, verbatim at their own paths
+// (fec.legacy.public_scripts: newsletter clicks and sign-ups, bonus votes, reader reviews).
+foreach ((array) config('fec.legacy.public_scripts', []) as $script) {
+    Route::match(['GET', 'HEAD', 'POST'], '/'.ltrim((string) $script, '/'), PublicScriptController::class);
+}
 
 // Phase 1 kernel: every other GET goes through the URL registry and the
 // run-time patterns (App\Fec\Url\Router) to a ported view or a 404. Public
