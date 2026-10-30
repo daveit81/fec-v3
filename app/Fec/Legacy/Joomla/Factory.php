@@ -95,6 +95,8 @@ class Factory
             'MetaAuthor' => (string) config('fec.legacy.meta.author', '0'),
             'robots' => (string) config('fec.legacy.meta.robots', ''),
             'sitename_pagetitles' => (int) config('fec.legacy.meta.sitename_pagetitles', 0),
+            // the lists' page size (JModelList: com_partnerdesk's desk), Joomla 2.5's default
+            'list_limit' => (int) config('fec.legacy.list_limit', 20),
             'sef' => '1',
             // sh404SEF set it at start-up to 1 - shRewriteMode (0: URLs without index.php/)
             'sef_rewrite' => '1',

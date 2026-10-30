@@ -549,6 +549,27 @@ files they serve), and the logo upload writes to `JPATH_ROOT . '/images/casino-l
 above, head replaced; its Svix signature check reads the webhook secret from
 `/home/freeextr/conf/fec_resend.php`, as on the live site.
 
+## com_partnerdesk (phase 5)
+
+Copied verbatim from the snapshot, with the mechanical rewrites (four `header()` of the
+markdown export) and one edit: `exportmd` emptied every output buffer before the download; it
+stops at `FEC_OB_BASE` (same edit as com_authors and com_atlas). Nothing of it is SEF on the live
+site: menu item 1226 (`partner-desk`, the public form) is unpublished, 1238 (the desk, under
+`dashboards/`) is published but no URL of the component is in `jos_sh404sef_urls`; the form
+(`view=submit`, 5 submissions to 30 Oct 2026, the last on 12 Oct) is reached as
+`/index.php?option=com_partnerdesk`, and JRoute gives every link of the component non-SEF here too.
+On v3 everything runs through the root route, which has the session: the form's time trap and
+data (`setUserState`), Joomla's token and the messages after the redirect need it. The form posts
+`task=send` with no login (`fec.legacy.public_tasks`: the root route and the runner let that one
+task through, writing connection); the desk (`dashboard`, `review` and the tasks posted to them)
+are desk views. The component's options are empty on the live site (`jos_extensions.params = {}`),
+so the controller's defaults hold here too: form open, 8 seconds, 3 submissions a day per IP,
+notification to configuration.php's `mailfrom` (here `MAIL_FROM_ADDRESS`). `core.manage` on the
+component is any redazione account. The layer gained JModelList (Joomla 2.5.28's: context, stateful
+list with `list_limit` 20, `getItems`/`getTotal`/`getStart`/`getPagination`, the page reset of
+`getUserStateFromRequest`) and JRequest's `uint` filter. On www the component stays on Joomla
+(`fec.legacy.root_keep`) until Joomla is switched off.
+
 ## Known legacy behaviour reproduced on purpose (parity)
 
 - A path with an encoded "#" (`%23`, a link copied with its anchor) is looked up without it: the

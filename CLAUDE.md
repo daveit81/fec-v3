@@ -96,6 +96,10 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   `FEC_LEGACY_SCHEDULE_LLMSTXT` and `FEC_LEGACY_SCHEDULE_COFM`. The search API (`api/search*.php`) and the
   bounce webhook are more public scripts. The review dashboard of `fec-admin/` (page, JSON API, clusters page)
   is `fec.legacy.desk_files`: same paths, logged-in redazione, `ComponentRunner::runDeskFile()`.
+- com_partnerdesk (phase 5) is copied verbatim and is all non-SEF, as on the live site: the public
+  "List your brand" form (`/index.php?option=com_partnerdesk`, view `submit`) and its `task=send`
+  (`fec.legacy.public_tasks`: no login, writing connection, the root route's session) and the desk views
+  `dashboard`/`review`. The layer has JModelList (Joomla 2.5.28's) for its list.
 - The jackpot desk is rewritten, not ported (`/desk/jackpots`, `Desk\JackpotsController`,
   `App\Fec\Desk\JackpotsDesk`): Laravel's CSRF and login, one column written, `jos_jackpots.published`
   (what the reviews' jackpot section reads); name, currency and soft come from the tracker and

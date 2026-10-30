@@ -51,11 +51,15 @@ final class ComponentRunner implements PageHandler
         if ($desk && ! auth()->check()) {
             abort(404);
         }
-        if ($task !== '' && ! $desk) {
+        // A public form's task (fec.legacy.public_tasks: com_partnerdesk's "send") runs for
+        // anyone, on the writing connection, but only with the session it needs (the
+        // root route's web group: Joomla's token, the form's time trap, the messages).
+        $publicTask = $task !== '' && ! $desk && $request->hasSession() && self::isPublicTask($option, $task);
+        if ($task !== '' && ! $desk && ! $publicTask) {
             abort(404, 'Task not available on this view');
         }
 
-        return $this->run($request, $url, $entry, $desk || $this->needsWrites($url));
+        return $this->run($request, $url, $entry, $desk || $publicTask || $this->needsWrites($url));
     }
 
     /**
@@ -558,6 +562,12 @@ final class ComponentRunner implements PageHandler
         }
 
         return $out;
+    }
+
+    /** A task a public form posts (fec.legacy.public_tasks, "option.task"): no login needed. */
+    public static function isPublicTask(string $option, string $task): bool
+    {
+        return $task !== '' && in_array($option.'.'.$task, (array) config('fec.legacy.public_tasks', []), true);
     }
 
     /**

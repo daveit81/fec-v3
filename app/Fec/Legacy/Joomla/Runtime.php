@@ -4,6 +4,7 @@ namespace App\Fec\Legacy\Joomla;
 
 use App\Fec\Legacy\Joomla\Mvc\Controller;
 use App\Fec\Legacy\Joomla\Mvc\Model;
+use App\Fec\Legacy\Joomla\Mvc\ModelList;
 use App\Fec\Legacy\Joomla\Mvc\View;
 
 /**
@@ -65,6 +66,7 @@ final class Runtime
         'JViewLegacy' => View::class,
         'JModel' => Model::class,
         'JModelLegacy' => Model::class,
+        'JModelList' => ModelList::class,
         'JPlugin' => Plugin::class,
         'JPluginHelper' => PluginHelper::class,
         'JModuleHelper' => ModuleHelper::class,

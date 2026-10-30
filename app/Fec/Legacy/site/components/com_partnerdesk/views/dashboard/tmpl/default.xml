@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+	<layout title="Partner Desk - Review Dashboard (private)">
+		<message>Private frontend dashboard for reviewing brand submissions. Requires login and core.manage permission on the component. Set menu access to Special.</message>
+	</layout>
+</metadata>

@@ -7,7 +7,7 @@ namespace App\Fec\Legacy\Joomla;
  * SEF layer would have produced (option, view, slug, Itemid...) with
  * setVar(); getVar() then reads them before the query string and the body,
  * exactly as Joomla's merged $_REQUEST did. Filters follow JFilterInput's
- * types for the ones our code uses: int, string, cmd, word, bool, float,
+ * types for the ones our code uses: int, uint, string, cmd, word, bool, float,
  * array, raw/none.
  */
 class Request
@@ -148,6 +148,10 @@ class Request
                 preg_match('/-?[0-9]+/', is_scalar($value) ? (string) $value : '', $m);
 
                 return isset($m[0]) ? (int) $m[0] : 0;
+            case 'UINT':
+                preg_match('/-?[0-9]+/', is_scalar($value) ? (string) $value : '', $m);
+
+                return isset($m[0]) ? abs((int) $m[0]) : 0;
             case 'FLOAT':
             case 'DOUBLE':
                 preg_match('/-?[0-9]+(\.[0-9]+)?/', is_scalar($value) ? (string) $value : '', $m);

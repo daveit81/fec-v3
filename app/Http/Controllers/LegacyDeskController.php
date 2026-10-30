@@ -58,7 +58,9 @@ class LegacyDeskController extends Controller
         }
         $url = new ResolvedUrl('page', 'index.php', $query, null, null, null, null, 'index.php?'.http_build_query($query), 'index.php');
 
-        if ((ComponentRunner::isDeskUrl($url) || ($query['task'] ?? '') !== '') && ! auth()->check()) {
+        $task = (string) ($query['task'] ?? '');
+        $publicTask = ComponentRunner::isPublicTask($option, $task) && ! ComponentRunner::isDeskUrl($url);
+        if ((ComponentRunner::isDeskUrl($url) || ($task !== '' && ! $publicTask)) && ! auth()->check()) {
             if ($request->expectsJson() || ($query['format'] ?? '') === 'json') {
                 return response()->json(['ok' => false, 'error' => 'login required'], 401);
             }

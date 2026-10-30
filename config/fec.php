@@ -407,7 +407,17 @@ return [
             // com_atlas (phase 5): the Operator Atlas editorial dashboard and its AJAX tasks
             // (task=dashboard.*), gated to Joomla user 42 by its model on the live site too
             'com_atlas.dashboard',
+            // com_partnerdesk (phase 5): the brand submissions desk, list and review (its tasks
+            // approve/reject/pending/savenotes/exportmd post to these views); core.manage on the
+            // live site, any redazione account here
+            'com_partnerdesk.dashboard', 'com_partnerdesk.review',
         ],
+
+        // Tasks a public form posts ("option.task"), run for anyone on the writing connection
+        // through the root route, which has the session they need (Joomla's token, the time trap,
+        // the messages): com_partnerdesk's "List your brand" form (view submit, non-SEF on the live
+        // site too: its menu item 1226 is unpublished, no URL of the component is registered).
+        'public_tasks' => ['com_partnerdesk.send'],
 
         // The primary navigation from jos_menu (App\Fec\Legacy\MenuModule: mod_menu of the fec_nav
         // position through the fecv2 override); false serves the snapshot of 25 Oct 2026.
@@ -478,6 +488,7 @@ return [
             ['title' => 'Add a bonus', 'url' => '/index.php?option=com_bonuses&view=add', 'note' => 'Form di inserimento/modifica bonus con welcome package FXRate'],
             ['title' => 'Click report', 'url' => '/index.php?option=com_bonuses&view=clicks', 'note' => 'Click per brand e paese, feed live, FTD StatsDrone (import CSV da /components/com_bonuses/ajax/ftd_import.php)'],
             ['title' => 'Jackpot', 'url' => '/desk/jackpots', 'note' => 'Jackpot del tracker: pubblicato o nascosto nella sezione jackpot delle recensioni (riscritto in fase 5: il resto lo aggiorna il cron)'],
+            ['title' => 'Partner Desk', 'url' => '/index.php?option=com_partnerdesk&view=dashboard', 'note' => 'Proposte dei brand dal form "List your brand" (/index.php?option=com_partnerdesk): approva, rifiuta, note, bozza di fact sheet'],
         ],
     ],
 
