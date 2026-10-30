@@ -127,6 +127,21 @@ return [
         'schedule_jackpots' => filter_var(env('FEC_LEGACY_SCHEDULE_JACKPOTS', false), FILTER_VALIDATE_BOOL),
         'jackpots_update_cron' => (string) env('FEC_JACKPOTS_UPDATE_CRON', ''),
 
+        // The crontab's scripts that bootstrapped Joomla on the command line, run by
+        // fec:legacy:cli <name> (site/<path>, head replaced, PORT-NOTES).
+        'cli_scripts' => [
+            'digest' => '_home/cron/send_weekly_digest.php',
+            'llmstxt' => 'cli/fec_generate_llmstxt.php',
+        ],
+
+        // The zone date() answered in under the PHP 5.6 command line (alt-php56's
+        // date.timezone): the legacy scripts compare and stamp with date(), so they run in it.
+        'php56_timezone' => (string) env('FEC_LEGACY_PHP56_TIMEZONE', 'UTC'),
+
+        // Their schedules (routes/console.php), off until the crontab lines are gone.
+        'schedule_digest' => filter_var(env('FEC_LEGACY_SCHEDULE_DIGEST', false), FILTER_VALIDATE_BOOL),
+        'schedule_llmstxt' => filter_var(env('FEC_LEGACY_SCHEDULE_LLMSTXT', false), FILTER_VALIDATE_BOOL),
+
         // The clock of the crontab of freeextr, i.e. the server's time zone (timedatectl on
         // 30 Oct 2026: America/New_York, EDT/EST): the jobs moved from the crontab keep their
         // expressions and run in this zone, daylight saving included.

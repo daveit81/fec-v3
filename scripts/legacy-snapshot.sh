@@ -198,8 +198,9 @@ for k in "${cron_keys[@]}"; do redact_value "$k" cron-key; done
 # The cron entry points and the webhook are copied for the first time: any quoted literal assigned
 # to a key/secret/token/password name is replaced as well, whatever its value.
 for f in "${cron_files[@]}" $(find "$DST/webhook" -type f 2>/dev/null); do
-  if perl -0ne 'exit((/(?:api[_-]?key|secret|token|passw(?:or)?d|pass|pwd)[A-Za-z0-9_]*[\x27"]?\s*(?:=>|=|:|,)\s*[\x27"](?!<REDACTED)[^\x27"\s]{8,}[\x27"]/i) ? 0 : 1)' "$f"; then
-    perl -pi -e 's/((?:api[_-]?key|secret|token|passw(?:or)?d|pass|pwd)[A-Za-z0-9_]*[\x27"]?\s*(?:=>|=|:|,)\s*[\x27"])(?!<REDACTED)[^\x27"\s]{8,}([\x27"])/$1<REDACTED:literal>$2/gi' "$f"
+  # the value must look like a key (letters, digits, _ - + / =): "token='.urlencode($t).'" is code
+  if perl -0ne 'exit((/(?:api[_-]?key|secret|token|passw(?:or)?d|pass|pwd)[A-Za-z0-9_]*[\x27"]?\s*(?:=>|=|:|,)\s*[\x27"](?!<REDACTED)[A-Za-z0-9_+\/=-]{8,}[\x27"]/i) ? 0 : 1)' "$f"; then
+    perl -pi -e 's/((?:api[_-]?key|secret|token|passw(?:or)?d|pass|pwd)[A-Za-z0-9_]*[\x27"]?\s*(?:=>|=|:|,)\s*[\x27"])(?!<REDACTED)[A-Za-z0-9_+\/=-]{8,}([\x27"])/$1<REDACTED:literal>$2/gi' "$f"
     echo "  redacted literal(s) in ${f#"$DST"/}"
   fi
 done

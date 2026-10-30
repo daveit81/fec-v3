@@ -61,3 +61,25 @@ if (config('fec.legacy.schedule_jackpots') && config('fec.legacy.jackpots_update
         ->runInBackground()
         ->appendOutputTo(storage_path('logs/jackpots-update.log'));
 }
+
+/*
+| The crontab's legacy scripts run by fec:legacy:cli, at the crontab's
+| expressions in its clock: the weekly digest on Tuesday at 02:00, llms.txt
+| every hour. Each enabled by its flag once its crontab line is gone.
+*/
+if (config('fec.legacy.schedule_digest')) {
+    Schedule::command('fec:legacy:cli digest')
+        ->cron('0 2 * * 2')
+        ->timezone(config('fec.legacy.cron_timezone', 'America/New_York'))
+        ->withoutOverlapping(240)
+        ->onOneServer()
+        ->appendOutputTo(storage_path('logs/newsletter-digest.log'));
+}
+if (config('fec.legacy.schedule_llmstxt')) {
+    Schedule::command('fec:legacy:cli llmstxt')
+        ->cron('0 * * * *')
+        ->timezone(config('fec.legacy.cron_timezone', 'America/New_York'))
+        ->withoutOverlapping(30)
+        ->onOneServer()
+        ->appendOutputTo(storage_path('logs/llms-txt.log'));
+}

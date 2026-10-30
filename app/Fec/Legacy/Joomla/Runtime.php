@@ -72,6 +72,7 @@ final class Runtime
         'JCategories' => Categories::class,
         'JCategoryNode' => CategoryNode::class,
         'JMail' => Mail::class,
+        'JApplicationCli' => ApplicationCli::class,
         'JLog' => Log::class,
     ];
 

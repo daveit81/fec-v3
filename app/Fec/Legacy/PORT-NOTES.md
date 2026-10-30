@@ -474,6 +474,22 @@ address as Joomla, and the key is rotated in one place. The secrets stay out of 
 `freshtoken.php` stays on Joomla: it hands out Joomla's form token, which only Joomla's own forms check
 (none of the endpoints above does). The search endpoints (`api/search*.php`) come with the next snapshot.
 
+## The crontab's scripts (phase 5)
+
+`_home/cron/send_weekly_digest.php` (the weekly newsletter digest, Tuesday 02:00) and
+`cli/fec_generate_llmstxt.php` (llms.txt, hourly) bootstrapped Joomla from the command line. Their copies
+run under `fec:legacy:cli digest|llmstxt [-- args]` (`ComponentRunner::runCliScript()`, `fec.legacy.cli_scripts`):
+the layer booted, writing connection, `$argv` as the crontab passed it, PHP's clock in the zone the PHP 5.6
+command line used (`fec.legacy.php56_timezone`: they stamp and compare with `date()`), output straight to
+the console, `exit($code)` as the command's status (`jexit()` now carries an integer code). Edits: the
+bootstrap heads (`define('_JEXEC')`, `JPATH_BASE`, `includes/defines.php`, `includes/framework.php`) are the
+`_JEXEC` guard; llms.txt is written to `JPATH_ROOT` (the real docroot) instead of `JPATH_BASE`;
+`JApplicationCli` is the layer's `ApplicationCli` (getInstance, execute, out, close). In the digest, one line
+of the 30 Oct snapshot had been mangled by the snapshot's own redaction (`token='.urlencode($unsubToken).'`
+read as a literal after "token="): restored in the copy, and the redaction now only takes key-shaped values.
+`scripts/bonuses_autoexpire.php` is not ported: it is standalone (configuration.php + mysqli, written for
+PHP 5.6 and 8), so its crontab line moves to alt-php 8.4 after a dry run on both.
+
 ## Known legacy behaviour reproduced on purpose (parity)
 
 - A path with an encoded "#" (`%23`, a link copied with its anchor) is looked up without it: the

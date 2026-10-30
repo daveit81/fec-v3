@@ -43,7 +43,8 @@ if (! function_exists('jexit')) {
             echo $message;
         }
 
-        throw new ExitException(is_string($message) ? $message : '');
+        // exit(4) ends a CLI script with status 4: the CLI runner reads the code back
+        throw new ExitException(is_string($message) ? $message : '', is_int($message) ? $message : 0);
     }
 }
 

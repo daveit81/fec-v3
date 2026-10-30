@@ -180,6 +180,49 @@ final class ComponentRunner implements PageHandler
         return $this->raw($body, $request);
     }
 
+    /**
+     * One of the crontab's scripts (fec.legacy.cli_scripts: the weekly digest, the llms.txt
+     * generator), which bootstrapped Joomla themselves from the command line: included here
+     * under the layer, on the writing connection, with $argv as the crontab passed it and PHP's
+     * clock set to the zone the PHP 5.6 command line ran in (fec.legacy.php56_timezone: the
+     * scripts compare and stamp with date()). Output goes straight to the console, unbuffered;
+     * exit($code) (jexit after the port) becomes the return value.
+     *
+     * @param  list<string>  $args
+     */
+    public function runCliScript(string $name, array $args = []): int
+    {
+        $path = (string) (config('fec.legacy.cli_scripts', [])[$name] ?? '');
+        $file = Runtime::sitePath().'/'.ltrim($path, '/');
+        if ($path === '' || ! is_file($file)) {
+            fwrite(STDERR, "fec:legacy:cli: unknown script '$name'\n");
+
+            return 2;
+        }
+
+        Runtime::boot('com_bonuses');
+        Factory::useRwConnection(true);
+        $fecCliZone = date_default_timezone_get();
+        date_default_timezone_set((string) config('fec.legacy.php56_timezone', 'UTC'));
+        $argv = array_merge([$file], array_values($args));
+        $argc = count($argv);
+        $_SERVER['argv'] = $argv;
+        $_SERVER['argc'] = $argc;
+
+        LegacyErrors::begin('cli/'.$name);
+        try {
+            require $file;
+            $fecCliStatus = 0;
+        } catch (ExitException $e) {
+            $fecCliStatus = (int) $e->getCode();
+        } finally {
+            LegacyErrors::end();
+            date_default_timezone_set($fecCliZone);
+        }
+
+        return $fecCliStatus;
+    }
+
     private function run(Request $request, ResolvedUrl $url, string $entry, bool $rw): Response
     {
         $option = (string) $url->option();
