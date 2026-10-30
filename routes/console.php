@@ -83,3 +83,25 @@ if (config('fec.legacy.schedule_llmstxt')) {
         ->onOneServer()
         ->appendOutputTo(storage_path('logs/llms-txt.log'));
 }
+
+/*
+| The casino of the month (fec-admin/fec_cofm_cron.php, which the crontab
+| reached with wget): mode=auto every day at 23:05 (propose on the last day
+| of the month, publish on the 1st, by PHP's UTC date: at 23:05 in New York
+| that is already the next day), mode=publish on the 1st at 00:05.
+*/
+if (config('fec.legacy.schedule_cofm')) {
+    Schedule::command('fec:legacy:cli cofm -- --mode=auto')
+        ->cron('5 23 * * *')
+        ->timezone(config('fec.legacy.cron_timezone', 'America/New_York'))
+        ->withoutOverlapping(60)
+        ->onOneServer()
+        ->appendOutputTo(storage_path('logs/cofm.log'));
+
+    Schedule::command('fec:legacy:cli cofm -- --mode=publish')
+        ->cron('5 0 1 * *')
+        ->timezone(config('fec.legacy.cron_timezone', 'America/New_York'))
+        ->withoutOverlapping(60)
+        ->onOneServer()
+        ->appendOutputTo(storage_path('logs/cofm.log'));
+}

@@ -88,10 +88,11 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   the layer's database never throws and `JDatabaseQuery::__call()` answers null for an unknown method
   (`setLimit()` included: the live vote counts read 0 because of it; PORT-NOTES).
   The web route of the desk scripts matches only their own names, so it never shadows these.
-- Phase 5 crontab scripts that bootstrapped Joomla (the weekly digest, llms.txt) run as
+- Phase 5 crontab scripts that bootstrapped Joomla (the weekly digest, llms.txt, the casino of the month) run as
   `fec:legacy:cli <name> [-- args]` (`fec.legacy.cli_scripts`, `ComponentRunner::runCliScript()`, PHP's clock
-  in `fec.legacy.php56_timezone`, exit code = the script's), scheduled behind `FEC_LEGACY_SCHEDULE_DIGEST`
-  and `FEC_LEGACY_SCHEDULE_LLMSTXT`.
+  in `fec.legacy.php56_timezone`, exit code = the script's), scheduled behind `FEC_LEGACY_SCHEDULE_DIGEST`,
+  `FEC_LEGACY_SCHEDULE_LLMSTXT` and `FEC_LEGACY_SCHEDULE_COFM`. The search API (`api/search*.php`) is three
+  more public scripts.
 - Phase 3 (com_bonuses): the component is copied verbatim too (`PORT-NOTES.md` lists what is left
   out), its lib closure is the "bonuses" slice (197 functions), its nine public views are in
   `Dispatcher::HANDLERS`, `com_bonuses.ads` is a writing view (click log). Its URLs are built by the

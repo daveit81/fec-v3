@@ -490,6 +490,18 @@ read as a literal after "token="): restored in the copy, and the redaction now o
 `scripts/bonuses_autoexpire.php` is not ported: it is standalone (configuration.php + mysqli, written for
 PHP 5.6 and 8), so its crontab line moves to alt-php 8.4 after a dry run on both.
 
+`fec-admin/fec_cofm_cron.php` (the casino of the month, reached by the crontab with wget on the server's IP
+and a key) runs the same way as `fec:legacy:cli cofm -- --mode=auto|propose|publish`: the key and its gate
+are gone (the copy is never served on the web), the mode comes from `--mode=` instead of `?mode=`. Its
+`auto` mode reads PHP's UTC date: at the crontab's 23:05 in New York it is already the next day in UTC, so
+the last day of a month in UTC (the 30th or 31st in New York) proposes and the 1st publishes; the schedule
+keeps the crontab's times and zone, and the copy keeps UTC (`fec.legacy.php56_timezone`).
+
+The search API (`api/search.php`, `api/search_popular.php`, `api/search_full.php`, the search box of every
+page) is three public scripts like the endpoints above: head replaced, read only, JSON. `JRoute` builds
+their links as on the live site, where sh404SEF answered from `/api/` and `fec_normalize_api_url()`
+removed that segment.
+
 ## Known legacy behaviour reproduced on purpose (parity)
 
 - A path with an encoded "#" (`%23`, a link copied with its anchor) is looked up without it: the

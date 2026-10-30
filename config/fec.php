@@ -132,6 +132,7 @@ return [
         'cli_scripts' => [
             'digest' => '_home/cron/send_weekly_digest.php',
             'llmstxt' => 'cli/fec_generate_llmstxt.php',
+            'cofm' => 'fec-admin/fec_cofm_cron.php',
         ],
 
         // The zone date() answered in under the PHP 5.6 command line (alt-php56's
@@ -141,6 +142,7 @@ return [
         // Their schedules (routes/console.php), off until the crontab lines are gone.
         'schedule_digest' => filter_var(env('FEC_LEGACY_SCHEDULE_DIGEST', false), FILTER_VALIDATE_BOOL),
         'schedule_llmstxt' => filter_var(env('FEC_LEGACY_SCHEDULE_LLMSTXT', false), FILTER_VALIDATE_BOOL),
+        'schedule_cofm' => filter_var(env('FEC_LEGACY_SCHEDULE_COFM', false), FILTER_VALIDATE_BOOL),
 
         // The clock of the crontab of freeextr, i.e. the server's time zone (timedatectl on
         // 30 Oct 2026: America/New_York, EDT/EST): the jobs moved from the crontab keep their
@@ -443,6 +445,9 @@ return [
             'subscribe.php',
             'components/com_bonuses/ajax/bonus_feedback.php',
             'components/com_bonuses/ajax_review_submit.php',
+            'api/search.php',
+            'api/search_popular.php',
+            'api/search_full.php',
         ],
 
         // The /desk home page: what the redazione can open on v3.

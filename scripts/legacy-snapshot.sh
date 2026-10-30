@@ -85,6 +85,13 @@ ROOTS=(
 CRONTAB="${FEC_CRONTAB:-}"
 HOME_SRC="${FEC_HOME:-/home/freeextr}"
 CRON_SCRIPTS='(bonuses_autoexpire\.php|send_weekly_digest\.php|fec_generate_llmstxt\.php|jackpots_update\.sh|fec_cofm_cron\.php)$'
+CRON_KEEP=(
+  "$HOME_SRC/scripts/bonuses_autoexpire.php"
+  "$HOME_SRC/cron/send_weekly_digest.php"
+  "$HOME_SRC/bin/jackpots_update.sh"
+  "$SRC/cli/fec_generate_llmstxt.php"
+  "$SRC/fec-admin/fec_cofm_cron.php"
+)
 
 if [[ "$(id -un)" != "freeextr" ]]; then
   echo "Run as freeextr, not $(id -un)" >&2
@@ -155,9 +162,6 @@ if [[ -n "$CRONTAB" && -r "$CRONTAB" ]]; then
       *) continue ;;
     esac
     if [[ ! -f "$src" ]]; then printf '%-48s (in the crontab, not on disk)\n' "$ref"; continue; fi
-    if [[ "$(basename "$src")" == fec_cofm_cron.php && ${#cron_keys[@]} -eq 0 ]]; then
-      printf '%-48s (no key read from the crontab: not copied)\n' "$ref"; continue
-    fi
     mkdir -p "$(dirname "$dst")"
     cp -p "$src" "$dst"
     cron_files+=("$dst")
@@ -165,8 +169,25 @@ if [[ -n "$CRONTAB" && -r "$CRONTAB" ]]; then
   done < "$list"
   total=$((total + ${#cron_files[@]}))
 else
-  printf '%-48s (no FEC_CRONTAB dump: cron entry points skipped)\n' "crontab"
+  printf '%-48s (no FEC_CRONTAB dump: the crontab itself skipped)\n' "crontab"
 fi
+
+# The phase 5 entry points, copied whether or not the crontab still calls them (once moved to
+# v3, their lines are gone, and the reference copy must stay): docroot paths at their path,
+# the others under _home/.
+for ref in "${CRON_KEEP[@]}"; do
+  case "$ref" in
+    "$SRC"/*) rel="${ref#"$SRC"/}"; dst="$DST/$rel" ;;
+    "$HOME_SRC"/*) rel="${ref#"$HOME_SRC"/}"; dst="$DST/_home/$rel" ;;
+    *) continue ;;
+  esac
+  [[ -f "$ref" && ! -f "$dst" ]] || continue
+  mkdir -p "$(dirname "$dst")"
+  cp -p "$ref" "$dst"
+  cron_files+=("$dst")
+  total=$((total + 1))
+  printf '%-48s copied (phase 5 entry point)\n' "${dst#"$DST"/}"
+done
 
 {
   echo "snapshot_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -195,6 +216,8 @@ for key in password secret smtppass ftp_pass; do
 done
 redact_value "$(sed -nE "s/.*expected = '([^']*)'.*/\1/p" "$SRC/components/com_fecapi/helpers/auth.php" 2>/dev/null)" fecapi-token
 for k in "${cron_keys[@]}"; do redact_value "$k" cron-key; done
+# the casino-of-the-month key, from its own file (its crontab lines are gone once it runs on v3)
+redact_value "$(sed -nE "s/.*define\('FEC_COFM_CRON_KEY', *'([^']*)'.*/\1/p" "$SRC/fec-admin/fec_cofm_cron.php" 2>/dev/null)" cron-key
 # The cron entry points and the webhook are copied for the first time: any quoted literal assigned
 # to a key/secret/token/password name is replaced as well, whatever its value.
 for f in "${cron_files[@]}" $(find "$DST/webhook" -type f 2>/dev/null); do
