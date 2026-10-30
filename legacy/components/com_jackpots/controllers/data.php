@@ -31,7 +31,7 @@ class JackpotsControllerData extends JController
             'driver'   => 'mysqli',
             'host'     => 'localhost',
             'user'     => 'freeextr_dfiocch',
-            'password' => 'semovente170381.',
+            'password' => '<REDACTED:password>',
             'database' => 'freeextr_jptest',
             'prefix'   => '',
         );

@@ -117,6 +117,26 @@ done
   echo "fec_common_lib_md5=$(md5sum components/com_bonuses/helpers/fec_common_lib.php 2>/dev/null | cut -c1-32)"
 } > "$DST/SNAPSHOT.txt"
 
+# The live site's known secrets, read from its own files, are replaced by value in the copy
+# (never printed): the database password, Joomla's secret and mail/FTP passwords from
+# configuration.php, the com_fecapi bearer token. On 30 Oct 2026 the database password was
+# found in 11 committed files (com_jackpots, chron/statusupd.php) that the keyword scan below
+# had not flagged: hardcoded copies are caught by value, whatever the code around them.
+redact_value() { # value label
+  local value="$1" label="$2"
+  [ "${#value}" -ge 8 ] || return 0
+  grep -rlF -- "$value" "$DST" 2>/dev/null | while IFS= read -r f; do
+    V="$value" L="$label" perl -pi -e 'BEGIN { $v = $ENV{V}; $l = $ENV{L} } s/\Q$v\E/<REDACTED:$l>/g' "$f"
+    echo "  redacted $label in ${f#"$DST"/}"
+  done
+}
+echo
+echo "Redacting the live site's known secrets in the copy:"
+for key in password secret smtppass ftp_pass; do
+  redact_value "$(sed -nE "s/.*public \\\$$key = '([^']*)'.*/\1/p" "$SRC/configuration.php" 2>/dev/null)" "$key"
+done
+redact_value "$(sed -nE "s/.*expected = '([^']*)'.*/\1/p" "$SRC/components/com_fecapi/helpers/auth.php" 2>/dev/null)" fecapi-token
+
 echo
 echo "Total: $total files in $DST ($(du -sh "$DST" | cut -f1))"
 echo
@@ -126,4 +146,7 @@ echo "Secret scan (file:line only, no values) - review before committing:"
   grep -rnoiE '(api[_-]?key|secret|passw(or)?d|token|bot_?id)\s*(=|=>|:)' "$DST" --include='*.php' --include='*.ini' --include='*.json' \
     | grep -viE 'csrf|nonce|token_?name|formtoken|JSession|checkToken|getToken|freshtoken|tokenise|placeholder'
   grep -rnoiE "define\s*\(\s*['\"][A-Z0-9_]*(KEY|SECRET|TOKEN|PASS(WORD)?|PWD)[A-Z0-9_]*['\"]\s*,\s*['\"][^'\"]{8,}" "$DST" --include='*.php'
+  # literal connection arguments and long literal tokens (the 30 Oct 2026 misses)
+  grep -rnoiE "(new mysqli|mysqli_connect|new PDO)\s*\(\s*['\"][^'\"]*['\"]\s*,\s*['\"][^'\"]+['\"]\s*,\s*['\"][^'\"<]{6,}" "$DST" --include='*.php'
+  grep -rnoE "=\s*['\"][A-Za-z0-9]{32,}['\"]" "$DST" --include='*.php' | grep -viE 'md5|sha|hash|checksum|uuid'
 } | cut -d: -f1,2 | sort | uniq | sed "s#^$DST/#  #" || true

@@ -45,7 +45,7 @@ $option = array();
 $option['driver']   = 'mysqli';
 $option['host']     = 'localhost';
 $option['user']     = 'freeextr_dfiocch';
-$option['password'] = 'semovente170381.';
+$option['password'] = '<REDACTED:password>';
 $option['database'] = 'freeextr_jptest';
 $option['prefix']   = '';
 
@@ -123,7 +123,7 @@ $option = array();
 $option['driver']   = 'mysqli';
 $option['host']     = 'localhost';
 $option['user']     = 'freeextr_dfiocch';
-$option['password'] = 'semovente170381.';
+$option['password'] = '<REDACTED:password>';
 $option['database'] = 'freeextr_jptest';
 $option['prefix']   = '';
 
@@ -185,7 +185,7 @@ $option = array();
 $option['driver']   = 'mysqli';
 $option['host']     = 'localhost';
 $option['user']     = 'freeextr_dfiocch';
-$option['password'] = 'semovente170381.';
+$option['password'] = '<REDACTED:password>';
 $option['database'] = 'freeextr_jptest';
 $option['prefix']   = '';
 
@@ -252,7 +252,7 @@ $option = array();
 $option['driver']   = 'mysqli';
 $option['host']     = 'localhost';
 $option['user']     = 'freeextr_dfiocch';
-$option['password'] = 'semovente170381.';
+$option['password'] = '<REDACTED:password>';
 $option['database'] = 'freeextr_jptest';
 $option['prefix']   = '';
 

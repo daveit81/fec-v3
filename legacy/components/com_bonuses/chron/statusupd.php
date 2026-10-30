@@ -1,6 +1,6 @@
 <?php 
 
-$mysqli = new mysqli("localhost", "freeextr_dfiocch", "semovente170381.", "freeextr_fec25");
+$mysqli = new mysqli("localhost", "freeextr_dfiocch", "<REDACTED:password>", "freeextr_fec25");
 
 /* check connection */
 if ($mysqli->connect_errno) {
