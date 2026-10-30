@@ -564,7 +564,8 @@ data (`setUserState`), Joomla's token and the messages after the redirect need i
 task through, writing connection); the desk (`dashboard`, `review` and the tasks posted to them)
 are desk views. The component's options are empty on the live site (`jos_extensions.params = {}`),
 so the controller's defaults hold here too: form open, 8 seconds, 3 submissions a day per IP,
-notification to configuration.php's `mailfrom` (here `MAIL_FROM_ADDRESS`). `core.manage` on the
+notification to configuration.php's `mailfrom` (here `FEC_LEGACY_MAILFROM`, webmaster@; the
+layer's JMail sends From it too, as Joomla did, while v3's own mails keep `MAIL_FROM_ADDRESS`, system@). `core.manage` on the
 component is any redazione account. The layer gained JModelList (Joomla 2.5.28's: context, stateful
 list with `list_limit` 20, `getItems`/`getTotal`/`getStart`/`getPagination`, the page reset of
 `getUserStateFromRequest`) and JRequest's `uint` filter. On www the component stays on Joomla

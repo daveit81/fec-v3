@@ -108,6 +108,10 @@ return [
         // Joomla configuration values the ported code reads through JFactory::getConfig().
         // "secret" signs the newsletter forms (HMAC) on the live site: same value = same signatures.
         'secret' => env('FEC_LEGACY_SECRET', ''),
+        // configuration.php's mailfrom/fromname: the sender of the legacy code's mails (JMail) and
+        // the address com_partnerdesk notifies; empty = MAIL_FROM_ADDRESS/MAIL_FROM_NAME.
+        'mailfrom' => env('FEC_LEGACY_MAILFROM', ''),
+        'fromname' => env('FEC_LEGACY_FROMNAME', ''),
         'sitename' => 'FreeExtraChips',
 
         // The Joomla user id the desk runs as once the redazione logs in on v3 (DESK_USER_ID on the live site).

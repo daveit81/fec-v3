@@ -86,8 +86,10 @@ class Factory
             'live_site' => '',
             'tmp_path' => storage_path('app/legacy-tmp'),
             'log_path' => storage_path('logs'),
-            'mailfrom' => (string) config('mail.from.address', ''),
-            'fromname' => (string) config('mail.from.name', ''),
+            // configuration.php's sender (FEC_LEGACY_MAILFROM/FROMNAME, webmaster@ on the live site):
+            // JMail's From and com_partnerdesk's notification address; v3's own mails keep MAIL_FROM_*
+            'mailfrom' => (string) (config('fec.legacy.mailfrom') ?: config('mail.from.address', '')),
+            'fromname' => (string) (config('fec.legacy.fromname') ?: config('mail.from.name', '')),
             // the global metadata and title options of configuration.php (com_content reads them)
             'MetaDesc' => (string) config('fec.legacy.meta.description', ''),
             'MetaKeys' => (string) config('fec.legacy.meta.keywords', ''),
