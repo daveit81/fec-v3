@@ -100,7 +100,7 @@ class ContactController extends Controller
         ]);
 
         $deskUrl = rtrim((string) config('app.url'), '/').'/desk/messages/'.$id;
-        $body = ContactForm::mailBody($v, $topic, $country, $deskUrl);
+        $body = ContactForm::mailBody($v, $topic, $country, $deskUrl, $request->getSchemeAndHttpHost().'/contactus/');
         $from = (string) (config('fec.legacy.mailfrom') ?: config('mail.from.address'));
         try {
             Mail::raw($body, function ($m) use ($topic, $v, $from): void {

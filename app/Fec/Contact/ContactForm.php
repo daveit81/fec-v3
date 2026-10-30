@@ -175,8 +175,12 @@ final class ContactForm
         return $keys;
     }
 
-    /** The plain-text mail to the topic's mailbox. */
-    public static function mailBody(array $v, array $topic, string $country, string $deskUrl): string
+    /**
+     * The plain-text mail to the topic's mailbox. It names the form it came from (the live
+     * site's address once /contactus/ is served under www, v3's while testing) and links the
+     * copy in the desk, which lives on v3 only (behind Cloudflare Access).
+     */
+    public static function mailBody(array $v, array $topic, string $country, string $deskUrl, string $formUrl = ''): string
     {
         $lines = [
             'New message from the FreeExtraChips contact form',
@@ -195,9 +199,12 @@ final class ContactForm
         $lines[] = $v['message'];
         $lines[] = '';
         $lines[] = '--';
-        $lines[] = 'Reply to this email to answer the sender (Reply-To is set to their address).';
+        if ($formUrl !== '') {
+            $lines[] = 'Sent from the contact form at '.$formUrl;
+        }
+        $lines[] = 'Reply to this email to answer the sender.';
         if ($deskUrl !== '') {
-            $lines[] = 'In the desk: '.$deskUrl;
+            $lines[] = 'Copy in the desk (v3): '.$deskUrl;
         }
 
         return implode("\n", $lines)."\n";

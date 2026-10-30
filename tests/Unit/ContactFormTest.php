@@ -98,11 +98,12 @@ final class ContactFormTest extends TestCase
     {
         $topics = $this->topics();
         [$v] = ContactForm::validate($this->input(['topic' => 'correction', 'page_url' => 'https://www.freeextrachips.com/x']), $topics);
-        $body = ContactForm::mailBody($v, $topics['correction'], 'IT', 'https://v3.freeextrachips.com/desk/messages/7');
+        $body = ContactForm::mailBody($v, $topics['correction'], 'IT', 'https://v3.freeextrachips.com/desk/messages/7', 'https://www.freeextrachips.com/contactus/');
         $this->assertStringContainsString("Topic:   Correction\n", $body);
         $this->assertStringContainsString("From:    Ada <ada@example.com>\n", $body);
         $this->assertStringContainsString("Page:    https://www.freeextrachips.com/x\n", $body);
         $this->assertStringContainsString("Country: IT\n", $body);
-        $this->assertStringContainsString('In the desk: https://v3.freeextrachips.com/desk/messages/7', $body);
+        $this->assertStringContainsString("Sent from the contact form at https://www.freeextrachips.com/contactus/\n", $body);
+        $this->assertStringContainsString('Copy in the desk (v3): https://v3.freeextrachips.com/desk/messages/7', $body);
     }
 }
