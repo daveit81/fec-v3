@@ -142,9 +142,10 @@ if [[ -n "$CRONTAB" && -r "$CRONTAB" ]]; then
   grep -vE '^[[:space:]]*#' "$CRONTAB" | grep -oE '[?&](key|token|secret)=[A-Za-z0-9_-]+' | cut -d= -f2 | sort -u > "$list" || true
   while IFS= read -r k; do [[ -n "$k" ]] && cron_keys+=("$k"); done < "$list"
   printf '%-48s %5d lines, %d URL keys\n' "crontab (dump)" "$(grep -cvE '^[[:space:]]*(#|$)' "$CRONTAB")" "${#cron_keys[@]}"
-  # the entry points: absolute paths under the home and the site's own URLs
+  # the entry points: absolute paths under the home and URLs of the site (by name or, as the
+  # casino-of-the-month lines call it, by the server's IP with a Host header)
   grep -vE '^[[:space:]]*#' "$CRONTAB" \
-    | grep -oE "(${HOME_SRC}/[A-Za-z0-9_./-]+|https?://[A-Za-z0-9.-]*freeextrachips\.com/[A-Za-z0-9_./-]+)" \
+    | grep -oE "(${HOME_SRC}/[A-Za-z0-9_./-]+|https?://[A-Za-z0-9.-]+/[A-Za-z0-9_./-]+)" \
     | grep -E "$CRON_SCRIPTS" | sort -u > "$list" || true
   while IFS= read -r ref; do
     case "$ref" in

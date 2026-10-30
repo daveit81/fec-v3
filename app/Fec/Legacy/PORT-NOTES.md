@@ -460,7 +460,12 @@ Two live behaviours they depend on, measured on 30 Oct 2026 with `fec_endpoints_
 - The database never throws (the CMS runs JError in legacy mode): the empty statement above answers
   200 with empty data, not a 500. So `bonus_feedback.php`'s `catch` on "Duplicate" never fires on the
   live site: a second vote from the same browser fails to insert (unique key bid+voter), the script goes
-  on and still adds the vote to `bonus_feedback_agg`. Reproduced as is (phase 6: fix both).
+  on and still adds the vote to `bonus_feedback_agg`.
+
+Both are live bugs, fixed on 30 Oct 2026 at Davey's request, the same lines in the v3 copy and in the
+Joomla file (`fec_vote_fix.php`, marker "FEC 2026-10-30 vote fix"): `get_agg()` no longer calls
+`setLimit()`, and the insert's result decides (error 1062 = already voted, the duplicate answer;
+another failure = `db_error`). The layer keeps Joomla 2.5's `__call()`: the fix is in the script.
 
 `components/com_bonuses/fec_review_config.php` (ours, see above) now reads the live file first, from
 the real docroot: the endpoint verifies Turnstile with the same secret and notifies the same moderation

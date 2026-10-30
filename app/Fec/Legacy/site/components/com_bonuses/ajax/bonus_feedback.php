@@ -209,7 +209,16 @@ try {
   $obj->country_code = $countrycflare; // NEW
   $obj->created_at = $now;
 
-  $db->insertObject('#__bonus_feedback', $obj, 'id');
+  // FEC 2026-10-30 vote fix: Joomla 2.5 never throws on a failed query (JError legacy mode):
+  // the second vote of a browser failed on uniq_bid_voter, the catch below never ran and the
+  // vote was added to the aggregate anyway. The insert's result decides now (1062 = duplicate).
+  if (!$db->insertObject('#__bonus_feedback', $obj, 'id')) {
+    if ((int) $db->getErrorNum() === 1062 || strpos((string) $db->getErrorMsg(), 'Duplicate') !== false) {
+      $agg = get_agg($db, $bid);
+      json_out(array('ok'=>true,'duplicate'=>true,'agg'=>$agg,'country_code'=>$countrycflare));
+    }
+    json_out(array('ok'=>false,'error'=>'db_error'), 500);
+  }
 } catch (Exception $e) {
   // Duplicate key su uniq_bid_voter -> già votato
   $msg = $e->getMessage();
@@ -300,8 +309,7 @@ function get_agg($db, $bid) {
   $q = $db->getQuery(true)
     ->select('yes_count, no_count')
     ->from($db->quoteName('#__bonus_feedback_agg'))
-    ->where('bid='.(int)$bid)
-    ->setLimit(1);
+    ->where('bid='.(int)$bid); // FEC 2026-10-30 vote fix: was ->setLimit(1), not in Joomla 2.5 (null query, 0 votes)
   $db->setQuery($q);
   $row = $db->loadAssoc();
   $yes = $row ? (int)$row['yes_count'] : 0;
