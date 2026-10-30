@@ -443,15 +443,24 @@ the review pipeline). Other edits: `bonus_feedback.php` assigned the application
 (`header()`, `exit`) apply.
 
 What the layer adds for them: `JApplication::initialise()` (does nothing: none of them reads what it
-prepared), `JDatabaseQuery::setLimit()` (the MySQLi query's `LIMIT offset, limit` on a SELECT),
-`JFactory::getMailer()`/`JMail` (the review moderation notice, through the application's mailer, From =
-`JFactory::getConfig()`'s mailfrom/fromname, i.e. MAIL_FROM_* of v3; Joomla used configuration.php's),
+prepared), `JFactory::getMailer()`/`JMail` (the review moderation notice, through the application's mailer,
+From = `JFactory::getConfig()`'s mailfrom/fromname, i.e. MAIL_FROM_* of v3; Joomla used configuration.php's),
 `JLog` (an entry goes only to a logger registered with `addLogger()`; the CMS registered none for
 "newsletter", so `subscribe.php`'s failure lines, which carry the address, were never written and are
-not now), and Joomla 2.5.28's database exceptions: its MySQLi driver threw `JDatabaseException` on a
-failing query, and `bonus_feedback.php` tells a second vote by "Duplicate" in the exception's message
-(without it the aggregate would count the vote twice). The pages keep the layer's no-throw behaviour;
-`runPublicScript()` switches throwing on for the endpoints only (`Database::throwErrors()`).
+not now) and `JDatabaseQuery::__call()` as Joomla 2.5 had it: null for any method but q/qn/e.
+
+Two live behaviours they depend on, measured on 30 Oct 2026 with `fec_endpoints_check.sh`
+(Joomla and v3 side by side):
+
+- Joomla 2.5's query has no `setLimit()` (JDatabaseQueryLimitable is Platform 12.1, Joomla 3).
+  `bonus_feedback.php`'s `get_agg()` ends its query with `->setLimit(1)`, receives null from
+  `__call()`, runs an empty statement and answers `{"yes":0,"no":0,"total":0,"yes_pct":0}` for every
+  bonus (bid 8676: live 0/0, the table 24/1). A first 0082 implemented `setLimit()` and answered 24/1:
+  reverted, the layer reproduces the null (with a legacy notice).
+- The database never throws (the CMS runs JError in legacy mode): the empty statement above answers
+  200 with empty data, not a 500. So `bonus_feedback.php`'s `catch` on "Duplicate" never fires on the
+  live site: a second vote from the same browser fails to insert (unique key bid+voter), the script goes
+  on and still adds the vote to `bonus_feedback_agg`. Reproduced as is (phase 6: fix both).
 
 `components/com_bonuses/fec_review_config.php` (ours, see above) now reads the live file first, from
 the real docroot: the endpoint verifies Turnstile with the same secret and notifies the same moderation

@@ -127,9 +127,10 @@ return [
         'schedule_jackpots' => filter_var(env('FEC_LEGACY_SCHEDULE_JACKPOTS', false), FILTER_VALIDATE_BOOL),
         'jackpots_update_cron' => (string) env('FEC_JACKPOTS_UPDATE_CRON', ''),
 
-        // The clock of the crontab of freeextr (the server's time zone): the jobs moved from the
-        // crontab keep their expressions and run in this zone.
-        'cron_timezone' => (string) env('FEC_LEGACY_CRON_TIMEZONE', 'UTC'),
+        // The clock of the crontab of freeextr, i.e. the server's time zone (timedatectl on
+        // 30 Oct 2026: America/New_York, EDT/EST): the jobs moved from the crontab keep their
+        // expressions and run in this zone, daylight saving included.
+        'cron_timezone' => (string) env('FEC_LEGACY_CRON_TIMEZONE', 'America/New_York'),
 
         // Component options (JComponentHelper::getParams): com_authors and com_bonuses have none;
         // com_content's are the row of #__extensions on the live site (28 Oct 2026), read by the

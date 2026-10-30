@@ -6,7 +6,7 @@ namespace App\Console\Commands\Legacy;
  * php artisan fec:payout-index:snapshot [--edition=YYYY-MM] [--force] [--dry]
  *
  * The monthly freeze of the FEC Payout Index (com_authors task
- * payoutindex.snapshot), as the cron called it on the 1st at 06:10 UTC:
+ * payoutindex.snapshot), as the cron called it on the 1st at 06:10 (crontab clock, America/New_York):
  * default edition = last month; --force rebuilds an existing edition;
  * --dry computes and renders a preview card without inserting anything.
  * Writes jos_fec_payout_index_editions, the card PNG under

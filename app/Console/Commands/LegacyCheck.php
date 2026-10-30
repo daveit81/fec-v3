@@ -172,6 +172,9 @@ class LegacyCheck extends Command
             // classes: JFactory::, new JDate(, JTable::getInstance(...)
             preg_match_all('/(?<![\\w$])(?:new\s+)?(J[A-Z][A-Za-z]+)\s*(?:::|\()/', $code, $m);
             foreach (array_unique($m[1]) as $class) {
+                if (in_array($class, ['JOIN'], true)) {
+                    continue; // SQL in a string: "LEFT JOIN (SELECT ..."
+                }
                 if (! class_exists($class) && ! isset($missing[$class])) {
                     $missing[$class] = $rel;
                 }

@@ -134,9 +134,8 @@ final class ComponentRunner implements PageHandler
      * r.php, subscribe.php, the bonus votes, the review submission), which bootstrapped
      * Joomla themselves and answered on their own: included at the same path under the
      * layer, for anyone, on the writing connection (they log clicks, votes, sign-ups and
-     * reviews), with Joomla 2.5.28's database exceptions (their try/catch blocks rely on
-     * them); the response is what the script echoed, with the headers, cookies and status
-     * it set. Never the layout, never Laravel's session.
+     * reviews); the response is what the script echoed, with the headers, cookies and
+     * status it set. Never the layout, never Laravel's session.
      */
     public function runPublicScript(Request $request, string $path): Response
     {
@@ -148,7 +147,6 @@ final class ComponentRunner implements PageHandler
 
         Runtime::boot('com_bonuses');
         Factory::useRwConnection(true);
-        Joomla\Database::throwErrors(true);
         if (! defined('FEC_OB_BASE')) {
             define('FEC_OB_BASE', ob_get_level() + 1);
         }
@@ -173,7 +171,6 @@ final class ComponentRunner implements PageHandler
             throw $e;
         } finally {
             LegacyErrors::end();
-            Joomla\Database::throwErrors(false);
         }
         $body = '';
         while (ob_get_level() > $level) {
@@ -382,6 +379,11 @@ final class ComponentRunner implements PageHandler
         $headers = Factory::getApplication()->getHeaders() + $this->phpHeaders();
         if (! isset($headers['Content-Type']) && json_decode($body) !== null) {
             $headers['Content-Type'] = 'application/json; charset=utf-8';
+        }
+        // what PHP sent when the script set none (default_mimetype + default_charset), not
+        // Symfony's lowercase "utf-8"
+        if (! isset($headers['Content-Type'])) {
+            $headers['Content-Type'] = 'text/html; charset=UTF-8';
         }
         // The status the legacy code set with http_response_code() (403 bad key, 500 failure).
         $status = http_response_code();

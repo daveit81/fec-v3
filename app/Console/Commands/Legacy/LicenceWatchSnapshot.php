@@ -7,7 +7,7 @@ namespace App\Console\Commands\Legacy;
  *
  * The quarterly freeze of the Licence Watch register into a draft edition
  * (com_authors task licencewatch.snapshot), as the cron called it on the
- * 1st of January, April, July and October at 06:20 UTC: default edition =
+ * 1st of January, April, July and October at 06:20 (crontab clock): default edition =
  * the current month; --force refreezes a draft (never a published edition).
  * Writes jos_fec_licence_watch_editions and the sh404SEF record of the
  * edition path, and mails FEC_PI_NOTIFY_TO when a draft was created.
