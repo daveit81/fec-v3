@@ -292,12 +292,13 @@ as on the live site. The form posts to `ajax_review_submit.php` on Joomla until 
 segment for (the FXShield report link of the casino pages, `view=fxreport`) answers what sh404SEF's
 default plugin answered: the component's name as the path and the leftover variables sorted
 (`/authors?casino_id=910&tmpl=component&view=fxreport`), never stored.
-Except the bare component, `index.php?option=com_x` with no other variable (phase 5): it is the
-desks' endpoint (`JRoute::_('index.php?option=com_authors')` of the RTP dashboard's AJAX and the blog
-desk's form, the same for com_atlas' dashboard), which on the live site posted to a SEF path of the
-component (any of them took a POST with `task=`); on v3 a public path takes no POST, so the bare
-component stays the non-SEF entry, `/index.php?option=com_x`, served by the root route. From
-28 Oct (when the default URL came in) to 30 Oct those endpoints were `/authors`.
+The bare component, `index.php?option=com_x` with no Itemid and no other variable (phase 5), is
+answered before any lookup with the non-SEF entry `/index.php?option=com_x` (root route, GET and
+POST). It is only the desks' endpoint (`JRoute::_('index.php?option=com_authors')` of the RTP
+dashboard's AJAX and the blog desk's form, the same for com_atlas' dashboard). sh404SEF made it the
+component's public path, `/authors`, which on the live site took the desk's POST like any Joomla
+page; on v3 that path is a stateless public page that takes no POST. Until 30 Oct (0089) those desks
+called `/authors` on v3 too (0088 tried at the router level, after the registry had already answered).
 
 `helpers/fxclock_widget.php` (verbatim since phase 3) loads the FXClock library from
 `/home/freeextr/fxclock/bootstrap.php`, outside the docroot and outside this repository, as it

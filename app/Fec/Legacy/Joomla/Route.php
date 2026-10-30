@@ -55,6 +55,17 @@ class Route
         $fragment = (string) (parse_url($url, PHP_URL_FRAGMENT) ?? '');
         $suffix = $fragment !== '' ? '#'.$fragment : '';
 
+        // The bare component, "index.php?option=com_x" with no Itemid and nothing else, is
+        // only ever the desks' endpoint (the RTP and Atlas dashboards' AJAX, the blog desk's
+        // form). sh404SEF made it the component's public path ("/authors"), which on the live
+        // site took the desk's POST and its GET with task= like any Joomla page; on v3 a public
+        // path is stateless and takes no POST, so it stays the non-SEF entry (the root route).
+        $bare = $query;
+        unset($bare['lang']);
+        if (array_keys($bare) === ['option'] && preg_match('/^com_[a-z0-9_]+$/', (string) $bare['option'])) {
+            return '/index.php?option='.$bare['option'].$suffix;
+        }
+
         // JRouterSite::_createURI(): an Itemid without an option stands for that menu
         // item's link (setQuery($item->query), then setVar('Itemid')), as mod_menu's
         // "index.php?Itemid=N" links are built in SEF mode
@@ -178,11 +189,7 @@ class Route
         unset($vars['option'], $vars['Itemid'], $vars['lang']);
         $segments = (array) $function($vars);
         if ($segments === []) {
-            // the bare component, "index.php?option=com_x" and nothing else, is the desks'
-            // endpoint (the RTP and Atlas dashboards' AJAX, the blog desk's form): on the live
-            // site any SEF path of the component took the POST, on v3 only the non-SEF entry
-            // does (the root route); sh404SEF's default URL, "/authors", is a public page here
-            return $vars === [] ? null : self::defaultSef($option, $vars);
+            return self::defaultSef($option, $vars);
         }
         $path = '/'.implode('/', array_map('rawurlencode', array_map('strval', $segments)));
         if ($vars !== []) {
