@@ -201,8 +201,11 @@ Both copied verbatim from the snapshot (`index.html` placeholders kept), with th
 rewrites. com_atlas serves its three public views on v3 (`operators`, `operator`, `changelog`:
 `/online-casinos/operators`, `/online-casinos/operators/<slug>`, `/online-casinos/operators/changelog`);
 the editorial dashboard (`dashboards/atlas-dashboard`, Itemid 1213, its AJAX tasks posted to that
-path with `task=dashboard.*`) is copied but not registered: it stays on Joomla, as the other
-`dashboards/` pages, until a later step. One edit: `controllers/dashboard.php` gateAndJson flushed
+path with `task=dashboard.*`) is a desk view since phase 5 (`com_atlas.dashboard` in
+`fec.legacy.desk_views`, its path in `fec.legacy.desk_paths`: logged-in redazione, writing connection;
+the model still admits only Joomla user 42). On www it stays on Joomla (`fec.legacy.root_keep`) until
+Davey works from v3. Its AJAX endpoint on v3 is `/index.php?option=com_atlas` (the bare
+component, see the JRoute note below), on the live site the dashboard's own path. One edit: `controllers/dashboard.php` gateAndJson flushed
 every output buffer; it stops at `FEC_OB_BASE` (same edit as com_authors). The layer gained what
 `atlas_route()` reads: the menu items' `component` (the link's option, as JMenuSite joined
 `#__extensions`) and the configuration's `sef_rewrite` (1: sh404SEF sets it to 1 - shRewriteMode at
@@ -289,6 +292,12 @@ as on the live site. The form posts to `ajax_review_submit.php` on Joomla until 
 segment for (the FXShield report link of the casino pages, `view=fxreport`) answers what sh404SEF's
 default plugin answered: the component's name as the path and the leftover variables sorted
 (`/authors?casino_id=910&tmpl=component&view=fxreport`), never stored.
+Except the bare component, `index.php?option=com_x` with no other variable (phase 5): it is the
+desks' endpoint (`JRoute::_('index.php?option=com_authors')` of the RTP dashboard's AJAX and the blog
+desk's form, the same for com_atlas' dashboard), which on the live site posted to a SEF path of the
+component (any of them took a POST with `task=`); on v3 a public path takes no POST, so the bare
+component stays the non-SEF entry, `/index.php?option=com_x`, served by the root route. From
+28 Oct (when the default URL came in) to 30 Oct those endpoints were `/authors`.
 
 `helpers/fxclock_widget.php` (verbatim since phase 3) loads the FXClock library from
 `/home/freeextr/fxclock/bootstrap.php`, outside the docroot and outside this repository, as it

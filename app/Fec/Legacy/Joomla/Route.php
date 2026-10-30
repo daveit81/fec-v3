@@ -178,7 +178,11 @@ class Route
         unset($vars['option'], $vars['Itemid'], $vars['lang']);
         $segments = (array) $function($vars);
         if ($segments === []) {
-            return self::defaultSef($option, $vars);
+            // the bare component, "index.php?option=com_x" and nothing else, is the desks'
+            // endpoint (the RTP and Atlas dashboards' AJAX, the blog desk's form): on the live
+            // site any SEF path of the component took the POST, on v3 only the non-SEF entry
+            // does (the root route); sh404SEF's default URL, "/authors", is a public page here
+            return $vars === [] ? null : self::defaultSef($option, $vars);
         }
         $path = '/'.implode('/', array_map('rawurlencode', array_map('strval', $segments)));
         if ($vars !== []) {

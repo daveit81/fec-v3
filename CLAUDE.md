@@ -139,8 +139,8 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   live settings in `fec.legacy.sh404sef`; the other components keep `Sh404sefMetas`. The home is
   the home menu item's article run like any other with the template's `$isHome` branch on top
   (`HomeTemplate`): `Router::home()` answers "/" on the live hostname, the status page keeps "/"
-  on the development one (APP_URL), where `/__home` shows the home. com_atlas (public views only:
-  the dashboard stays on Joomla) and com_tournaments are verbatim copies under `site/components/`.
+  on the development one (APP_URL), where `/__home` shows the home. com_atlas (the public views, and since
+  phase 5 the editorial dashboard as a desk view: `dashboards/atlas-dashboard`) and com_tournaments are verbatim copies under `site/components/`.
   The primary navigation is the live mod_menu module (`MenuModule`: `jos_modules` params, Joomla
   2.5's `ModMenuHelper::getList()` over `jos_menu`, the fecv2 override under
   `site/templates/fecv2/html/mod_menu/`); `partials/nav-static` is only the fallback

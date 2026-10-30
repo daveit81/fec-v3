@@ -38,10 +38,12 @@ final class Dispatcher
         // the reviews, the directory, the clusters, the blog), then com_atlas, com_tournaments
         'com_content.article' => \App\Fec\Legacy\ComponentRunner::class,
         'com_content.category' => \App\Fec\Legacy\ComponentRunner::class,
-        // com_atlas: the three public views (the editorial dashboard stays on Joomla for now)
+        // com_atlas: the three public views, and (phase 5) the editorial dashboard, a desk view
+        // (fec.legacy.desk_views: logged-in redazione only, its AJAX tasks dashboard.*)
         'com_atlas.operators' => \App\Fec\Legacy\ComponentRunner::class,
         'com_atlas.operator' => \App\Fec\Legacy\ComponentRunner::class,
         'com_atlas.changelog' => \App\Fec\Legacy\ComponentRunner::class,
+        'com_atlas.dashboard' => \App\Fec\Legacy\ComponentRunner::class,
         // com_tournaments: the live feed (its rows are written by the parser crons on Joomla's side)
         'com_tournaments.show' => \App\Fec\Legacy\ComponentRunner::class,
     ];

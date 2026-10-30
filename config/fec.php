@@ -404,6 +404,9 @@ return [
             // site too; "actions" is the controller of its tasks (task=actions.save...). The
             // old editor (view=edit) is not ported: dead on the live site, linked from nowhere.
             'com_bonuses.home', 'com_bonuses.add', 'com_bonuses.manage', 'com_bonuses.clicks', 'com_bonuses.actions',
+            // com_atlas (phase 5): the Operator Atlas editorial dashboard and its AJAX tasks
+            // (task=dashboard.*), gated to Joomla user 42 by its model on the live site too
+            'com_atlas.dashboard',
         ],
 
         // The primary navigation from jos_menu (App\Fec\Legacy\MenuModule: mod_menu of the fec_nav
@@ -425,7 +428,7 @@ return [
         ],
 
         // SEF paths of the desks (registry URLs): explicit routes in the web group, CSRF handled by the legacy token.
-        'desk_paths' => ['methodology-admin', 'fxshield-admin', 'fxshield-verify'],
+        'desk_paths' => ['methodology-admin', 'fxshield-admin', 'fxshield-verify', 'dashboards/atlas-dashboard'],
 
         // The desks' standalone endpoints: components/<option>/ajax/<name>.php on the live
         // site, scripts that bootstrapped Joomla themselves and that the desk pages call by
