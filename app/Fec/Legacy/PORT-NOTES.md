@@ -292,6 +292,12 @@ as on the live site. The form posts to `ajax_review_submit.php` on Joomla until 
 segment for (the FXShield report link of the casino pages, `view=fxreport`) answers what sh404SEF's
 default plugin answered: the component's name as the path and the leftover variables sorted
 (`/authors?casino_id=910&tmpl=component&view=fxreport`), never stored.
+The FXCheck activity ticker of the home (`fec_render_fxcheck_activity_section`, "radice" slice):
+the age of a report was `TIMESTAMPDIFF(SECOND, created_at, NOW())`, but `created_at` is UTC (JDate)
+and `NOW()` is the database server's clock, America/New_York: every report looked 4 hours younger
+(5 in winter). Fixed on the live lib and here alike on 30 Oct 2026: `UTC_TIMESTAMP()` in place of
+`NOW()` (Davey). The lib's other `NOW()` are windows of days (7, 30, 90...), left as they are.
+
 `JDatabase::query()`/`execute()` of the layer answered the number of changed rows for a write and the
 rows for a read until 30 Oct (0090); Joomla 2.5 answered mysqli_query()'s result, true for any
 statement that ran. Our models test it with `if (!$db->query())`, so on v3 an unchanged save failed:

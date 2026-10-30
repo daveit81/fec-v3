@@ -8641,7 +8641,7 @@ $html .= '})();</script>';
           'f.'.$db->quoteName('username').' AS username',
           'f.'.$db->quoteName('vote').' AS vote',
           'f.'.$db->quoteName('comment').' AS comment',
-          'TIMESTAMPDIFF(SECOND, f.'.$db->quoteName('created_at').', NOW()) AS age_sec',
+          'TIMESTAMPDIFF(SECOND, f.'.$db->quoteName('created_at').', UTC_TIMESTAMP()) AS age_sec',
           'b.'.$db->quoteName('bid').' AS bid',
           'b.'.$db->quoteName('cid').' AS cid',
           'b.'.$db->quoteName('type').' AS type',
