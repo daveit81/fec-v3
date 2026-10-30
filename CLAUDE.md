@@ -85,7 +85,9 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   the review submission) are the live scripts verbatim at the same path (`routes/stateless.php`,
   `PublicScriptController`, `ComponentRunner::runPublicScript()`): anyone, no Laravel session, writing
   connection, raw answer (PHP's `text/html; charset=UTF-8` when the script sets no type). Like Joomla 2.5,
-  the layer's database never throws and `JDatabaseQuery::__call()` answers null for an unknown method
+  the layer's database never throws, `query()` is true for any statement that ran (false only on an
+  error, whatever it changed: `if (!$db->query())` after an unchanged upsert is a success), and
+  `JDatabaseQuery::__call()` answers null for an unknown method
   (`setLimit()` included: the live vote counts read 0 because of it; PORT-NOTES).
   The web route of the desk scripts matches only their own names, so it never shadows these.
 - Phase 5 crontab scripts that bootstrapped Joomla (the weekly digest, llms.txt, the casino of the month) run as

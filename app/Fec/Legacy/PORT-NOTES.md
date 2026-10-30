@@ -292,6 +292,13 @@ as on the live site. The form posts to `ajax_review_submit.php` on Joomla until 
 segment for (the FXShield report link of the casino pages, `view=fxreport`) answers what sh404SEF's
 default plugin answered: the component's name as the path and the leftover variables sorted
 (`/authors?casino_id=910&tmpl=component&view=fxreport`), never stored.
+`JDatabase::query()`/`execute()` of the layer answered the number of changed rows for a write and the
+rows for a read until 30 Oct (0090); Joomla 2.5 answered mysqli_query()'s result, true for any
+statement that ran. Our models test it with `if (!$db->query())`, so on v3 an unchanged save failed:
+the RTP dashboard's upsert of a slot nobody edited ("save_failed"), and the same in the Atlas
+dashboard (an UPDATE that changes nothing, a DELETE that finds no row). Now true on success, false on
+an error; the count is `getAffectedRows()`.
+
 The bare component, `index.php?option=com_x` with no Itemid and no other variable (phase 5), is
 answered before any lookup with the non-SEF entry `/index.php?option=com_x` (root route, GET and
 POST). It is only the desks' endpoint (`JRoute::_('index.php?option=com_authors')` of the RTP

@@ -83,6 +83,14 @@ class Database
         return $this->execute();
     }
 
+    /**
+     * JDatabaseMySQLi::query(): the mysqli_query() result, false on an error and
+     * otherwise truthy whatever the statement touched (true for a write, the
+     * result set for a read). Our models test it with "if (!$db->query())": an
+     * upsert or an UPDATE that changes nothing, a DELETE that finds no row, is a
+     * success (the RTP dashboard's save of an unchanged slot, 30 Oct 2026).
+     * How many rows changed is getAffectedRows().
+     */
     public function execute(): mixed
     {
         $this->errorNum = 0;
@@ -91,7 +99,9 @@ class Database
 
         try {
             if (preg_match('/^\s*(SELECT|SHOW|DESCRIBE|EXPLAIN|WITH)\b/i', $sql)) {
-                return $this->connection()->select($sql);
+                $this->connection()->select($sql);
+
+                return true;
             }
             $pdo = $this->connection()->getPdo();
             $affected = $this->connection()->affectingStatement($sql);
@@ -100,7 +110,7 @@ class Database
                 $this->insertId = (int) $pdo->lastInsertId();
             }
 
-            return $affected;
+            return true;
         } catch (Throwable $e) {
             $this->fail($e, $sql);
 
