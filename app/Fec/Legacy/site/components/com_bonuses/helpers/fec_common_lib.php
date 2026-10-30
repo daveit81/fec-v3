@@ -8672,14 +8672,10 @@ $html .= '})();</script>';
       return '<!-- fec_render_fxcheck_activity_section: no recent approved feedback -->';
     }
 
-    // Pick: commented reports first (newest first), then bare votes, up to
-    // the limit; then back in time order so the ticker stays a ticker.
-    $withText = array(); $bare = array();
-    foreach ($rows as $r) {
-      if (trim((string)$r->comment) !== '') $withText[] = $r; else $bare[] = $r;
-    }
-    $rows = array_slice(array_merge($withText, $bare), 0, $limit);
-    fec_php5_usort($rows, function ($a, $b) { return (int)$a->age_sec - (int)$b->age_sec; });
+    // FEC 2026-10-30 ticker (Davey): the newest approved reports in time order, with or
+    // without a comment, so every vote moves the ticker (a bare vote reads as its bonus
+    // and the tally, lib v72). Was: commented reports first, bare votes never shown.
+    $rows = array_slice($rows, 0, $limit);
 
     // The bonus's own label for bare votes: "$200 No Deposit Bonus",
     // "313 Free Spins on Wrath of Medusa", "100% up to $500 1st Deposit Match".

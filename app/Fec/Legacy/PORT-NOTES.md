@@ -297,6 +297,10 @@ the age of a report was `TIMESTAMPDIFF(SECOND, created_at, NOW())`, but `created
 and `NOW()` is the database server's clock, America/New_York: every report looked 4 hours younger
 (5 in winter). Fixed on the live lib and here alike on 30 Oct 2026: `UTC_TIMESTAMP()` in place of
 `NOW()` (Davey). The lib's other `NOW()` are windows of days (7, 30, 90...), left as they are.
+The same day the ticker became purely chronological (Davey): the newest approved reports, with
+or without a comment. It took the latest 21 and put the commented ones first, so a vote without a
+comment never reached the 7 lines while 7 comments stood among the 21. Same text live and here
+(the live file by `fec_ticker_fix.php`; here the `fec_php5_usort` of the old pick goes with it).
 
 `JDatabase::query()`/`execute()` of the layer answered the number of changed rows for a write and the
 rows for a read until 30 Oct (0090); Joomla 2.5 answered mysqli_query()'s result, true for any
