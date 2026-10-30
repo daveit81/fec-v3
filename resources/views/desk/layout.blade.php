@@ -1,6 +1,6 @@
 {{-- Desk pages of v3 (login, home): a small standalone shell, not the public .fecx one. --}}
 <!doctype html>
-<html lang="it">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">

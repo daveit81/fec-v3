@@ -42,7 +42,7 @@ class LoginController extends Controller
         if ($user === null || ! Hash::check($data['password'], (string) $user->password)) {
             Log::warning('desk login: bad credentials', ['email' => $data['email'], 'ip' => $request->ip()]);
 
-            return back()->withInput(['email' => $data['email']])->withErrors(['email' => 'Email o password non corretti.']);
+            return back()->withInput(['email' => $data['email']])->withErrors(['email' => 'Wrong email or password.']);
         }
 
         $code = (string) random_int(100000, 999999);
@@ -52,15 +52,15 @@ class LoginController extends Controller
 
         try {
             Mail::raw(
-                "Codice di accesso al desk FEC v3: {$code}\n\nVale ".self::CODE_TTL_MINUTES." minuti, una sola volta. Se non sei stato tu, ignora questa email.\n",
+                "Your FEC v3 desk sign-in code: {$code}\n\nIt works once, for ".self::CODE_TTL_MINUTES." minutes. If you did not try to sign in, ignore this email.\n",
                 function ($message) use ($user) {
-                    $message->to($user->email)->subject('[FEC] Codice di accesso '.now(config('fec.timezone'))->format('H:i'));
+                    $message->to($user->email)->subject('[FEC] Desk sign-in code '.now(config('fec.timezone'))->format('H:i'));
                 }
             );
         } catch (\Throwable $e) {
             Log::error('desk login: code mail failed', ['error' => $e->getMessage()]);
 
-            return back()->withInput(['email' => $data['email']])->withErrors(['email' => 'Impossibile inviare il codice: riprova tra poco.']);
+            return back()->withInput(['email' => $data['email']])->withErrors(['email' => 'The code could not be sent: try again in a moment.']);
         }
 
         $request->session()->put('desk.pending_user_id', $user->id);
@@ -87,7 +87,7 @@ class LoginController extends Controller
         if ($user === null || $user->login_code === null || $user->login_code_expires_at === null || $user->login_code_expires_at->isPast()) {
             $request->session()->forget(['desk.pending_user_id', 'desk.remember']);
 
-            return redirect()->route('login')->withErrors(['email' => 'Codice scaduto: ricomincia dal login.']);
+            return redirect()->route('login')->withErrors(['email' => 'The code has expired: sign in again.']);
         }
         if (! Hash::check($data['code'], (string) $user->login_code)) {
             // one attempt per code: a wrong code burns it
@@ -97,7 +97,7 @@ class LoginController extends Controller
             $request->session()->forget(['desk.pending_user_id', 'desk.remember']);
             Log::warning('desk login: wrong code', ['user' => $user->id, 'ip' => $request->ip()]);
 
-            return redirect()->route('login')->withErrors(['email' => 'Codice errato: ricomincia dal login.']);
+            return redirect()->route('login')->withErrors(['email' => 'Wrong code: sign in again.']);
         }
 
         $user->login_code = null;

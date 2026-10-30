@@ -1,9 +1,9 @@
 @extends('desk.layout')
-@section('title', 'Accesso')
+@section('title', 'Sign in')
 @section('content')
 <div class="card">
-  <h1>Desk FEC v3</h1>
-  <p class="sub">Redazione: email e password, poi il codice che arriva via email.</p>
+  <h1>FEC v3 desk</h1>
+  <p class="sub">Editorial team: your email and password, then the code we email you.</p>
   @if ($errors->any())
     <div class="err">{{ $errors->first() }}</div>
   @endif
@@ -13,8 +13,8 @@
     <input type="email" id="email" name="email" value="{{ old('email') }}" autocomplete="username" required autofocus>
     <label for="password">Password</label>
     <input type="password" id="password" name="password" autocomplete="current-password" required>
-    <label class="remember"><input type="checkbox" name="remember" value="1"> Ricordami su questo dispositivo</label>
-    <button class="btn" type="submit">Continua</button>
+    <label class="remember"><input type="checkbox" name="remember" value="1"> Remember me on this device</label>
+    <button class="btn" type="submit">Continue</button>
   </form>
 </div>
 @endsection

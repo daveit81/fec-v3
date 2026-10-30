@@ -54,6 +54,6 @@ class MessagesController extends Controller
         $changed = DB::table('contact_messages')->where('id', $id)->update(['status' => $status, 'updated_at' => now()]);
         abort_if($changed === 0 && ! DB::table('contact_messages')->where('id', $id)->exists(), 404);
 
-        return redirect()->route('desk.messages.show', $id)->with('desk_ok', $status === 'done' ? 'Segnato come gestito.' : 'Rimesso tra i da fare.');
+        return redirect()->route('desk.messages.show', $id)->with('desk_ok', $status === 'done' ? 'Marked as handled.' : 'Moved back to the to-do list.');
     }
 }

@@ -1,46 +1,46 @@
 @extends('desk.layout')
-@section('title', 'Jackpot')
+@section('title', 'Jackpots')
 @section('desk_class', 'desk--full')
 @section('content')
 @php($back = request()->getRequestUri())
 <div class="top">
   <div><a href="{{ route('desk.home') }}" class="btn btn--ghost">← Desk</a></div>
-  <form method="post" action="{{ route('logout') }}">@csrf <button class="btn btn--ghost" type="submit">Esci</button></form>
+  <form method="post" action="{{ route('logout') }}">@csrf <button class="btn btn--ghost" type="submit">Sign out</button></form>
 </div>
 <div class="card">
-  <h1>Jackpot</h1>
+  <h1>Jackpots</h1>
   <p class="sub">
-    I jackpot del tracker (<code>jos_jackpots</code>, aggiornati ogni 15 minuti da <code>fec:jackpots:update</code>).
-    Qui si decide solo se un jackpot compare nella sezione jackpot delle recensioni: nome, valuta, software e importo
-    vengono dal tracker e il cron li riscrive.
-    Pubblicati {{ (int) ($counts[1] ?? 0) }}, nascosti {{ (int) ($counts[0] ?? 0) }}.
+    The tracker's jackpots (<code>jos_jackpots</code>, updated every 15 minutes by <code>fec:jackpots:update</code>).
+    Here you only decide whether a jackpot appears in the jackpot section of the casino reviews: name, currency,
+    software and amount come from the tracker, and the cron rewrites them.
+    Published {{ (int) ($counts[1] ?? 0) }}, hidden {{ (int) ($counts[0] ?? 0) }}.
   </p>
 
   @if (session('desk_ok'))<div class="ok">{{ session('desk_ok') }}</div>@endif
   @if (session('desk_error'))<div class="err">{{ session('desk_error') }}</div>@endif
 
   <form class="filters" method="get" action="{{ route('desk.jackpots') }}">
-    <input type="text" name="q" value="{{ $q }}" placeholder="Nome, jid o casinò" autocomplete="off">
+    <input type="text" name="q" value="{{ $q }}" placeholder="Name, jid or casino" autocomplete="off">
     <select name="published">
-      <option value="" @selected($published === null)>Tutti</option>
-      <option value="1" @selected($published === 1)>Pubblicati</option>
-      <option value="0" @selected($published === 0)>Nascosti</option>
+      <option value="" @selected($published === null)>All</option>
+      <option value="1" @selected($published === 1)>Published</option>
+      <option value="0" @selected($published === 0)>Hidden</option>
     </select>
     <select name="soft">
-      <option value="">Ogni software</option>
+      <option value="">All software</option>
       @foreach ($softs as $value => $label)
         <option value="{{ $value }}" @selected($soft === (string) $value)>{{ $label }}</option>
       @endforeach
     </select>
-    <button class="btn" type="submit">Filtra</button>
-    @if ($q !== '' || $published !== null || $soft !== '')<a class="btn btn--ghost" href="{{ route('desk.jackpots') }}">Azzera</a>@endif
+    <button class="btn" type="submit">Filter</button>
+    @if ($q !== '' || $published !== null || $soft !== '')<a class="btn btn--ghost" href="{{ route('desk.jackpots') }}">Clear</a>@endif
   </form>
 
   <div class="scroll">
   <table class="grid">
     <thead>
       <tr>
-        <th>Jackpot</th><th>Jid</th><th>Casinò</th><th>Software</th><th>Importo</th><th>Aggiornato</th><th>Recensioni</th>
+        <th>Jackpot</th><th>Jid</th><th>Casino</th><th>Software</th><th>Amount</th><th>Updated</th><th>Reviews</th>
       </tr>
     </thead>
     <tbody>
@@ -60,16 +60,16 @@
             <input type="hidden" name="back" value="{{ $back }}">
             @if ((int) $row->published === 1)
               <input type="hidden" name="published" value="0">
-              <button class="btn btn--sm" type="submit" title="Togli dalla sezione jackpot delle recensioni">Pubblicato · nascondi</button>
+              <button class="btn btn--sm" type="submit" title="Remove from the jackpot section of the reviews">Published · hide</button>
             @else
               <input type="hidden" name="published" value="1">
-              <button class="btn btn--sm btn--off" type="submit" title="Mostra nella sezione jackpot delle recensioni">Nascosto · pubblica</button>
+              <button class="btn btn--sm btn--off" type="submit" title="Show in the jackpot section of the reviews">Hidden · publish</button>
             @endif
           </form>
         </td>
       </tr>
     @empty
-      <tr><td colspan="7">Nessun jackpot.</td></tr>
+      <tr><td colspan="7">No jackpots.</td></tr>
     @endforelse
     </tbody>
   </table>
@@ -77,9 +77,9 @@
 
   @if ($rows->lastPage() > 1)
   <div class="pager">
-    @if ($rows->previousPageUrl())<a href="{{ $rows->previousPageUrl() }}">← Precedenti</a>@endif
-    <span>Pagina {{ $rows->currentPage() }} di {{ $rows->lastPage() }} · {{ $rows->total() }} jackpot</span>
-    @if ($rows->nextPageUrl())<a href="{{ $rows->nextPageUrl() }}">Successivi →</a>@endif
+    @if ($rows->previousPageUrl())<a href="{{ $rows->previousPageUrl() }}">← Previous</a>@endif
+    <span>Page {{ $rows->currentPage() }} of {{ $rows->lastPage() }} · {{ $rows->total() }} jackpots</span>
+    @if ($rows->nextPageUrl())<a href="{{ $rows->nextPageUrl() }}">Next →</a>@endif
   </div>
   @endif
 </div>

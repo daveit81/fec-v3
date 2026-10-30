@@ -180,6 +180,7 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
 - Parity, not improvement, until Joomla is switched off: same URLs, same markup (`.fecx`,
   `fec-edition.css`), same data. Improvements belong to phase 6.
 - ASCII in PHP string literals; raw UTF-8 only in Blade/CSS files.
+- The desk speaks English, like the site: pages, buttons, messages, the /desk list (Davey, 30 Oct 2026).
 - No debug logs under the docroot; never log request payloads or user arrays.
 - Every switch of a section is preceded by a parity script and followed by a rollback path
   (one line in the legacy `.htaccess`).

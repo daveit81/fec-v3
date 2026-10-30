@@ -67,7 +67,7 @@ class JackpotsController extends Controller
         $published = JackpotsDesk::published($request->input('published'));
         $back = $this->backUrl($request);
         if (! JackpotsDesk::validJid($jid) || $published === null) {
-            return redirect($back)->with('desk_error', 'Richiesta non valida.');
+            return redirect($back)->with('desk_error', 'Invalid request.');
         }
 
         try {
@@ -76,14 +76,14 @@ class JackpotsController extends Controller
         } catch (Throwable $e) {
             Log::error('jackpots desk: update failed: '.$e->getMessage());
 
-            return redirect($back)->with('desk_error', 'Salvataggio non riuscito (errore del database).');
+            return redirect($back)->with('desk_error', 'Not saved: database error.');
         }
         if (! $exists) {
-            return redirect($back)->with('desk_error', 'Jackpot '.$jid.' non trovato.');
+            return redirect($back)->with('desk_error', 'Jackpot '.$jid.' not found.');
         }
         Log::info('jackpots desk: '.$jid.' published='.$published.' by user '.(int) $request->user()?->id);
 
-        return redirect($back)->with('desk_ok', 'Jackpot '.$jid.($published ? ' pubblicato.' : ' nascosto.'));
+        return redirect($back)->with('desk_ok', 'Jackpot '.$jid.($published ? ' published.' : ' hidden.'));
     }
 
     /** @return array<string, string> soft value => label (JReviews field 311, as the old desk read it). */
