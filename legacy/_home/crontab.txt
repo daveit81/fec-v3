@@ -3,7 +3,7 @@ SHELL="/bin/bash"
 0 0,8 * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/frank/frank-engine.php >> /home/freeextr/logs/frank.log 2>&1
 
 SHELL="/bin/bash"
-7 * * * * /opt/alt/php56/usr/bin/php /home/freeextr/scripts/bonuses_autoexpire.php > /dev/null
+7 * * * * /opt/alt/php84/usr/bin/php -d date.timezone=UTC -d log_errors=0 /home/freeextr/scripts/bonuses_autoexpire.php > /dev/null
 
 SHELL="/bin/bash"
 0 0 * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_tournaments/parser/sloto-upta-xml.php
@@ -93,7 +93,6 @@ SHELL="/bin/bash"
 */5 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_jackpots/parser/redstag.php >/dev/null 2>&1
 
 SHELL="/bin/bash"
-0,15 * * * * /usr/bin/flock -n /tmp/jackpots_update.lock /home/freeextr/bin/jackpots_update.sh >> /home/freeextr/cron_jackpots.log 2>&1
 
 SHELL="/bin/bash"
 0,30 * * * * /opt/alt/php84/usr/bin/php /home/freeextr/public_html/components/com_tournaments/parser/mirax.php
@@ -105,10 +104,8 @@ SHELL="/bin/bash"
 0 0,12 * * * /opt/alt/php84/usr/bin/php /home/freeextr/scripts/sitemap-generator.php >> /home/freeextr/logs/sitemap-cron.log 2>&1
 
 SHELL="/bin/bash"
-0 2 * * 2 /opt/alt/php56/usr/bin/php /home/freeextr/cron/send_weekly_digest.php >> /home/freeextr/cron/digest.log 2>&1
 
 SHELL="/bin/bash"
-0 * * * * /opt/alt/php56/usr/bin/php /home/freeextr/public_html/cli/fec_generate_llmstxt.php
 
 5 23 * * * wget -qO- --no-check-certificate "https://170.249.222.58/fec-admin/fec_cofm_cron.php?mode=auto&key=<REDACTED>" --header="Host: www.freeextrachips.com"
 SHELL="/bin/bash"

@@ -3,11 +3,12 @@
 defined('_JEXEC') or die('Restricted access');
 
 // FEC 2026-10-30 gate: the desk (dashboard/edit/tools views, actions.* tasks) is for the redazione only.
-// Public: the show/details views with their getjson/hits/values tasks, and data.update (the cron).
+// Public: the show/details views with their getjson/hits/values tasks. data.update: v3's
+// fec:jackpots:update since 30 Oct 2026 (FEC 2026-10-30 gate, data.* closed).
 $fecInput = JFactory::getApplication()->input;
 $fecTask = (string) $fecInput->getCmd('task');
 $fecView = (string) $fecInput->getCmd('view');
-if (strpos($fecTask, 'actions.') === 0 || in_array($fecView, array('dashboard', 'edit', 'tools'), true)) {
+if (strpos($fecTask, 'actions.') === 0 || strpos($fecTask, 'data.') === 0 || in_array($fecView, array('dashboard', 'edit', 'tools'), true)) {
     $fecUser = JFactory::getUser();
     if ($fecUser->guest || !$fecUser->authorise('core.manage', 'com_jackpots')) {
         JError::raiseError(403, JText::_('JERROR_ALERTNOAUTHOR'));
