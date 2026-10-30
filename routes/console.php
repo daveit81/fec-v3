@@ -44,3 +44,19 @@ if (config('fec.legacy.schedule_snapshots')) {
         ->onOneServer()
         ->appendOutputTo(storage_path('logs/licence-watch-snapshot.log'));
 }
+
+/*
+| com_jackpots data.update, which the crontab reached through the web
+| (/home/freeextr/bin/jackpots_update.sh): fec:jackpots:update at the same
+| crontab expression (FEC_JACKPOTS_UPDATE_CRON) in the crontab's clock.
+| Enabled by FEC_LEGACY_SCHEDULE_JACKPOTS once that crontab line is gone.
+*/
+if (config('fec.legacy.schedule_jackpots') && config('fec.legacy.jackpots_update_cron') !== '') {
+    Schedule::command('fec:jackpots:update')
+        ->cron(config('fec.legacy.jackpots_update_cron'))
+        ->timezone(config('fec.legacy.cron_timezone', 'UTC'))
+        ->withoutOverlapping(120)
+        ->onOneServer()
+        ->runInBackground()
+        ->appendOutputTo(storage_path('logs/jackpots-update.log'));
+}

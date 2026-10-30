@@ -73,6 +73,14 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   `fec.legacy.editions_config`, the task's JSON and HTTP status as output and exit code). Their
   schedule in `routes/console.php` is gated by `FEC_LEGACY_SCHEDULE_SNAPSHOTS`: on only once the
   crontab lines that call them on Joomla are removed, never both.
+- Phase 5 moves the crontab's Joomla and PHP 5.6 jobs into the scheduler, each gated by its own
+  `FEC_LEGACY_SCHEDULE_*` flag (never both: the crontab line goes first) and run in the crontab's clock
+  (`FEC_LEGACY_CRON_TIMEZONE`). `fec:jackpots:update` is com_jackpots' `data.update` (the web task
+  that `/home/freeextr/bin/jackpots_update.sh` called): the tracker database `jptest` (connection of
+  that name, one table per jackpot) folded into `jos_jackpots` with the same SQL and values
+  (`App\Fec\Legacy\JackpotsFold`); `--dry-run` compares with the table instead of writing.
+  `scripts/legacy-snapshot.sh` copies the crontab's entry points when root passes a dump of the
+  crontab (`FEC_CRONTAB`), with the crontab itself in `legacy/_home/crontab.txt`, keys redacted.
 - Phase 3 (com_bonuses): the component is copied verbatim too (`PORT-NOTES.md` lists what is left
   out), its lib closure is the "bonuses" slice (197 functions), its nine public views are in
   `Dispatcher::HANDLERS`, `com_bonuses.ads` is a writing view (click log). Its URLs are built by the

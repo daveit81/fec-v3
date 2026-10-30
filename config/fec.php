@@ -121,6 +121,16 @@ return [
         // crontab lines that call them on Joomla are removed: never both.
         'schedule_snapshots' => filter_var(env('FEC_LEGACY_SCHEDULE_SNAPSHOTS', false), FILTER_VALIDATE_BOOL),
 
+        // fec:jackpots:update (com_jackpots data.update) from the v3 scheduler, at the crontab's
+        // expression for /home/freeextr/bin/jackpots_update.sh, in the clock the crontab runs on.
+        // Off, and no expression, until that crontab line is removed: never both.
+        'schedule_jackpots' => filter_var(env('FEC_LEGACY_SCHEDULE_JACKPOTS', false), FILTER_VALIDATE_BOOL),
+        'jackpots_update_cron' => (string) env('FEC_JACKPOTS_UPDATE_CRON', ''),
+
+        // The clock of the crontab of freeextr (the server's time zone): the jobs moved from the
+        // crontab keep their expressions and run in this zone.
+        'cron_timezone' => (string) env('FEC_LEGACY_CRON_TIMEZONE', 'UTC'),
+
         // Component options (JComponentHelper::getParams): com_authors and com_bonuses have none;
         // com_content's are the row of #__extensions on the live site (28 Oct 2026), read by the
         // port of the core component: show_intro=0 makes the article text the full text alone

@@ -128,6 +128,27 @@ return [
             'engine' => null,
         ],
 
+        /*
+        | The jackpot tracker's database (one table per jackpot, "113_xxx",
+        | written by the parsers): read by fec:jackpots:update, which folds
+        | the latest values into jos_jackpots as com_jackpots' data.update did.
+        | Read with the writing user's credentials (SELECT only is needed).
+        */
+        'jptest' => [
+            'driver' => 'mariadb',
+            'host' => env('FEC_DB_HOST', '127.0.0.1'),
+            'port' => env('FEC_DB_PORT', '3306'),
+            'database' => env('FEC_JPTEST_DATABASE', 'freeextr_jptest'),
+            'username' => env('FEC_RW_DB_USERNAME', env('FEC_DB_USERNAME', '')),
+            'password' => env('FEC_RW_DB_PASSWORD', env('FEC_DB_PASSWORD', '')),
+            'unix_socket' => env('FEC_DB_SOCKET', ''),
+            'charset' => env('FEC_DB_CHARSET', 'utf8mb4'),
+            'collation' => env('FEC_DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'strict' => false,
+            'engine' => null,
+        ],
+
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => env('DB_URL'),
