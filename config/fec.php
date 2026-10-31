@@ -252,6 +252,22 @@ return [
         // a wrong row would be served by both halves of the site.
         'sef_register' => filter_var(env('FEC_LEGACY_SEF_REGISTER', false), FILTER_VALIDATE_BOOL),
 
+        // The URLs of new com_content articles (App\Fec\Legacy\Sef\ContentPlugin, the router's
+        // content_article pattern): sh404SEF writes them the first time a Joomla page links the
+        // article, which after the root switch no longer happens. The rule per category, measured
+        // on the registry on 31 Oct 2026: prefix + "/" + the article's alias, with the Itemid
+        // sh404SEF stored. Off until `fec:sef:check --option=com_content` rebuilds every stored row
+        // without a difference; on, JRoute builds (and with sef_register records) the URL of a live
+        // article the registry does not hold, and the router answers its path.
+        'sef_content' => [
+            'enabled' => filter_var(env('FEC_LEGACY_SEF_CONTENT', false), FILTER_VALIDATE_BOOL),
+            'categories' => [
+                8 => ['prefix' => 'online-casinos', 'itemid' => 26],              // casino reviews
+                154 => ['prefix' => 'blog', 'itemid' => 1261],                    // the blog
+                153 => ['prefix' => 'online-casinos/clusters', 'itemid' => null], // operator clusters
+            ],
+        ],
+
         // The rules of the legacy public_html/.htaccess (mod_alias "Redirect 301", "RedirectMatch",
         // mod_rewrite "RewriteRule ... [R=301]", [G] 410, [F] 403 query filters) that fall under the paths
         // v3 serves: the web server answered them before Joomla; the v3 block at the top of that file

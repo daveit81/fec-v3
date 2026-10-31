@@ -62,9 +62,16 @@ final class Sh404sef
         "\u{0103}" => 'a', "\u{015F}" => 's', "\u{0163}" => 't', "\u{021B}" => 't', "\u{021A}" => 'T', "\u{0218}" => 'S', "\u{0219}" => 's', "\u{015E}" => 'S',
     ];
 
-    /** @var array<string, class-string<SefPlugin>> option => the port of its sef_ext plugin */
+    /**
+     * option => the port of its sef_ext plugin (com_content: the articles of the
+     * categories that still get new ones, ContentPlugin; off unless
+     * fec.legacy.sef_content.enabled, see build()).
+     *
+     * @var array<string, class-string<SefPlugin>>
+     */
     public const PLUGINS = [
         'com_bonuses' => BonusesPlugin::class,
+        'com_content' => ContentPlugin::class,
     ];
 
     /**
@@ -73,13 +80,20 @@ final class Sh404sef
      * Null when no plugin covers the option or the plugin leaves the URL raw
      * (the desk views).
      *
+     * The com_content port answers only with fec.legacy.sef_content.enabled on
+     * ($force: fec:sef:check, which compares and never writes): until then the
+     * links of articles the registry does not hold stay raw, as before it.
+     *
      * @param  array<string, string>  $query  option/view/... of the link
      */
-    public static function build(string $url, array $query): ?BuiltUrl
+    public static function build(string $url, array $query, bool $force = false): ?BuiltUrl
     {
         $option = $query['option'] ?? '';
         $class = self::PLUGINS[$option] ?? null;
         if ($class === null) {
+            return null;
+        }
+        if ($option === 'com_content' && ! $force && ! config('fec.legacy.sef_content.enabled', false)) {
             return null;
         }
 

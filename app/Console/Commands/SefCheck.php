@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Fec\Legacy\Sef\ContentPlugin;
 use App\Fec\Legacy\Sef\Sh404sef;
 use App\Fec\Url\UrlRegistry;
 use Illuminate\Console\Command;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\DB;
  *                                                             component with the plugin port, report what differs
  * php artisan fec:sef:check --option=com_bonuses --view=casino --limit=200 --show=20
  * php artisan fec:sef:check --url="index.php?option=com_bonuses&view=details&type=fs&bid=5742&cid=811"
+ * php artisan fec:sef:check --option=com_content              the articles' rule (ContentPlugin), whether on or not
+ * php artisan fec:sef:check --missing                         live articles of the covered categories with no URL
  *
  * The check of the port of a sh404SEF plugin (App\Fec\Legacy\Sef): the registry
  * holds what the live plugin produced for thousands of queries, so rebuilding
@@ -25,20 +28,24 @@ class SefCheck extends Command
                             {--view= : Only the rows of this view}
                             {--limit=0 : Stop after N rows (0 = all)}
                             {--show=30 : How many differences to print}
-                            {--url= : Build one Joomla query and print the path and the stored non-SEF URL}';
+                            {--url= : Build one Joomla query and print the path and the stored non-SEF URL}
+                            {--missing : List the live articles of the categories ContentPlugin covers that have no registry URL}';
 
     protected $description = 'Rebuild the registry URLs of a component with the ported sh404SEF plugin and report the differences';
 
     public function handle(): int
     {
+        if ($this->option('missing')) {
+            return $this->missing();
+        }
         if ($url = (string) $this->option('url')) {
-            $built = Sh404sef::build($url, UrlRegistry::parseQuery($url));
+            $built = Sh404sef::build($url, UrlRegistry::parseQuery($url), true);
             if ($built === null) {
                 $this->line('raw (no SEF URL for this query)');
             } else {
                 $this->line('path:    /'.$built->path);
                 $this->line('non-SEF: '.$built->nonSef);
-                $this->line('registry: '.(app(UrlRegistry::class)->pathFor($url, false) ?? '(not stored)'));
+                $this->line('registry: '.(app(UrlRegistry::class)->pathFor($url, true) ?? '(not stored)'));
             }
 
             return self::SUCCESS;
@@ -82,7 +89,7 @@ class SefCheck extends Command
             $byView[$key] ??= ['rows' => 0, 'ok' => 0, 'diff' => 0, 'raw' => 0];
             $byView[$key]['rows']++;
 
-            $built = Sh404sef::build((string) $row->newurl, $query);
+            $built = Sh404sef::build((string) $row->newurl, $query, true);
             if ($built === null) {
                 $byView[$key]['raw']++;
                 $raw++;
@@ -114,5 +121,42 @@ class SefCheck extends Command
         }
 
         return $diffTotal === 0 ? self::SUCCESS : self::FAILURE;
+    }
+
+    /**
+     * The live articles of the categories ContentPlugin covers that the registry has no
+     * URL for (exact or tolerant, any spelling of their query): before the root switch
+     * sh404SEF writes them as soon as a Joomla page links them; after it, v3 does (the
+     * links JRoute builds, the router's content_article pattern). Should stay empty.
+     */
+    private function missing(): int
+    {
+        $rules = ContentPlugin::rules();
+        if ($rules === []) {
+            $this->error('No categories in fec.legacy.sef_content.categories');
+
+            return self::FAILURE;
+        }
+        $registry = app(UrlRegistry::class);
+        $now = time();
+        $rows = [];
+        $checked = 0;
+        foreach (DB::connection('fec')->table('content')->whereIn('catid', array_keys($rules))->where('state', 1)
+            ->orderBy('id')->cursor() as $article) {
+            if (! ContentPlugin::isLive($article, $now)) {
+                continue;
+            }
+            $checked++;
+            $rule = $rules[(int) $article->catid];
+            if ($registry->pathFor(ContentPlugin::nonSef((int) $article->id, (int) $article->catid, $rule['itemid']), true) === null) {
+                $rows[] = [$article->id, $article->catid, $rule['prefix'].'/'.$article->alias, $article->publish_up];
+            }
+        }
+        if ($rows !== []) {
+            $this->table(['id', 'catid', 'would be', 'publish_up (UTC)'], $rows);
+        }
+        $this->line(sprintf('%d live articles in categories %s: %d without a registry URL', $checked, implode(', ', array_keys($rules)), count($rows)));
+
+        return $rows === [] ? self::SUCCESS : self::FAILURE;
     }
 }

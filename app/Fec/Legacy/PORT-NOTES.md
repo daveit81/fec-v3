@@ -588,6 +588,33 @@ mailed From `FEC_LEGACY_MAILFROM` with Reply-To the sender; `/desk/messages` lis
 `fec.legacy.root_keep`. Same day, on the live file and here alike: the Affiliate Disclosure gives
 proposals@ for business inquiries (it said partnerships@, which Davey opened too).
 
+## The URLs of new articles after the root switch (phase 5)
+
+Found on 31 Oct 2026 while measuring what the Joomla backend is still used for. sh404SEF writes the
+row of a new article in `jos_sh404sef_urls` the first time a Joomla page links it (the directory, the
+blog list); after the root switch no public page is Joomla's, the port of sh404SEF covered only
+com_bonuses (`Sef\BonusesPlugin`), and a new review, post or cluster would have had no URL (a raw
+`/index.php?option=com_content...` link, a 404 on its path). Every published article of the three
+categories that still get new ones had its row that day: catid 8 806/806, 154 714/714, 153 18/18.
+
+`Sef\ContentPlugin` is sh404SEF's rule as the registry shows it, not a port of its com_content plugin
+(which is not in the snapshot): the category's prefix and the article's alias (not its title: "3,000x"
+is stored "3-000x"), the non-SEF URL with option first and the rest in byte order, `lang=en`, and the
+Itemid of the category's rows (26 for the reviews, 1261 for the blog, none for the clusters). Only
+published articles; another category, or an unpublished article, stays raw as before. It runs where
+the bonus port runs: in `JRoute` after every registry lookup failed (exact and tolerant: a
+review row without `catid` in its newurl, mostbet-casino 1961, is found by id), registering the row
+with `fec.legacy.sef_register`, and in `Sh404sefAliases::sefFor()`. The router's `content_article`
+pattern answers `/<prefix>/<alias>` for a live article (state 1, in its publishing window, UTC) of that
+category when the registry has no URL for it at all, and registers it: the editor opening a review right
+after publishing it. An article that has a URL under another spelling (its alias changed after sh404SEF
+wrote the row) keeps it, and the new spelling stays a 404, as on the live site.
+
+All of it is off until `FEC_LEGACY_SEF_CONTENT=true` (`Sh404sef::build()` answers null for com_content,
+the pattern does not match): the check first, `fec:sef:check --option=com_content` (forced on, writes
+nothing), then the flag, before the root switch. `fec:sef:check --missing` lists the live articles of
+those categories without a registry URL; it should stay empty.
+
 ## The affiliate links desk (phase 5, written for v3)
 
 com_shortlink had two halves. The public one (`index.php?option=com_shortlink&phrase=`, reached

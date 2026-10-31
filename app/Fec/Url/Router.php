@@ -3,6 +3,7 @@
 namespace App\Fec\Url;
 
 use App\Fec\Url\Patterns\BonusDetails;
+use App\Fec\Url\Patterns\ContentArticle;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -13,7 +14,8 @@ use Throwable;
  *   0b. jos_sh404sef_aliases sh404SEF's aliases, before its own URLs, Location as written
  *   0c. the home            "/" is the home menu item (jos_menu home = 1), never a row of the table
  *   1. jos_sh404sef_urls    canonical page, duplicate of a page, slash spelling, recorded 404
- *   2. run-time patterns    URL families sh404SEF never stored (bonus details)
+ *   2. run-time patterns    URL families sh404SEF never stored (bonus details), and articles it
+ *                           has not stored yet (content_article, fec.legacy.sef_content)
  *   3. jos_redirection      off by default (fec.router.legacy_redirection): the table of sh404SEF 1.x,
  *                           read by no plugin of Joomla 2.5 (shsef and jredirect are J1.5 files the
  *                           2.5 loader never includes); on 29 Oct 2026 the live site answered 404
@@ -28,6 +30,7 @@ final class Router
     /** @var list<class-string<UrlPattern>> in matching order */
     private const PATTERNS = [
         BonusDetails::class,
+        ContentArticle::class,
     ];
 
     public function __construct(

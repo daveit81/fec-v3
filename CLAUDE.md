@@ -221,6 +221,12 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   (`app/Fec/Url/Patterns`, e.g. `/bonuses/<casino>/<slug>-id<bid>`). `jos_redirection` (sh404SEF
   1.x's table) is off (`fec.router.legacy_redirection`): no plugin of Joomla 2.5 reads it, the live
   site answers 404 where its rules would redirect (checked 29 Oct 2026).
+- New articles (reviews catid 8, blog 154, clusters 153) get their URL from sh404SEF the first time a
+  Joomla page links them; after the root switch v3 does it: `Sef\ContentPlugin` (prefix + "/" + alias, the
+  Itemid sh404SEF stored; `fec.legacy.sef_content.categories`) for the links JRoute builds, and the router's
+  `content_article` pattern for the article's own path when the registry has no URL for it at all. Both off
+  until `FEC_LEGACY_SEF_CONTENT=true`, after `fec:sef:check --option=com_content` rebuilds every stored
+  row the same; `fec:sef:check --missing` lists the live articles of those categories without a URL.
 - A ported view = one `PageHandler` class registered in `Dispatcher::HANDLERS` under `option.view`.
   Unregistered views answer 404 (with the decision shown on the dev hostname only).
 - Probes: `php artisan fec:urls:resolve <path>...` (`--json`) and `GET /__registry?path=` on `v3.`.
