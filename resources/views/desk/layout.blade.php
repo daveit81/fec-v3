@@ -24,6 +24,14 @@
   .filters .btn { margin-top: 0; padding: 8px 14px; }
   .btn--sm { margin-top: 0; padding: 4px 10px; font-size: 13px; }
   .btn--off { background: #8a939c; }
+  .btn--danger { background: #a12a2a; }
+  h2 { font-size: 16px; margin: 28px 0 4px; }
+  .hint { display: block; color: #5c6670; font-size: 13px; margin-top: 4px; }
+  .opt { font-weight: 400; color: #5c6670; }
+  .uses { margin: 8px 0 0; padding-left: 18px; font-size: 14px; }
+  .uses li { margin: 3px 0; }
+  table.grid td.dest { max-width: 420px; word-break: break-all; }
+  input[readonly] { background: #f6f7f8; }
   .tag { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 12px; background: #eef0f2; color: #3c444c; }
   .tag--good { background: #e8f5f1; color: #14523f; }
   .tag--fair { background: #fff4dc; color: #7a5300; }

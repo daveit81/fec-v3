@@ -108,6 +108,11 @@ one page at a time (strangler migration). The roadmap, decisions and runbooks li
   `App\Fec\Desk\JackpotsDesk`): Laravel's CSRF and login, one column written, `jos_jackpots.published`
   (what the reviews' jackpot section reads); name, currency and soft come from the tracker and
   `fec:jackpots:update` rewrites them, the logo column and `jos_providers.restrictions` have no live reader.
+- The affiliate links desk is written for v3 (`/desk/links`, `Desk\LinksController`, `App\Fec\Desk\LinksDesk`):
+  the phrases of `/goto.php?link=` in `jos_shortlink`, which com_shortlink managed from the Joomla backend
+  (goto.php itself is `GotoController` since 25 Oct 2026). List, add, edit, delete, with who uses each phrase
+  (casinos' `jr_gourl`, bonuses' `link`, article bodies, custom modules) and its clicks from `jos_bonus_clicks`;
+  a phrase in use can get a new destination but cannot be renamed or deleted. Writes on `fec_rw`, logged.
 - Phase 3 (com_bonuses): the component is copied verbatim too (`PORT-NOTES.md` lists what is left
   out), its lib closure is the "bonuses" slice (197 functions), its nine public views are in
   `Dispatcher::HANDLERS`, `com_bonuses.ads` is a writing view (click log). Its URLs are built by the

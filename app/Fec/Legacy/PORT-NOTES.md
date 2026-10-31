@@ -588,6 +588,30 @@ mailed From `FEC_LEGACY_MAILFROM` with Reply-To the sender; `/desk/messages` lis
 `fec.legacy.root_keep`. Same day, on the live file and here alike: the Affiliate Disclosure gives
 proposals@ for business inquiries (it said partnerships@, which Davey opened too).
 
+## The affiliate links desk (phase 5, written for v3)
+
+com_shortlink had two halves. The public one (`index.php?option=com_shortlink&phrase=`, reached
+through the legacy `goto.php`) is `GotoController` + `App\Fec\Shortlink\Shortlinks` since 25 Oct
+2026. The other was its backend in `/administrator`, the only place where a phrase was created or
+pointed elsewhere (Davey noticed it was left out, 31 Oct 2026). `/desk/links` replaces it
+(`Desk\LinksController`, `App\Fec\Desk\LinksDesk`), written rather than ported. Data of that day:
+1,010 phrases, 1,008 of them absolute URLs, 2 relative, no article ids; 71 created in 2026; 806
+casinos point their `jr_gourl` at a phrase, 1 bonus its `link`, 39 articles their body; no reference
+to a missing phrase.
+
+Kept: list with search, a "last call" filter, sorting by phrase, hits and last call; add, edit and
+delete; the destination as an absolute URL or a path of the site (the redirect still takes an article
+id or any relative link, as com_shortlink did, for the rows that have one). Not kept: the article
+picker (no phrase uses one), the "check config" button that moved `goto.php` (gone with v3), and two
+quirks of the old backend: every save rewrote `create_date` with the time of the save (the table's
+constructor set it, the form never sent it), and a phrase still in use could be renamed or deleted
+(goto.php then lands on the home page, silently). Here a phrase used by a casino, a bonus, an article
+or a custom module can get a new destination but cannot be renamed or deleted. Added, read only: who
+uses each phrase, and its clicks from `jos_bonus_clicks` (the tracker of record; the table's counter
+counts bots too). Every write is a line of `laravel.log` (old and new values; a deleted row whole).
+
+Grant needed by `freeextr_v3rw`: INSERT and DELETE on `jos_shortlink` (UPDATE it has since phase 1).
+
 ## Known legacy behaviour reproduced on purpose (parity)
 
 - A path with an encoded "#" (`%23`, a link copied with its anchor) is looked up without it: the

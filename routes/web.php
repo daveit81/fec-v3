@@ -5,6 +5,7 @@ use App\Fec\Url\Router;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\Desk\HomeController;
 use App\Http\Controllers\Desk\JackpotsController;
+use App\Http\Controllers\Desk\LinksController;
 use App\Http\Controllers\Desk\LoginController;
 use App\Http\Controllers\Desk\MessagesController;
 use App\Http\Controllers\HealthController;
@@ -82,6 +83,17 @@ Route::middleware('auth')->group(function (): void {
 Route::middleware('auth')->group(function (): void {
     Route::get('/desk/jackpots', [JackpotsController::class, 'index'])->name('desk.jackpots');
     Route::post('/desk/jackpots/published', [JackpotsController::class, 'publish'])->name('desk.jackpots.publish');
+});
+
+// Phase 5: the affiliate links of /goto.php (jos_shortlink), managed in the Joomla backend by
+// com_shortlink; written for v3 (App\Fec\Desk\LinksDesk). goto.php itself is routes/stateless.php.
+Route::middleware('auth')->group(function (): void {
+    Route::get('/desk/links', [LinksController::class, 'index'])->name('desk.links');
+    Route::get('/desk/links/new', [LinksController::class, 'create'])->name('desk.links.create');
+    Route::post('/desk/links', [LinksController::class, 'store'])->name('desk.links.store');
+    Route::get('/desk/links/{id}', [LinksController::class, 'edit'])->whereNumber('id')->name('desk.links.edit');
+    Route::post('/desk/links/{id}', [LinksController::class, 'update'])->whereNumber('id')->name('desk.links.update');
+    Route::post('/desk/links/{id}/delete', [LinksController::class, 'destroy'])->whereNumber('id')->name('desk.links.destroy');
 });
 
 // Ported desks: their SEF paths (fec.legacy.desk_paths); the non-SEF entry

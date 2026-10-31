@@ -495,6 +495,7 @@ return [
             ['title' => 'Bonus list', 'url' => '/index.php?option=com_bonuses&view=manage', 'note' => 'Bonus list with filters, toggles, duplicate, restore, bulk actions'],
             ['title' => 'Add a bonus', 'url' => '/index.php?option=com_bonuses&view=add', 'note' => 'Bonus entry and edit form with the FXRate welcome package'],
             ['title' => 'Click report', 'url' => '/index.php?option=com_bonuses&view=clicks', 'note' => 'Clicks by brand and country, live feed, StatsDrone FTDs (CSV import from /components/com_bonuses/ajax/ftd_import.php)'],
+            ['title' => 'Affiliate links', 'url' => '/desk/links', 'note' => 'The phrases of /goto.php?link= (jos_shortlink, formerly com_shortlink in the Joomla backend): destination, who uses them, clicks'],
             ['title' => 'Jackpots', 'url' => '/desk/jackpots', 'note' => 'Tracker jackpots: published or hidden in the jackpot section of the reviews (rewritten in phase 5: the cron updates the rest)'],
             ['title' => 'Partner Desk', 'url' => '/index.php?option=com_partnerdesk&view=dashboard', 'note' => 'Brand submissions from the "List your brand" form (/index.php?option=com_partnerdesk): approve, reject, notes, fact-sheet draft'],
             ['title' => 'Messages', 'url' => '/desk/messages', 'note' => 'Copies of the /contactus/ form messages by topic and status (each one is also emailed to its mailbox)'],
